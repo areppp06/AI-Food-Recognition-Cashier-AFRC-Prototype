@@ -22,6 +22,8 @@ class AIItem(BaseModel):
 
 class AIResponse(BaseModel):
     items: List[AIItem]
+    error_code: Optional[str] = None
+    error_message: Optional[str] = None
 
 class BillItem(BaseModel):
     name: str
@@ -36,6 +38,11 @@ class BillResponse(BaseModel):
     total: float
     low_confidence: bool
     session_id: str
+
+class ErrorResponse(BaseModel):
+    error_code: str
+    message: str
+    retake_required: bool = True
 
 class VerifyRequest(BaseModel):
     session_id: str
