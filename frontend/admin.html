@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>AFRC Admin</title>
+<style>
+body { font-family: system-ui; max-width: 900px; margin: 2rem auto; }
+table { width: 100%; border-collapse: collapse; background: white; }
+th, td { padding: 0.75rem; border-bottom: 1px solid #ddd; text-align: left; }
+button { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<h1>🛠️ AFRC Admin - Daily Menu</h1>
+<table id="menuTable">
+<thead><tr><th>Dish</th><th>Price (RM)</th><th>Available Today</th></tr></thead>
+<tbody></tbody>
+</table>
+<button onclick="save()">Save Menu</button>
+<p><a href="/">← Customer</a> | <a href="/cashier">Cashier</a></p>
+<script>
+async function load() {
+  const res = await fetch("/api/menu");
+  const menu = await res.json();
+  const tbody = document.querySelector("tbody");
+  tbody.innerHTML = menu.map(d => `
+    <tr>
+      <td>${d.name}</td>
+      <td><input type="number" step="0.01" value="${d.price}" data-id="${d.id}" class="price"></td>
+      <td><input type="checkbox" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail"></td>
+    </tr>
+  `).join("");
+}
+async function save() {
+  const rows = [...document.querySelectorAll("tr")].slice(1);
+  const dishes = rows.map(r => {
+    const id = r.querySelector(".price").dataset.id;
+    return {
+      id: parseInt(id),
+      price: parseFloat(r.querySelector(".price").value),
+      available: r.querySelector(".avail").checked
+    };
+  });
+  await fetch("/api/menu", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(dishes) });
+  alert("Menu updated! AI will only see available dishes.");
+}
+load();
+</script>
+</body>
+</html>

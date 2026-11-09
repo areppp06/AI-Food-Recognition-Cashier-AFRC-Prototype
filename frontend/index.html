@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AFRC - Customer</title>
+<style>
+body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 1rem; background: #f8f9fa; }
+.camera-box { border: 2px dashed #ccc; border-radius: 12px; padding: 1rem; text-align: center; background: white; }
+video, canvas { max-width: 100%; border-radius: 8px; }
+button { background: #ff6b35; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 0.5rem; }
+.bill { background: white; padding: 1.5rem; border-radius: 12px; margin-top: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+.total { font-size: 1.5rem; font-weight: bold; color: #ff6b35; }
+.low { color: #e74c3c; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>🍛 AFRC - Self Service</h1>
+<p>Place your plate and capture. AI sees food, backend prices it.</p>
+
+<div class="camera-box">
+<video id="video" autoplay playsinline width="640" height="480" style="display:none;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
+<br>
+<button id="startCam">📷 Start Camera</button>
+<button id="capture" disabled>📸 Capture Plate</button>
+</div>
+
+<div id="result" class="bill" style="display:none;"></div>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const startBtn = document.getElementById('startCam');
+const capBtn = document.getElementById('capture');
+const result = document.getElementById('result');
+
+let stream;
+
+startBtn.onclick = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    video.srcObject = stream;
+    video.style.display = "block";
+    capBtn.disabled = false;
+    startBtn.disabled = true;
+  } catch (e) {
+    alert("Camera access required. No gallery uploads allowed.");
+  }
+};
+
+capBtn.onclick = async () => {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.style.display = "block";
+  
+  canvas.toBlob(async (blob) => {
+    const form = new FormData();
+    form.append("file", blob, "plate.jpg");
+    const res = await fetch("/api/recognize", { method: "POST", body: form });
+    const data = await res.json();
+    showBill(data);
+  }, "image/jpeg", 0.8);
+};
+
+function showBill(data) {
+  let html = "<h2>Your Bill</h2>";
+  if (data.low_confidence) html += '<p class="low">⚠️ Some items need cashier verification</p>';
+  data.items.forEach(i => {
+    html += `<div class="item"><span>${i.name} x ${i.quantity}</span><span>RM ${i.subtotal.toFixed(2)}</span></div>`;
+    if (i.needs_verification) html += `<small style="color:red">Low confidence (${(i.confidence*100).toFixed(0)}%)</small>`;
+  });
+  html += `<div class="total">Total: RM ${data.total.toFixed(2)}</div>`;
+  html += `<p>Session: ${data.session_id}</p>`;
+  html += `<button onclick="location.href='/cashier'">Go to Cashier if needed</button>`;
+  result.innerHTML = html;
+  result.style.display = "block";
+}
+</script>
+</body>
+</html>
