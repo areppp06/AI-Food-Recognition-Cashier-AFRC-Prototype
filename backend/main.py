@@ -8,8 +8,8 @@ import json
 from datetime import datetime
 
 from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill
-from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest
-from .ai_service import recognize_food
+from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
+from .ai_service import recognize_food, RecognitionError
 
 app = FastAPI(title="AFRC Prototype", version="1.0")
 
@@ -56,21 +56,54 @@ def update_menu(dishes: List[dict], db: Session = Depends(get_db)):
 
 @app.post("/api/recognize")
 async def recognize(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(400, "Must be an image from camera")
-    
-    image_bytes = await file.read()
-    available = [{"name": d.name, "available": d.available, "unit": d.unit, "price": d.price} 
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail=ErrorResponse(
+            error_code="INVALID_IMAGE",
+            message="Please capture a photo using the camera. Gallery uploads are not allowed."
+        ).dict())
+
+    try:
+        image_bytes = await file.read()
+        if len(image_bytes) < 1000:
+            raise HTTPException(status_code=400, detail=ErrorResponse(
+                error_code="UPLOAD_FAILED",
+                message="Photo is too small or empty. Please retake."
+            ).dict())
+    except Exception:
+        raise HTTPException(status_code=400, detail=ErrorResponse(
+            error_code="UPLOAD_FAILED",
+            message="Failed to receive photo. Please try again."
+        ).dict())
+
+    available = [{"name": d.name, "available": d.available, "unit": d.unit, "price": d.price}
                  for d in db.query(Dish).filter(Dish.available == True).all()]
-    
-    ai_items = await recognize_food(image_bytes, available)
-    
+
+    try:
+        ai_items = await recognize_food(image_bytes, available)
+    except RecognitionError as e:
+        raise HTTPException(status_code=422, detail=ErrorResponse(
+            error_code=e.code,
+            message=e.message,
+            retake_required=True
+        ).dict())
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=ErrorResponse(
+            error_code="AI_SERVICE_ERROR",
+            message="AI service is temporarily down. Please try again in a moment."
+        ).dict())
+
+    if not ai_items:
+        raise HTTPException(status_code=422, detail=ErrorResponse(
+            error_code="NO_FOOD_DETECTED",
+            message="No matching dishes found on the plate. Please retake or check today's menu."
+        ).dict())
+
     # Backend pricing - never trust AI for prices
     bill_items = []
     total = 0.0
     low_conf = False
     dish_map = {d.name: d for d in db.query(Dish).all()}
-    
+
     for item in ai_items:
         dish = dish_map.get(item.name)
         if not dish or not dish.available:
@@ -89,13 +122,19 @@ async def recognize(file: UploadFile = File(...), db: Session = Depends(get_db))
             confidence=conf,
             needs_verification=needs
         ))
-    
+
+    if not bill_items:
+        raise HTTPException(status_code=422, detail=ErrorResponse(
+            error_code="NO_MATCHING_DISHES",
+            message="Recognized items are not on today's menu. Please retake or ask staff."
+        ).dict())
+
     session_id = str(uuid.uuid4())
-    session = SessionBill(id=session_id, raw_ai=json.dumps([i.dict() for i in ai_items]), 
+    session = SessionBill(id=session_id, raw_ai=json.dumps([i.dict() for i in ai_items]),
                           final_bill=json.dumps([b.dict() for b in bill_items]))
     db.add(session)
     db.commit()
-    
+
     return BillResponse(
         items=bill_items,
         total=round(total, 2),
@@ -108,7 +147,7 @@ def verify(req: VerifyRequest, db: Session = Depends(get_db)):
     cashier = db.query(Cashier).filter(Cashier.pin == req.pin, Cashier.active == True).first()
     if not cashier:
         raise HTTPException(401, "Invalid PIN")
-    
+
     # Recalculate from corrections
     dish_map = {d.name: d for d in db.query(Dish).all()}
     bill_items = []
@@ -124,13 +163,13 @@ def verify(req: VerifyRequest, db: Session = Depends(get_db)):
                 "name": name, "quantity": qty, "unit_price": dish.price,
                 "subtotal": round(sub, 2), "confidence": 1.0, "needs_verification": False
             })
-    
+
     # Log
-    log = AuditLog(cashier_id=cashier.id, action="verify_bill", 
+    log = AuditLog(cashier_id=cashier.id, action="verify_bill",
                    details=f"session={req.session_id} total={total}")
     db.add(log)
     db.commit()
-    
+
     return {"items": bill_items, "total": round(total, 2), "verified": True}
 
 @app.get("/api/cashiers")
