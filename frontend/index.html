@@ -2,31 +2,108 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AFRC - Customer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFRC - Self Service</title>
 <style>
-body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 1rem; background: #f8f9fa; }
-.camera-box { border: 2px dashed #ccc; border-radius: 12px; padding: 1rem; text-align: center; background: white; }
-video, canvas { max-width: 100%; border-radius: 8px; }
-button { background: #ff6b35; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem; cursor: pointer; margin: 0.5rem; }
-.bill { background: white; padding: 1.5rem; border-radius: 12px; margin-top: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-.item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
-.total { font-size: 1.5rem; font-weight: bold; color: #ff6b35; }
-.low { color: #e74c3c; font-weight: bold; }
+* { box-sizing: border-box; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  max-width: 720px;
+  margin: 1.5rem auto;
+  padding: 0 1.25rem 2rem;
+  background: #f5f6f8;
+  color: #222;
+}
+h1 { margin: 0 0 0.5rem; font-size: 1.75rem; }
+.subtitle { color: #555; margin-bottom: 1.5rem; }
+.camera-box {
+  border: 2px dashed #ddd;
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  background: white;
+  margin-bottom: 1.5rem;
+}
+video, canvas {
+  max-width: 100%;
+  border-radius: 12px;
+  margin: 0.5rem 0;
+}
+.btn {
+  display: inline-block;
+  background: #ff6b35;
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 0.4rem;
+  min-width: 160px;
+  transition: background 0.15s;
+}
+.btn:hover { background: #e55a2b; }
+.btn:disabled { background: #ccc; cursor: not-allowed; }
+.btn-secondary { background: #4a5568; }
+.btn-secondary:hover { background: #2d3748; }
+.bill {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  margin-top: 1rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #eee;
+}
+.total {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ff6b35;
+  margin-top: 1rem;
+}
+.low { color: #e53e3e; font-weight: 600; margin: 0.5rem 0; }
+.error-box {
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  color: #c53030;
+  padding: 1.25rem;
+  border-radius: 12px;
+  margin: 1rem 0;
+}
+.error-code {
+  font-family: monospace;
+  background: #fed7d7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+.loading {
+  color: #666;
+  font-style: italic;
+  margin: 1rem 0;
+}
 </style>
 </head>
 <body>
-<h1>🍛 AFRC - Self Service</h1>
-<p>Place your plate and capture. AI sees food, backend prices it.</p>
+<h1>🍛 AFRC Self Service</h1>
+<p class="subtitle">Place your plate under the camera and capture. Prices come from the menu, not the AI.</p>
 
 <div class="camera-box">
-<video id="video" autoplay playsinline width="640" height="480" style="display:none;"></video>
-<canvas id="canvas" style="display:none;"></canvas>
-<br>
-<button id="startCam">📷 Start Camera</button>
-<button id="capture" disabled>📸 Capture Plate</button>
+  <video id="video" autoplay playsinline width="640" height="480" style="display:none;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <div id="controls">
+    <button id="startCam" class="btn">📷 Start Camera</button>
+    <button id="capture" class="btn" disabled>📸 Capture Plate</button>
+  </div>
+  <div id="status" class="loading" style="display:none;">Processing photo...</div>
 </div>
 
-<div id="result" class="bill" style="display:none;"></div>
+<div id="result"></div>
 
 <script>
 const video = document.getElementById('video');
@@ -34,48 +111,95 @@ const canvas = document.getElementById('canvas');
 const startBtn = document.getElementById('startCam');
 const capBtn = document.getElementById('capture');
 const result = document.getElementById('result');
+const status = document.getElementById('status');
 
 let stream;
 
 startBtn.onclick = async () => {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" },
+      audio: false
+    });
     video.srcObject = stream;
     video.style.display = "block";
     capBtn.disabled = false;
     startBtn.disabled = true;
+    result.innerHTML = "";
   } catch (e) {
-    alert("Camera access required. No gallery uploads allowed.");
+    showError("CAMERA_DENIED", "Camera access is required. Please allow camera permission and try again.");
   }
 };
 
 capBtn.onclick = async () => {
+  status.style.display = "block";
+  capBtn.disabled = true;
+  result.innerHTML = "";
+
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0);
   canvas.style.display = "block";
-  
+
   canvas.toBlob(async (blob) => {
+    if (!blob) {
+      showError("UPLOAD_FAILED", "Could not capture photo. Please try again.");
+      return;
+    }
     const form = new FormData();
     form.append("file", blob, "plate.jpg");
-    const res = await fetch("/api/recognize", { method: "POST", body: form });
-    const data = await res.json();
-    showBill(data);
-  }, "image/jpeg", 0.8);
+
+    try {
+      const res = await fetch("/api/recognize", { method: "POST", body: form });
+      const data = await res.json();
+
+      if (!res.ok) {
+        const detail = data.detail || data;
+        showError(detail.error_code || "UNKNOWN", detail.message || "Something went wrong. Please retake the photo.");
+        return;
+      }
+
+      showBill(data);
+    } catch (e) {
+      showError("NETWORK_ERROR", "Could not reach the server. Please check your connection and try again.");
+    } finally {
+      status.style.display = "none";
+      capBtn.disabled = false;
+    }
+  }, "image/jpeg", 0.85);
 };
 
+function showError(code, message) {
+  result.innerHTML = `
+    <div class="error-box">
+      <strong>Please retake photo</strong><br>
+      ${message}<br>
+      <span class="error-code">${code}</span>
+      <br><br>
+      <button class="btn" onclick="location.reload()">📸 Retake Photo</button>
+    </div>
+  `;
+  status.style.display = "none";
+  capBtn.disabled = false;
+}
+
 function showBill(data) {
-  let html = "<h2>Your Bill</h2>";
-  if (data.low_confidence) html += '<p class="low">⚠️ Some items need cashier verification</p>';
+  let html = `<div class="bill"><h2>Your Bill</h2>`;
+  if (data.low_confidence) {
+    html += `<p class="low">⚠️ Some items have low confidence and may need cashier verification.</p>`;
+  }
   data.items.forEach(i => {
-    html += `<div class="item"><span>${i.name} x ${i.quantity}</span><span>RM ${i.subtotal.toFixed(2)}</span></div>`;
-    if (i.needs_verification) html += `<small style="color:red">Low confidence (${(i.confidence*100).toFixed(0)}%)</small>`;
+    html += `<div class="item"><span>${i.name} × ${i.quantity}</span><span>RM ${i.subtotal.toFixed(2)}</span></div>`;
+    if (i.needs_verification) {
+      html += `<small style="color:#e53e3e">Low confidence (${(i.confidence*100).toFixed(0)}%)</small>`;
+    }
   });
   html += `<div class="total">Total: RM ${data.total.toFixed(2)}</div>`;
-  html += `<p>Session: ${data.session_id}</p>`;
-  html += `<button onclick="location.href='/cashier'">Go to Cashier if needed</button>`;
+  html += `<p style="margin-top:1rem;font-size:0.9rem;color:#666">Session: ${data.session_id}</p>`;
+  html += `<button class="btn btn-secondary" onclick="location.href='/cashier'">Cashier Verification</button>`;
+  html += `<button class="btn" onclick="location.reload()">New Plate</button>`;
+  html += `</div>`;
   result.innerHTML = html;
-  result.style.display = "block";
 }
 </script>
 </body>
