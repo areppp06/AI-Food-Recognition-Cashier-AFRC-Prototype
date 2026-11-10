@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
 
-from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill
+from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, next_bill_number
 from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
@@ -267,31 +267,44 @@ async def recognize(
         ).dict())
 
     session_id = str(uuid.uuid4())
+    bill_number = next_bill_number(db)
     try:
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
     except OSError:
         pass
-    session = SessionBill(id=session_id, raw_ai=json.dumps([i.dict() for i in ai_items]),
-                          final_bill=json.dumps([b.dict() for b in bill_items]))
+    session = SessionBill(
+        id=session_id,
+        bill_number=bill_number,
+        raw_ai=json.dumps([i.dict() for i in ai_items]),
+        final_bill=json.dumps([b.dict() for b in bill_items]),
+    )
     db.add(session)
     db.commit()
 
     return BillResponse(
         items=bill_items,
         total=round(total, 2),
-        session_id=session_id
+        session_id=session_id,
+        bill_number=bill_number,
     )
 
 def _bill_payload(session: SessionBill) -> dict:
     items = json.loads(session.final_bill or "[]")
     total = round(sum(float(item.get("subtotal") or 0) for item in items), 2)
+    img_path = UPLOAD_DIR / f"{session.id}.jpg"
     return {
         "session_id": session.id,
+        "bill_number": session.bill_number or f"AAA-0001",
         "items": items,
         "total": total,
         "status": session.status or "open",
         "receipt_email": session.receipt_email or "",
+        "curlec_order_id": session.curlec_order_id or "",
+        "curlec_payment_id": session.curlec_payment_id or "",
+        "created_at": (session.created_at.isoformat() + "Z") if session.created_at else "",
+        "paid_at": (session.paid_at.isoformat() + "Z") if session.paid_at else "",
+        "has_image": img_path.is_file(),
     }
 
 @app.get("/api/sessions/{session_id}")
@@ -362,8 +375,8 @@ def _create_curlec_order(bill: SessionBill, db: Session) -> dict:
         order = client.order.create({
             "amount": amount,
             "currency": "MYR",
-            "receipt": bill.id[:40],
-            "notes": {"session_id": bill.id},
+            "receipt": (bill.bill_number or bill.id)[:40],
+            "notes": {"session_id": bill.id, "bill_number": bill.bill_number or ""},
         })
     except Exception:
         raise HTTPException(status_code=502, detail="Could not start the payment. Please try again.")
@@ -382,6 +395,7 @@ def _record_captured_payment(bill: SessionBill, payment: dict, db: Session) -> b
         return False
     bill.curlec_payment_id = str(payment.get("id") or "")
     bill.status = "paid"
+    bill.paid_at = datetime.utcnow()
     db.commit()
     return True
 
@@ -462,17 +476,33 @@ async def curlec_webhook(request: Request, db: Session = Depends(get_db)):
     body = await request.body()
     signature = request.headers.get("x-razorpay-signature", "")
     webhook_secret = os.getenv("CURLEC_WEBHOOK_SECRET", "").strip()
-    if not webhook_secret:
-        raise HTTPException(status_code=503, detail="Payment webhook is not configured")
     client, _key_id = _curlec_client()
     try:
-        client.utility.verify_webhook_signature(body.decode("utf-8"), signature, webhook_secret)
         event = json.loads(body)
     except Exception:
-        raise HTTPException(status_code=400, detail="invalid signature")
+        raise HTTPException(status_code=400, detail="invalid payload")
+
+    verified_by_sig = False
+    if webhook_secret and not webhook_secret.startswith("http"):
+        try:
+            client.utility.verify_webhook_signature(body.decode("utf-8"), signature, webhook_secret)
+            verified_by_sig = True
+        except Exception:
+            verified_by_sig = False
+
     if event.get("event") in ("payment.captured", "order.paid"):
-        payment = ((event.get("payload") or {}).get("payment") or {}).get("entity") or {}
-        order_id = str(payment.get("order_id") or "")
+        entity = ((event.get("payload") or {}).get("payment") or {}).get("entity") or {}
+        payment_id = str(entity.get("id") or "").strip()
+        order_id = str(entity.get("order_id") or "").strip()
+        payment = entity
+        if not verified_by_sig:
+            if not payment_id:
+                return {"status": "ignored"}
+            try:
+                payment = client.payment.fetch(payment_id)
+                order_id = str(payment.get("order_id") or "").strip()
+            except Exception:
+                return {"status": "ignored"}
         bill = db.query(SessionBill).filter(SessionBill.curlec_order_id == order_id).first()
         if bill and bill.status != "paid" and str(payment.get("status")) == "captured":
             _record_captured_payment(bill, payment, db)
@@ -501,9 +531,19 @@ def verify(req: VerifyRequest, request: Request, db: Session = Depends(get_db)):
                 "subtotal": round(sub, 2)
             })
 
+    target_bill = (
+        db.query(SessionBill)
+        .filter((SessionBill.id == req.session_id) | (SessionBill.bill_number == req.session_id.strip().upper()))
+        .first()
+    )
+    if target_bill:
+        target_bill.final_bill = json.dumps(bill_items)
+        if target_bill.status == "needs_cashier":
+            target_bill.status = "open"
+
     # Log
     log = AuditLog(cashier_id=cashier.id, action="verify_bill",
-                   details=f"session={req.session_id} total={total}")
+                   details=f"session={req.session_id} total={total:.2f}")
     db.add(log)
     db.commit()
 
@@ -512,3 +552,59 @@ def verify(req: VerifyRequest, request: Request, db: Session = Depends(get_db)):
 @app.get("/api/cashiers")
 def list_cashiers(db: Session = Depends(get_db)):
     return [{"id": c.id, "name": c.name, "active": c.active} for c in db.query(Cashier).all()]
+
+@app.get("/api/admin/bills")
+def list_admin_bills(db: Session = Depends(get_db)):
+    sessions = db.query(SessionBill).order_by(SessionBill.created_at.desc()).all()
+    bills = [_bill_payload(s) for s in sessions]
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    total_revenue = round(sum(b["total"] for b in bills if b["status"] == "paid"), 2)
+    today_revenue = round(
+        sum(
+            b["total"]
+            for b in bills
+            if b["status"] == "paid" and (b["paid_at"] or b["created_at"]).startswith(today_str)
+        ),
+        2,
+    )
+    return {
+        "summary": {
+            "total_revenue": total_revenue,
+            "today_revenue": today_revenue,
+            "total_bills": len(bills),
+            "paid_count": sum(1 for b in bills if b["status"] == "paid"),
+            "pending_count": sum(1 for b in bills if b["status"] in ("open", "pending")),
+            "needs_cashier_count": sum(1 for b in bills if b["status"] == "needs_cashier"),
+        },
+        "bills": bills,
+    }
+
+@app.post("/api/admin/bills/{session_id}/status")
+def update_admin_bill_status(session_id: str, payload: dict, db: Session = Depends(get_db)):
+    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    new_status = str(payload.get("status") or "").strip().lower()
+    if new_status not in ("open", "pending", "paid", "needs_cashier", "cancelled"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+    bill.status = new_status
+    if new_status == "paid" and not bill.paid_at:
+        bill.paid_at = datetime.utcnow()
+    db.commit()
+    return _bill_payload(bill)
+
+@app.get("/api/admin/audit-logs")
+def list_audit_logs(db: Session = Depends(get_db)):
+    cashier_map = {c.id: c.name for c in db.query(Cashier).all()}
+    logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(200).all()
+    return [
+        {
+            "id": l.id,
+            "cashier_id": l.cashier_id,
+            "cashier_name": cashier_map.get(l.cashier_id, f"Cashier #{l.cashier_id}"),
+            "action": l.action,
+            "details": l.details or "",
+            "timestamp": (l.timestamp.isoformat() + "Z") if l.timestamp else "",
+        }
+        for l in logs
+    ]

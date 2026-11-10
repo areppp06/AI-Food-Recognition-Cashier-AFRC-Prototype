@@ -43,6 +43,7 @@ class AuditLog(Base):
 class SessionBill(Base):
     __tablename__ = "sessions"
     id = Column(String, primary_key=True)
+    bill_number = Column(String, default="", index=True)
     raw_ai = Column(Text)
     final_bill = Column(Text)
     status = Column(String, default="open")
@@ -50,6 +51,34 @@ class SessionBill(Base):
     curlec_order_id = Column(String, default="")
     curlec_payment_id = Column(String, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
+    paid_at = Column(DateTime, nullable=True)
+
+def format_bill_number(seq: int) -> str:
+    seq = max(1, int(seq))
+    prefix_idx, num = divmod(seq - 1, 9999)
+    num += 1
+    c1 = chr(ord("A") + ((prefix_idx // (26 * 26)) % 26))
+    c2 = chr(ord("A") + ((prefix_idx // 26) % 26))
+    c3 = chr(ord("A") + (prefix_idx % 26))
+    return f"{c1}{c2}{c3}-{num:04d}"
+
+def parse_bill_seq(bill_number: str) -> int:
+    if not bill_number or "-" not in bill_number:
+        return 0
+    prefix, digits = bill_number.strip().upper().split("-", 1)
+    if len(prefix) != 3 or not prefix.isalpha() or not digits.isdigit():
+        return 0
+    p_idx = (
+        (ord(prefix[0]) - ord("A")) * 26 * 26
+        + (ord(prefix[1]) - ord("A")) * 26
+        + (ord(prefix[2]) - ord("A"))
+    )
+    return p_idx * 9999 + int(digits)
+
+def next_bill_number(db) -> str:
+    rows = db.query(SessionBill.bill_number).all()
+    max_seq = max((parse_bill_seq(r[0]) for r in rows if r and r[0]), default=0)
+    return format_bill_number(max_seq + 1)
 
 def init_db():
     Base.metadata.create_all(bind=engine)
@@ -61,6 +90,8 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE dishes ADD COLUMN pieces_per_portion INTEGER DEFAULT 1")
         conn.exec_driver_sql("UPDATE dishes SET pieces_per_portion = 1 WHERE pieces_per_portion IS NULL")
         session_columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(sessions)")]
+        if session_columns and "bill_number" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN bill_number TEXT DEFAULT ''")
         if session_columns and "status" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN status TEXT DEFAULT 'open'")
         if session_columns and "receipt_email" not in session_columns:
@@ -69,7 +100,23 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN curlec_order_id TEXT DEFAULT ''")
         if session_columns and "curlec_payment_id" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN curlec_payment_id TEXT DEFAULT ''")
+        if session_columns and "paid_at" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN paid_at DATETIME")
     db = SessionLocal()
+    # Backfill bill_number for any existing sessions missing one
+    missing_bills = (
+        db.query(SessionBill)
+        .filter((SessionBill.bill_number == None) | (SessionBill.bill_number == ""))
+        .order_by(SessionBill.created_at.asc())
+        .all()
+    )
+    if missing_bills:
+        existing_rows = db.query(SessionBill.bill_number).all()
+        seq = max((parse_bill_seq(r[0]) for r in existing_rows if r and r[0]), default=0)
+        for s in missing_bills:
+            seq += 1
+            s.bill_number = format_bill_number(seq)
+        db.commit()
     # Seed default dishes if empty
     if db.query(Dish).count() == 0:
         seeds = [

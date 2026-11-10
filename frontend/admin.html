@@ -1,73 +1,974 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>AFRC Admin</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFRC Admin Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-body { font-family: system-ui; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
-table { width: 100%; border-collapse: collapse; background: white; }
-th, td { padding: 0.75rem; border-bottom: 1px solid #ddd; text-align: left; }
-button { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
-button.remove { background: #c0392b; }
-form.add { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin: 1rem 0 1.5rem; }
-label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; }
-input[type="text"], input[type="number"], textarea { padding: 0.45rem 0.5rem; border: 1px solid #ccc; border-radius: 6px; font: inherit; }
-textarea { width: 100%; min-width: 16rem; }
-label.grow { flex: 1; min-width: 16rem; }
-.note { color: #555; }
-#error { color: #c0392b; min-height: 1.2rem; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: #f1f5f9;
+    color: #0f172a;
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: #0f172a;
+    color: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+    transition: transform 0.25s ease;
+  }
+  .brand {
+    padding: 1.5rem 1.35rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    background: #ff5e36;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(255, 94, 54, 0.35);
+  }
+  .brand-text h2 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .brand-text span {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    display: block;
+  }
+
+  .nav-group {
+    padding: 1.25rem 0.85rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .nav-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+    padding: 0 0.65rem 0.4rem;
+  }
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: #cbd5e1;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s ease;
+  }
+  .nav-btn-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+  }
+  .nav-btn.active {
+    background: #ff5e36;
+    color: #ffffff;
+    box-shadow: 0 6px 16px -4px rgba(255, 94, 54, 0.45);
+  }
+  .nav-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+  }
+  .nav-badge.alert {
+    background: #f59e0b;
+    color: #0f172a;
+  }
+
+  .sidebar-footer {
+    padding: 1rem 0.85rem 1.35rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .ext-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 10px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+  }
+  .ext-link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+  }
+
+  /* Main Layout */
+  .main-wrapper {
+    margin-left: 260px;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .topbar {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+  .menu-toggle {
+    display: none;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.5rem 0.65rem;
+    cursor: pointer;
+    color: #0f172a;
+  }
+  .page-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .content {
+    padding: 1.75rem 2rem 3rem;
+    max-width: 1400px;
+    width: 100%;
+  }
+  .section-pane {
+    display: none;
+  }
+  .section-pane.active {
+    display: block;
+  }
+
+  /* Stat Cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.15rem;
+    margin-bottom: 1.75rem;
+  }
+  .stat-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 1.35rem 1.4rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  }
+  .stat-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 0.45rem;
+  }
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #0f172a;
+  }
+  .stat-value.orange { color: #ff5e36; }
+  .stat-value.green { color: #10b981; }
+  .stat-value.amber { color: #d97706; }
+  .stat-sub {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    margin-top: 0.3rem;
+  }
+
+  /* Cards & Tables */
+  .panel-card {
+    background: #ffffff;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+  }
+  .panel-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .panel-body {
+    padding: 1.25rem 1.5rem;
+  }
+
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+  .search-input {
+    padding: 0.55rem 0.9rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 0.86rem;
+    min-width: 230px;
+    outline: none;
+  }
+  .search-input:focus {
+    border-color: #ff5e36;
+  }
+  .pill-filter {
+    padding: 0.45rem 0.85rem;
+    border-radius: 9999px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .pill-filter.active {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+  }
+
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  th {
+    padding: 0.85rem 1.15rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+  }
+  td {
+    padding: 0.9rem 1.15rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.88rem;
+    vertical-align: middle;
+  }
+  tr:last-child td {
+    border-bottom: none;
+  }
+  tr:hover td {
+    background: #fcfcfd;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.22rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .badge-paid { background: #dcfce7; color: #15803d; }
+  .badge-pending { background: #e0f2fe; color: #0369a1; }
+  .badge-open { background: #f1f5f9; color: #475569; }
+  .badge-cashier { background: #fef3c7; color: #b45309; }
+  .badge-cancelled { background: #fee2e2; color: #b91c1c; }
+
+  .bill-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 700;
+    font-size: 0.86rem;
+    color: #0f172a;
+    background: #f1f5f9;
+    padding: 0.25rem 0.55rem;
+    border-radius: 8px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1rem;
+    border-radius: 10px;
+    border: none;
+    background: #ff5e36;
+    color: #ffffff;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn:hover { background: #f04e26; }
+  .btn-dark { background: #0f172a; }
+  .btn-dark:hover { background: #1e293b; }
+  .btn-outline {
+    background: #ffffff;
+    color: #334155;
+    border: 1.5px solid #cbd5e1;
+  }
+  .btn-outline:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+  }
+  .btn-sm {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.78rem;
+    border-radius: 8px;
+  }
+  .btn-danger {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+  .btn-danger:hover {
+    background: #fecaca;
+  }
+
+  /* Menu Form */
+  .menu-form-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 0.7fr 0.7fr 2fr auto auto;
+    gap: 0.85rem;
+    align-items: end;
+  }
+  .field-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+  }
+  .input-box, textarea.input-box {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 0.86rem;
+    background: #ffffff;
+    color: #0f172a;
+  }
+  .input-box:focus {
+    outline: none;
+    border-color: #ff5e36;
+  }
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: #0f172a;
+    color: #ffffff;
+    padding: 0.85rem 1.25rem;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+    display: none;
+    z-index: 9999;
+  }
+
+  /* Lightbox */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+    padding: 1.5rem;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img {
+    max-width: 92vw;
+    max-height: 85vh;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  }
+
+  @media (max-width: 960px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main-wrapper { margin-left: 0; }
+    .menu-toggle { display: inline-flex; }
+    .menu-form-grid { grid-template-columns: 1fr 1fr; }
+    .content { padding: 1.25rem 1rem 2.5rem; }
+    .topbar { padding: 0.9rem 1rem; }
+  }
 </style>
 </head>
 <body>
-<h1>AFRC Admin - Daily Menu</h1>
-<p class="note">Names added here are the names Grok must return. Description tells Grok what one serving looks like. Pieces per portion defaults to 1, so one counted unit bills as one portion. Set 3 for bendi: 1–3 pieces bill as 1 portion, 4–6 as 2, and so on. Two detected pieces still bill as 1 portion, not 3. The price is for one billed portion.</p>
-<form class="add" onsubmit="addDish(event)">
-  <label>Dish name
-    <input id="newName" type="text" required placeholder="e.g. Ayam goreng">
-  </label>
-  <label>Price (RM)
-    <input id="newPrice" type="number" min="0" step="0.01" value="0.00" required>
-  </label>
-  <label class="grow">Description (optional)
-    <input id="newDescription" type="text" maxlength="500" placeholder="e.g. one portion is a drumstick with thigh, or a drumstick alone">
-  </label>
-  <label>Pieces per portion
-    <input id="newPieces" type="number" min="1" max="100" step="1" value="1" required>
-  </label>
-  <label>Available today
-    <input id="newAvailable" type="checkbox" checked>
-  </label>
-  <button type="submit">Add dish</button>
-</form>
-<p id="error"></p>
-<table id="menuTable">
-<thead><tr><th>Dish</th><th>Description for AI</th><th>Pieces per portion</th><th>Price (RM)</th><th>Available Today</th><th></th></tr></thead>
-<tbody></tbody>
-</table>
-<button onclick="save()">Save changes</button>
-<p><a href="/">Customer</a> | <a href="/cashier">Cashier</a></p>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-logo">AF</div>
+    <div class="brand-text">
+      <h2>AFRC Admin</h2>
+      <span>Cashier &amp; Stall Portal</span>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Management</div>
+    <button class="nav-btn active" data-tab="dashboard" onclick="switchTab('dashboard', 'Dashboard Overview')">
+      <span class="nav-btn-left">📊 Dashboard</span>
+    </button>
+    <button class="nav-btn" data-tab="bills" onclick="switchTab('bills', 'Bills & Transactions Log')">
+      <span class="nav-btn-left">🧾 Bills &amp; Receipts</span>
+      <span class="nav-badge" id="navBillsCount">0</span>
+    </button>
+    <button class="nav-btn" data-tab="menu" onclick="switchTab('menu', 'Daily Menu Configuration')">
+      <span class="nav-btn-left">🍛 Daily Menu</span>
+    </button>
+    <button class="nav-btn" data-tab="audit" onclick="switchTab('audit', 'Cashiers & Verification Logs')">
+      <span class="nav-btn-left">🔐 Cashier &amp; Audit</span>
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="nav-label">Quick Links</div>
+    <a class="ext-link" href="/" target="_blank">📷 Customer Camera View</a>
+    <a class="ext-link" href="/cashier" target="_blank">⌨️ Cashier PIN Screen</a>
+  </div>
+</aside>
+
+<div class="main-wrapper">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <h1 class="page-title" id="pageTitle">Dashboard Overview</h1>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-outline" onclick="refreshAll()">↻ Refresh Data</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <!-- TAB 1: DASHBOARD -->
+    <section class="section-pane active" id="tab-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Today's Paid Revenue</div>
+          <div class="stat-value orange" id="statTodayRev">RM 0.00</div>
+          <div class="stat-sub">Completed payments today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total All-Time Revenue</div>
+          <div class="stat-value green" id="statTotalRev">RM 0.00</div>
+          <div class="stat-sub" id="statPaidCount">0 paid bills</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Logged Bills</div>
+          <div class="stat-value" id="statTotalBills">0</div>
+          <div class="stat-sub">Sequential from #AAA-0001</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Needs Cashier / Pending</div>
+          <div class="stat-value amber" id="statAttention">0</div>
+          <div class="stat-sub" id="statAttentionSub">0 waiting for staff</div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">Recent Bills &amp; Transactions</div>
+          <button class="btn btn-outline btn-sm" onclick="switchTab('bills', 'Bills & Transactions Log')">View All Bills →</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Bill #</th>
+                <th>Date / Time</th>
+                <th>Ordered Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="recentBillsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: BILLS LOG -->
+    <section class="section-pane" id="tab-bills">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">All Logged Bills</div>
+          <div class="filter-bar">
+            <input class="search-input" id="billSearch" oninput="renderBillsTable()" placeholder="Search Bill #AAA-0001, dish, email..." type="text">
+            <button class="pill-filter active" data-status="all" onclick="setStatusFilter('all', this)">All</button>
+            <button class="pill-filter" data-status="paid" onclick="setStatusFilter('paid', this)">Paid</button>
+            <button class="pill-filter" data-status="needs_cashier" onclick="setStatusFilter('needs_cashier', this)">Needs Cashier</button>
+            <button class="pill-filter" data-status="open" onclick="setStatusFilter('open', this)">Open / Pending</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Bill #</th>
+                <th>Created At</th>
+                <th>Items Ordered</th>
+                <th>Customer Email</th>
+                <th>Total (RM)</th>
+                <th>Status</th>
+                <th>Photo</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="allBillsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: DAILY MENU -->
+    <section class="section-pane" id="tab-menu">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Add New Dish to Menu</div>
+            <p style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Names added here are the exact names the AI vision model returns. Use Description to describe what 1 serving looks like.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <form class="menu-form-grid" onsubmit="addDish(event)">
+            <label class="field-label">Dish Name
+              <input class="input-box" id="newName" placeholder="e.g. Ayam goreng" required type="text">
+            </label>
+            <label class="field-label">Price (RM)
+              <input class="input-box" id="newPrice" min="0" required step="0.01" type="number" value="0.00">
+            </label>
+            <label class="field-label">Pieces / Portion
+              <input class="input-box" id="newPieces" max="100" min="1" required step="1" type="number" value="1">
+            </label>
+            <label class="field-label">AI Visual Description (optional)
+              <input class="input-box" id="newDescription" maxlength="500" placeholder="e.g. fried chicken piece with crispy skin" type="text">
+            </label>
+            <label class="field-label" style="align-items:center; justify-content:center; padding-bottom:0.4rem;">
+              <span>Available</span>
+              <input checked id="newAvailable" style="width:18px; height:18px;" type="checkbox">
+            </label>
+            <button class="btn" type="submit">+ Add Dish</button>
+          </form>
+          <p id="error" style="color:#ef4444; font-size:0.84rem; margin-top:0.6rem; min-height:1.1rem;"></p>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">Current Menu Items</div>
+          <button class="btn btn-dark" onclick="saveMenu()">💾 Save Menu Changes</button>
+        </div>
+        <div class="table-wrap">
+          <table id="menuTable">
+            <thead>
+              <tr>
+                <th>Dish Name</th>
+                <th>Description for AI</th>
+                <th>Pieces / Portion</th>
+                <th>Price (RM)</th>
+                <th>Available Today</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="menuBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: CASHIER & AUDIT -->
+    <section class="section-pane" id="tab-audit">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">Cashier Verification Audit Log</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Log ID</th>
+                <th>Timestamp</th>
+                <th>Cashier</th>
+                <th>Action</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="auditBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="lightbox" id="photoModal" onclick="this.classList.remove('open')">
+  <img alt="Plate photo" id="photoModalImg" src="">
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
+let allBills = [];
+let statusFilter = "all";
+
 function esc(value) {
-  return String(value).replace(/[&<>"']/g, (ch) => ({
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[ch]));
 }
 
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => { t.style.display = "none"; }, 3000);
+}
+
+function switchTab(tabId, title) {
+  document.querySelectorAll(".section-pane").forEach(el => el.classList.remove("active"));
+  document.getElementById("tab-" + tabId).classList.add("active");
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tab === tabId);
+  });
+  document.getElementById("pageTitle").textContent = title;
+  document.getElementById("sidebar").classList.remove("open");
+}
+
+function statusBadge(status) {
+  const s = (status || "open").toLowerCase();
+  if (s === "paid") return '<span class="badge badge-paid">Paid</span>';
+  if (s === "needs_cashier") return '<span class="badge badge-cashier">Needs Cashier</span>';
+  if (s === "pending") return '<span class="badge badge-pending">Pending</span>';
+  if (s === "cancelled") return '<span class="badge badge-cancelled">Cancelled</span>';
+  return '<span class="badge badge-open">Open</span>';
+}
+
+function formatDateTime(iso) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString("en-MY", {
+    year: "numeric", month: "short", day: "2-digit",
+    hour: "2-digit", minute: "2-digit"
+  });
+}
+
+function formatItemsSummary(items) {
+  if (!items || !items.length) return "-";
+  return items.map(i => {
+    const pcs = i.piece_count ? ` (${i.piece_count} pcs)` : "";
+    return `${esc(i.name)} ×${esc(i.quantity)}${pcs}`;
+  }).join(", ");
+}
+
+async function loadBills() {
+  const res = await fetch("/api/admin/bills");
+  if (!res.ok) return;
+  const data = await res.json();
+  allBills = data.bills || [];
+  const sum = data.summary || {};
+
+  document.getElementById("statTodayRev").textContent = "RM " + Number(sum.today_revenue || 0).toFixed(2);
+  document.getElementById("statTotalRev").textContent = "RM " + Number(sum.total_revenue || 0).toFixed(2);
+  document.getElementById("statPaidCount").textContent = `${sum.paid_count || 0} paid bills`;
+  document.getElementById("statTotalBills").textContent = String(sum.total_bills || 0);
+  const attn = (sum.needs_cashier_count || 0) + (sum.pending_count || 0);
+  document.getElementById("statAttention").textContent = String(attn);
+  document.getElementById("statAttentionSub").textContent = `${sum.needs_cashier_count || 0} needs cashier · ${sum.pending_count || 0} open/pending`;
+  document.getElementById("navBillsCount").textContent = String(sum.total_bills || 0);
+
+  // Recent bills (top 8)
+  const recentBody = document.getElementById("recentBillsBody");
+  if (!allBills.length) {
+    recentBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:2rem;">No bills logged yet.</td></tr>';
+  } else {
+    recentBody.innerHTML = allBills.slice(0, 8).map(b => `
+      <tr>
+        <td><span class="bill-code">#${esc(b.bill_number)}</span></td>
+        <td>${esc(formatDateTime(b.created_at))}</td>
+        <td>${formatItemsSummary(b.items)}</td>
+        <td style="font-weight:700;">RM ${Number(b.total).toFixed(2)}</td>
+        <td>${statusBadge(b.status)}</td>
+        <td>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">Receipt PDF</button>
+            <a class="btn btn-outline btn-sm" href="/pay?session=${encodeURIComponent(b.session_id)}" target="_blank" style="text-decoration:none;">Open</a>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  renderBillsTable();
+}
+
+function setStatusFilter(status, btn) {
+  statusFilter = status;
+  document.querySelectorAll(".pill-filter").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderBillsTable();
+}
+
+function renderBillsTable() {
+  const q = (document.getElementById("billSearch").value || "").trim().toLowerCase();
+  const filtered = allBills.filter(b => {
+    if (statusFilter === "paid" && b.status !== "paid") return false;
+    if (statusFilter === "needs_cashier" && b.status !== "needs_cashier") return false;
+    if (statusFilter === "open" && !["open", "pending"].includes(b.status)) return false;
+    if (!q) return true;
+    const itemStr = (b.items || []).map(i => i.name).join(" ").toLowerCase();
+    return (
+      (b.bill_number || "").toLowerCase().includes(q) ||
+      (b.session_id || "").toLowerCase().includes(q) ||
+      (b.receipt_email || "").toLowerCase().includes(q) ||
+      itemStr.includes(q)
+    );
+  });
+
+  const tbody = document.getElementById("allBillsBody");
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#94a3b8; padding:2rem;">No matching bills found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(b => {
+    const photoBtn = b.has_image
+      ? `<button class="btn btn-outline btn-sm" onclick="viewPhoto('/api/sessions/${encodeURIComponent(b.session_id)}/image')">View Photo</button>`
+      : `<span style="color:#94a3b8; font-size:0.78rem;">No photo</span>`;
+    const markPaidBtn = b.status !== "paid"
+      ? `<button class="btn btn-sm" onclick="setBillStatus('${esc(b.session_id)}', 'paid')">Mark Paid</button>`
+      : "";
+    return `
+      <tr>
+        <td><span class="bill-code">#${esc(b.bill_number)}</span></td>
+        <td>${esc(formatDateTime(b.created_at))}</td>
+        <td>${formatItemsSummary(b.items)}</td>
+        <td>${esc(b.receipt_email || "-")}</td>
+        <td style="font-weight:700;">RM ${Number(b.total).toFixed(2)}</td>
+        <td>${statusBadge(b.status)}</td>
+        <td>${photoBtn}</td>
+        <td>
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">PDF</button>
+            ${markPaidBtn}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function viewPhoto(url) {
+  const modal = document.getElementById("photoModal");
+  document.getElementById("photoModalImg").src = url;
+  modal.classList.add("open");
+}
+
+async function setBillStatus(sessionId, status) {
+  const res = await fetch(`/api/admin/bills/${encodeURIComponent(sessionId)}/status`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ status })
+  });
+  if (res.ok) {
+    showToast(`Bill updated to ${status.toUpperCase()}`);
+    await loadBills();
+  }
+}
+
+function downloadBillPdf(sessionId) {
+  const billData = allBills.find(b => b.session_id === sessionId);
+  if (!billData || !window.jspdf) return;
+  const { jsPDF } = window.jspdf;
+  const items = billData.items || [];
+  const billNo = billData.bill_number || "AAA-0001";
+  const total = Number(billData.total || 0).toFixed(2);
+  const dt = new Date(billData.paid_at || billData.created_at || Date.now());
+  const dateStr = dt.toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" });
+  const timeStr = dt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  const pageHeight = Math.max(115, 92 + items.length * 9);
+  const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
+
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, 80, 3, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text("AFRC SELF-SERVICE", 40, 10, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text("AI Food Recognition Cashier", 40, 14, { align: "center" });
+  doc.text("OFFICIAL PAYMENT RECEIPT", 40, 18, { align: "center" });
+
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineDashPattern([1, 1], 0);
+  doc.line(6, 21.5, 74, 21.5);
+
+  doc.setFontSize(8);
+  doc.setTextColor(71, 85, 105);
+  doc.text("BILL NO:", 6, 26.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text("#" + billNo, 74, 26.5, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("DATE:", 6, 31);
+  doc.setTextColor(15, 23, 42);
+  doc.text(dateStr + " " + timeStr, 74, 31, { align: "right" });
+
+  doc.setTextColor(71, 85, 105);
+  doc.text("STATUS:", 6, 35.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text(String(billData.status || "open").toUpperCase(), 74, 35.5, { align: "right" });
+
+  doc.line(6, 39, 74, 39);
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text("ITEM / QTY", 6, 43.5);
+  doc.text("AMOUNT (RM)", 74, 43.5, { align: "right" });
+  doc.line(6, 45.5, 74, 45.5);
+
+  let y = 50.5;
+  doc.setFontSize(8);
+  items.forEach((item) => {
+    const pcs = item.piece_count ? ` (${item.piece_count} pcs)` : "";
+    const label = `${item.name} x${item.quantity}${pcs}`;
+    const sub = Number(item.subtotal || 0).toFixed(2);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(label.slice(0, 32), 6, y);
+    doc.text(sub, 74, y, { align: "right" });
+    if (item.unit_price !== undefined) {
+      y += 3.5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`@ RM ${Number(item.unit_price).toFixed(2)} / unit`, 6, y);
+      doc.setFontSize(8);
+    }
+    y += 5.2;
+  });
+
+  doc.line(6, y - 1.5, 74, y - 1.5);
+  y += 4;
+  doc.setFillColor(248, 250, 252);
+  doc.setLineDashPattern([], 0);
+  doc.roundedRect(6, y - 4, 68, 10, 2, 2, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("TOTAL", 9, y + 2.2);
+  doc.setTextColor(255, 94, 54);
+  doc.text("RM " + total, 71, y + 2.2, { align: "right" });
+
+  doc.save(`AFRC-Receipt-${billNo}.pdf`);
+}
+
+/* Menu Management */
 function showError(message) {
   document.getElementById("error").textContent = message || "";
 }
 
-async function load() {
+async function loadMenu() {
   const res = await fetch("/api/menu");
   const menu = await res.json();
-  const tbody = document.querySelector("tbody");
+  const tbody = document.getElementById("menuBody");
   tbody.innerHTML = menu.map(d => `
     <tr>
-      <td>${esc(d.name)}</td>
-      <td><textarea class="desc" maxlength="500" rows="2" placeholder="What one serving looks like">${esc(d.description || "")}</textarea></td>
-      <td><input type="number" min="1" max="100" step="1" class="pieces" required value="${d.pieces_per_portion || 1}"></td>
-      <td><input type="number" step="0.01" min="0" value="${d.price}" data-id="${d.id}" class="price"></td>
-      <td><input type="checkbox" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail"></td>
-      <td><button type="button" class="remove" data-id="${d.id}" data-name="${esc(d.name)}" onclick="removeDish(this)">Remove</button></td>
+      <td style="font-weight:700;">${esc(d.name)}</td>
+      <td><textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like">${esc(d.description || "")}</textarea></td>
+      <td style="width:120px;"><input type="number" min="1" max="100" step="1" class="input-box pieces" required value="${d.pieces_per_portion || 1}"></td>
+      <td style="width:130px;"><input type="number" step="0.01" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price"></td>
+      <td style="width:110px; text-align:center;"><input type="checkbox" style="width:18px; height:18px;" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail"></td>
+      <td style="width:90px;"><button type="button" class="btn btn-danger btn-sm" data-id="${d.id}" data-name="${esc(d.name)}" onclick="removeDish(this)">Remove</button></td>
     </tr>
   `).join("");
 }
@@ -97,7 +998,8 @@ async function addDish(event) {
   document.getElementById("newDescription").value = "";
   document.getElementById("newPieces").value = "1";
   document.getElementById("newAvailable").checked = true;
-  await load();
+  showToast("Dish added to menu");
+  await loadMenu();
 }
 
 async function removeDish(button) {
@@ -111,12 +1013,13 @@ async function removeDish(button) {
     showError(data.detail || "Could not remove the dish.");
     return;
   }
-  await load();
+  showToast("Dish removed");
+  await loadMenu();
 }
 
-async function save() {
+async function saveMenu() {
   showError("");
-  const rows = [...document.querySelectorAll("tbody tr")];
+  const rows = [...document.querySelectorAll("#menuBody tr")];
   const dishes = rows.map(r => {
     const id = r.querySelector(".price").dataset.id;
     return {
@@ -136,10 +1039,34 @@ async function save() {
     showError("Could not save menu changes.");
     return;
   }
-  alert("Menu updated. Grok will see available dishes and any descriptions you saved.");
+  showToast("Menu changes saved!");
 }
 
-load();
+async function loadAuditLogs() {
+  const res = await fetch("/api/admin/audit-logs");
+  if (!res.ok) return;
+  const logs = await res.json();
+  const tbody = document.getElementById("auditBody");
+  if (!logs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:2rem;">No cashier verification logs yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = logs.map(l => `
+    <tr>
+      <td>#${esc(l.id)}</td>
+      <td>${esc(formatDateTime(l.timestamp))}</td>
+      <td style="font-weight:600;">${esc(l.cashier_name)}</td>
+      <td><span class="badge badge-pending">${esc(l.action)}</span></td>
+      <td style="font-family:monospace; font-size:0.82rem;">${esc(l.details)}</td>
+    </tr>
+  `).join("");
+}
+
+async function refreshAll() {
+  await Promise.all([loadBills(), loadMenu(), loadAuditLogs()]);
+}
+
+refreshAll();
 </script>
 </body>
 </html>

@@ -37,6 +37,7 @@ class BillResponse(BaseModel):
     items: List[BillItem]
     total: float
     session_id: str
+    bill_number: Optional[str] = ""
 
 class ErrorResponse(BaseModel):
     error_code: str

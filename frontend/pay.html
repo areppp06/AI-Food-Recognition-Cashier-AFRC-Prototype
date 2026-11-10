@@ -41,13 +41,29 @@ h1 {
   border: 1px solid #f1f5f9;
   transition: all 0.3s ease;
 }
+.summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
 .section-title {
   font-size: 0.82rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #94a3b8;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+}
+.bill-no-tag {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
 }
 .item-list {
   display: flex;
@@ -418,7 +434,10 @@ input[type="email"]:focus {
 <h1>Bill Payment</h1>
 </div>
 <div class="bill-card" style="max-width: 480px; width: 100%; margin: 0px auto; padding: 2.25rem 1.75rem 2.5rem; background: rgb(255, 255, 255); mask-image: radial-gradient(9px at 50% 0px, transparent 9px, black 9.5px), radial-gradient(9px at 50% 100%, transparent 9px, black 9.5px); mask-position: 0px 0px, 0px 100%; mask-size: 24px 51%; mask-repeat: repeat-x; box-shadow: rgba(15, 23, 42, 0.14) 0px 18px 30px, rgba(15, 23, 42, 0.08) 0px 2px 6px; border-radius: 0px;">
+<div class="summary-header">
 <div class="section-title">Order Summary</div>
+<div class="bill-no-tag" id="billNoBadge" hidden></div>
+</div>
 <div id="bill">
 <div class="skeleton-loader">
 <div class="skeleton-bar" style="width: 88%;"></div>
@@ -632,6 +651,12 @@ async function load() {
     }
     if (params.get("payment") === "failed") {
       errorBox.textContent = "Payment was not completed. You can try again.";
+    }
+
+    if (data.bill_number) {
+      const badge = document.getElementById("billNoBadge");
+      badge.textContent = "Bill #" + data.bill_number;
+      badge.hidden = false;
     }
 
     let html = '<div class="item-list">';
