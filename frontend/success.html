@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFRC - Thank you</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; max-width: 720px; margin: 1.5rem auto; padding: 0 1.25rem 2rem; background: #f5f6f8; color: #222; }
+.card { background: white; padding: 2rem 1.5rem; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center; }
+h1 { margin-bottom: 0.5rem; }
+.total { font-size: 1.6rem; font-weight: 700; color: #ff6b35; }
+.note { color: #555; }
+a { color: #ff6b35; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Payment successful</h1>
+  <p>Thank you.</p>
+  <p id="total" class="total"></p>
+  <p id="emailNote" class="note"></p>
+  <p><a href="/">Start another plate</a></p>
+</div>
+<script>
+const sessionId = new URLSearchParams(location.search).get("session") || "";
+async function load() {
+  if (!sessionId) return;
+  const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId));
+  if (!res.ok) return;
+  const data = await res.json();
+  document.getElementById("total").textContent = "RM " + Number(data.total).toFixed(2);
+  if (data.receipt_email) {
+    document.getElementById("emailNote").textContent = "Receipt address saved: " + data.receipt_email + ". Email sending will be connected later.";
+  }
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFRC - Payment</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; max-width: 720px; margin: 1.5rem auto; padding: 0 1.25rem 2rem; background: #f5f6f8; color: #222; }
+.bill { background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+.item { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #eee; }
+.total { font-size: 1.6rem; font-weight: 700; color: #ff6b35; margin-top: 1rem; }
+label { display: block; margin-top: 1.25rem; font-weight: 600; }
+input[type="email"] { width: 100%; margin-top: 0.4rem; padding: 0.75rem; border: 1px solid #ccc; border-radius: 10px; font: inherit; }
+.btn { display: inline-block; background: #ff6b35; color: white; border: none; padding: 14px 28px; border-radius: 10px; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 1rem; }
+.btn:disabled { background: #ccc; cursor: not-allowed; }
+.note { color: #555; }
+.error { color: #c53030; }
+</style>
+</head>
+<body>
+<div class="bill">
+  <h1>Payment</h1>
+  <div id="bill" class="note">Loading bill...</div>
+  <form id="payForm" hidden>
+    <label>Email for receipt (optional)
+      <input id="email" type="email" placeholder="you@email.com" autocomplete="email">
+    </label>
+    <p class="note">Leave this blank if you do not want a receipt. Email sending will be connected later.</p>
+    <button id="payBtn" class="btn" type="submit">Pay now</button>
+    <p id="error" class="error"></p>
+  </form>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+const sessionId = params.get("session") || "";
+const billBox = document.getElementById("bill");
+const form = document.getElementById("payForm");
+const errorBox = document.getElementById("error");
+
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
+
+async function load() {
+  if (!sessionId) {
+    billBox.textContent = "This payment link is missing a bill.";
+    return;
+  }
+  const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    billBox.textContent = data.detail || "Bill not found.";
+    return;
+  }
+  if (data.status === "paid") {
+    location.replace("/payment/success?session=" + encodeURIComponent(sessionId));
+    return;
+  }
+  if (data.status === "needs_cashier") {
+    billBox.textContent = "A cashier is checking this bill. Payment stays closed until they finish.";
+    return;
+  }
+  let html = data.items.map(item =>
+    `<div class="item"><span>${esc(item.name)} × ${esc(item.quantity)}${item.piece_count ? ` <small>(${esc(item.piece_count)} pieces)</small>` : ""}</span><span>RM ${Number(item.subtotal).toFixed(2)}</span></div>`
+  ).join("");
+  html += `<div class="total">Total: RM ${Number(data.total).toFixed(2)}</div>`;
+  billBox.innerHTML = html;
+  form.hidden = false;
+}
+
+form.onsubmit = async (event) => {
+  event.preventDefault();
+  errorBox.textContent = "";
+  const button = document.getElementById("payBtn");
+  button.disabled = true;
+  const res = await fetch("/api/pay", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ session_id: sessionId, email: document.getElementById("email").value })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    button.disabled = false;
+    errorBox.textContent = data.detail || "Payment could not be completed.";
+    return;
+  }
+  location.href = "/payment/success?session=" + encodeURIComponent(sessionId);
+};
+
+load();
+</script>
+</body>
+</html>

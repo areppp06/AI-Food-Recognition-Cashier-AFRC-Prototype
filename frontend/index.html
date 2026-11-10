@@ -44,7 +44,12 @@ video, canvas {
   transition: background 0.15s;
 }
 .btn:hover { background: #e55a2b; }
-.btn:disabled { background: #ccc; cursor: not-allowed; }
+.btn:disabled { background: #ccc; cursor: not-allowed; filter: blur(1px); opacity: 0.45; }
+.confirm-row { display: flex; gap: 0.75rem; align-items: flex-start; margin: 1rem 0; text-align: left; }
+.confirm-row input { margin-top: 0.2rem; width: 1.15rem; height: 1.15rem; }
+.note { color: #444; margin: 0.75rem 0 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.wait-note { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 1rem; margin-top: 1rem; }
 .btn-secondary { background: #4a5568; }
 .btn-secondary:hover { background: #2d3748; }
 .bill {
@@ -183,23 +188,55 @@ function showError(code, message) {
   capBtn.disabled = false;
 }
 
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
+
 function showBill(data) {
   let html = `<div class="bill"><h2>Your Bill</h2>`;
-  if (data.low_confidence) {
-    html += `<p class="low">⚠️ Some items have low confidence and may need cashier verification.</p>`;
-  }
+  html += `<p class="note">Check the items and quantities below. Tick the box only if the list is correct, then pay. If something is wrong, tap Need Cashier and wait at the counter.</p>`;
   data.items.forEach(i => {
-    html += `<div class="item"><span>${i.name} × ${i.quantity}</span><span>RM ${i.subtotal.toFixed(2)}</span></div>`;
-    if (i.needs_verification) {
-      html += `<small style="color:#e53e3e">Low confidence (${(i.confidence*100).toFixed(0)}%)</small>`;
-    }
+    const pieces = i.piece_count ? ` <small>(${esc(i.piece_count)} pieces)</small>` : "";
+    html += `<div class="item"><span>${esc(i.name)} × ${esc(i.quantity)}${pieces}</span><span>RM ${Number(i.subtotal).toFixed(2)}</span></div>`;
   });
-  html += `<div class="total">Total: RM ${data.total.toFixed(2)}</div>`;
-  html += `<p style="margin-top:1rem;font-size:0.9rem;color:#666">Session: ${data.session_id}</p>`;
-  html += `<button class="btn btn-secondary" onclick="location.href='/cashier'">Cashier Verification</button>`;
-  html += `<button class="btn" onclick="location.reload()">New Plate</button>`;
-  html += `</div>`;
+  html += `<div class="total">Total: RM ${Number(data.total).toFixed(2)}</div>`;
+  html += `<label class="confirm-row"><input id="confirmItems" type="checkbox"> <span>I confirmed that the list of items and quantities are correct</span></label>`;
+  html += `<div class="actions">`;
+  html += `<button id="needCashier" class="btn btn-secondary" type="button">Need Cashier</button>`;
+  html += `<button id="payNow" class="btn" type="button">PAY NOW</button>`;
+  html += `</div><div id="cashierWait"></div></div>`;
   result.innerHTML = html;
+
+  const confirmBox = document.getElementById("confirmItems");
+  const payBtn = document.getElementById("payNow");
+  const cashierBtn = document.getElementById("needCashier");
+  const sync = () => {
+    const confirmed = confirmBox.checked;
+    payBtn.disabled = !confirmed;
+    cashierBtn.disabled = confirmed;
+  };
+  confirmBox.addEventListener("change", sync);
+  sync();
+
+  payBtn.onclick = () => {
+    if (!confirmBox.checked) return;
+    location.href = "/pay?session=" + encodeURIComponent(data.session_id);
+  };
+  cashierBtn.onclick = async () => {
+    if (confirmBox.checked) return;
+    cashierBtn.disabled = true;
+    const res = await fetch("/api/sessions/" + encodeURIComponent(data.session_id) + "/need-cashier", { method: "POST" });
+    if (!res.ok) {
+      cashierBtn.disabled = false;
+      document.getElementById("cashierWait").innerHTML = `<p class="low">Could not call a cashier. Please try again.</p>`;
+      return;
+    }
+    confirmBox.disabled = true;
+    payBtn.disabled = true;
+    document.getElementById("cashierWait").innerHTML = `<div class="wait-note"><strong>A cashier is on the way.</strong><br>Please stay at the counter. They will check this plate with you.</div>`;
+  };
 }
 </script>
 </body>

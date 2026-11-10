@@ -11,7 +11,7 @@
 ## Features Implemented in Prototype
 - Configurable daily menu (admin)
 - Camera-only photo capture (no gallery upload)
-- AI vision integration (xAI Grok, OpenAI GPT-4o, or Gemini, with mock fallback)
+- AI vision integration (xAI Grok, OpenRouter, OpenAI GPT-4o, or Gemini, with mock fallback)
 - Strict backend pricing engine
 - Cashier verification screen with 4-digit PIN
 - Audit logs for cashier actions
@@ -20,7 +20,7 @@
 ## Tech Stack
 - Backend: Python + FastAPI + SQLite
 - Frontend: Vanilla HTML/JS (camera via getUserMedia)
-- AI: xAI Grok (`grok-4.7`), OpenAI Vision, or Google Gemini (configurable via .env)
+- AI: xAI Grok, OpenRouter, OpenAI Vision, or Google Gemini (configurable via .env)
 
 ## Quick Start
 

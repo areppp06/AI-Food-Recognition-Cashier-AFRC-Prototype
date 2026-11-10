@@ -6,6 +6,8 @@ class DishBase(BaseModel):
     price: float
     available: bool = True
     unit: str = "portion"
+    description: Optional[str] = ""
+    pieces_per_portion: Optional[int] = 1
 
 class DishCreate(DishBase):
     pass
@@ -18,7 +20,6 @@ class Dish(DishBase):
 class AIItem(BaseModel):
     name: str
     quantity: float
-    confidence: float
 
 class AIResponse(BaseModel):
     items: List[AIItem]
@@ -30,13 +31,11 @@ class BillItem(BaseModel):
     quantity: float
     unit_price: float
     subtotal: float
-    confidence: float
-    needs_verification: bool
+    piece_count: Optional[int] = None
 
 class BillResponse(BaseModel):
     items: List[BillItem]
     total: float
-    low_confidence: bool
     session_id: str
 
 class ErrorResponse(BaseModel):

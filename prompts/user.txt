@@ -1,0 +1,4 @@
+Today's menu. The name before the colon is the only name you may return. Text after the colon, if any, describes what one serving looks like:
+{menu}
+
+Return the listed dishes you can see. Use the list name exactly, not the description. quantity is the number of separate servings, not the number of pieces inside one serving. If a line says to count pieces, quantity is the piece count and must not be converted into portions. Each visible piece belongs to only one dish. Do not count the same piece under two names. Sauce or gravy may cover the food.

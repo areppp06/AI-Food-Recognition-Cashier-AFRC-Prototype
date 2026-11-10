@@ -18,6 +18,8 @@ class Dish(Base):
     price = Column(Float)
     available = Column(Boolean, default=True)
     unit = Column(String, default="portion")
+    description = Column(Text, default="")
+    pieces_per_portion = Column(Integer, default=1)
 
 class Cashier(Base):
     __tablename__ = "cashiers"
@@ -39,10 +41,24 @@ class SessionBill(Base):
     id = Column(String, primary_key=True)
     raw_ai = Column(Text)
     final_bill = Column(Text)
+    status = Column(String, default="open")
+    receipt_email = Column(String, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    with engine.begin() as conn:
+        columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(dishes)")]
+        if "description" not in columns:
+            conn.exec_driver_sql("ALTER TABLE dishes ADD COLUMN description TEXT DEFAULT ''")
+        if "pieces_per_portion" not in columns:
+            conn.exec_driver_sql("ALTER TABLE dishes ADD COLUMN pieces_per_portion INTEGER DEFAULT 1")
+        conn.exec_driver_sql("UPDATE dishes SET pieces_per_portion = 1 WHERE pieces_per_portion IS NULL")
+        session_columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(sessions)")]
+        if session_columns and "status" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN status TEXT DEFAULT 'open'")
+        if session_columns and "receipt_email" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN receipt_email TEXT DEFAULT ''")
     db = SessionLocal()
     # Seed default dishes if empty
     if db.query(Dish).count() == 0:
