@@ -39,7 +39,7 @@ body {
 .video-container {
   position: relative;
   width: 100%;
-  min-height: 280px;
+  aspect-ratio: 4 / 3;
   background: #0f172a;
   border-radius: 18px;
   overflow: hidden;
@@ -65,7 +65,7 @@ body {
 }
 video, canvas {
   width: 100%;
-  height: auto;
+  height: 100%;
   object-fit: cover;
   border-radius: 18px;
 }
@@ -500,9 +500,23 @@ capBtn.onclick = async () => {
   capBtn.disabled = true;
   result.innerHTML = "";
 
-  canvas.width = video.videoWidth || 640;
-  canvas.height = video.videoHeight || 480;
-  canvas.getContext('2d').drawImage(video, 0, 0);
+  const vw = video.videoWidth || 640;
+  const vh = video.videoHeight || 480;
+  const targetRatio = 4 / 3;
+  const srcRatio = vw / vh;
+  let sx = 0, sy = 0, sw = vw, sh = vh;
+  if (srcRatio > targetRatio) {
+    sw = Math.round(vh * targetRatio);
+    sx = Math.round((vw - sw) / 2);
+  } else if (srcRatio < targetRatio) {
+    sh = Math.round(vw / targetRatio);
+    sy = Math.round((vh - sh) / 2);
+  }
+  const outW = Math.min(960, sw);
+  const outH = Math.round(outW / targetRatio);
+  canvas.width = outW;
+  canvas.height = outH;
+  canvas.getContext('2d').drawImage(video, sx, sy, sw, sh, 0, 0, outW, outH);
   canvas.style.display = "block";
   video.style.display = "none";
 
