@@ -42,7 +42,7 @@ What `bash install.sh` does automatically:
 1. **Interactive Env Setup**: On first run (when `env/.env` or `env/curlec.env` is missing), it prompts you to enter each environment variable one by one. Press **Enter** to keep the default shown in `[brackets]`, or type your value.
    - *Tip*: Include your VPS IP or domain in `TURNSTILE_HOSTNAMES` (e.g., `localhost,127.0.0.1,YOUR_VPS_IP`).
 2. **Virtual Environment & Packages**: Creates `./venv` and installs all dependencies from `requirements.txt`.
-3. **Starts the Server**: Launches FastAPI via `uvicorn` on `http://0.0.0.0:8000`.
+3. **Auto-Configures & Starts `systemd` Service**: Automatically creates `/etc/systemd/system/afrc.service`, enables it on boot, and runs FastAPI (`uvicorn`) in the background on `http://0.0.0.0:8000` (or pass `--foreground` to run in the current terminal).
 
 ### Useful `install.sh` Commands
 - **Re-configure environment variables interactively anytime:**

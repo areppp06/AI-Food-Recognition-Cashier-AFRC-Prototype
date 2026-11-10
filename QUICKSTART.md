@@ -33,8 +33,9 @@ bash install.sh
 2. **Python Virtual Environment**:
    - Creates `./venv` if it doesn't exist and upgrades `pip`.
    - Installs all required packages from `requirements.txt`.
-3. **Starts the Server**:
-   - Launches the FastAPI server (`uvicorn backend.main:app`) on `http://0.0.0.0:8000`.
+3. **Auto-Configures & Starts `systemd` Service**:
+   - Automatically creates `/etc/systemd/system/afrc.service`, enables it on boot, starts `uvicorn backend.main:app` in the background on `http://0.0.0.0:8000`, and prints the live service status.
+   - *(Use `bash install.sh --foreground` if you want to run `uvicorn` directly in your terminal instead of via `systemd`.)*
 
 ---
 

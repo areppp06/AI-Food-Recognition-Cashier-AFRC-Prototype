@@ -12,6 +12,7 @@ CURLEC_EXAMPLE="$ENV_DIR/curlec.env.example"
 
 FORCE_CONFIGURE=false
 START_SERVER=true
+FOREGROUND=false
 
 for arg in "$@"; do
   case "$arg" in
@@ -20,6 +21,9 @@ for arg in "$@"; do
       ;;
     --no-start|--setup-only)
       START_SERVER=false
+      ;;
+    --foreground)
+      FOREGROUND=true
       ;;
   esac
 done
@@ -157,6 +161,55 @@ fi
 
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
+
+if [[ "$FOREGROUND" == "false" ]] && command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
+  SUDO=""
+  if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+    if command -v sudo >/dev/null 2>&1; then
+      SUDO="sudo"
+    fi
+  fi
+
+  SERVICE_USER="$(id -un)"
+  SERVICE_FILE="/etc/systemd/system/afrc.service"
+
+  echo "[*] Setting up systemd service ($SERVICE_FILE) ..."
+  $SUDO tee "$SERVICE_FILE" >/dev/null <<EOF
+[Unit]
+Description=AFRC FastAPI Server
+After=network.target
+
+[Service]
+Type=simple
+User=${SERVICE_USER}
+WorkingDirectory=${ROOT_DIR}
+ExecStart=${ROOT_DIR}/venv/bin/uvicorn backend.main:app --host ${HOST} --port ${PORT}
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  # Stop any manual/nohup uvicorn process before starting the systemd unit
+  $SUDO systemctl stop afrc.service 2>/dev/null || true
+  pkill -f "uvicorn backend.main:app" 2>/dev/null || true
+
+  $SUDO systemctl daemon-reload
+  $SUDO systemctl enable afrc.service >/dev/null
+  $SUDO systemctl restart afrc.service
+
+  echo ""
+  echo "[✓] AFRC is now running in the background via systemd on http://${HOST}:${PORT}"
+  echo "    - Check status : sudo systemctl status afrc"
+  echo "    - View logs    : sudo journalctl -u afrc -f"
+  echo "    - Restart app  : sudo systemctl restart afrc"
+  echo "    - Stop app     : sudo systemctl stop afrc"
+  echo ""
+  $SUDO systemctl status afrc.service --no-pager -l || true
+  exit 0
+fi
+
 echo ""
-echo "[✓] Starting AFRC server on http://${HOST}:${PORT} ..."
+echo "[✓] Starting AFRC server in foreground on http://${HOST}:${PORT} ..."
 exec uvicorn backend.main:app --host "$HOST" --port "$PORT"
