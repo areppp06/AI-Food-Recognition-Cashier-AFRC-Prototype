@@ -50,6 +50,7 @@ class SessionBill(Base):
     receipt_email = Column(String, default="")
     curlec_order_id = Column(String, default="")
     curlec_payment_id = Column(String, default="")
+    image_key = Column(String, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
     paid_at = Column(DateTime, nullable=True)
 
@@ -100,6 +101,8 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN curlec_order_id TEXT DEFAULT ''")
         if session_columns and "curlec_payment_id" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN curlec_payment_id TEXT DEFAULT ''")
+        if session_columns and "image_key" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN image_key TEXT DEFAULT ''")
         if session_columns and "paid_at" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN paid_at DATETIME")
     db = SessionLocal()

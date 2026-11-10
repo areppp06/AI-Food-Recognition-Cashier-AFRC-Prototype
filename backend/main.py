@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Annotated, List
@@ -20,6 +20,57 @@ from .ai_service import recognize_food, RecognitionError
 
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 app = FastAPI(title="AFRC Prototype", version="1.0")
+
+def _r2_config():
+    account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    api_token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
+    bucket = os.getenv("R2_BUCKET_NAME", "afrc-plates").strip() or "afrc-plates"
+    if (
+        not account_id
+        or not api_token
+        or account_id.startswith("your-")
+        or api_token.startswith("your-")
+    ):
+        return None
+    return account_id, api_token, bucket
+
+async def _upload_plate_to_r2(key: str, image_bytes: bytes) -> bool:
+    cfg = _r2_config()
+    if not cfg:
+        return False
+    account_id, api_token, bucket = cfg
+    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{quote(key, safe='/')}"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.put(
+                url,
+                content=image_bytes,
+                headers={
+                    "Authorization": f"Bearer {api_token}",
+                    "Content-Type": "image/jpeg",
+                },
+            )
+            return 200 <= resp.status_code < 300
+    except Exception:
+        return False
+
+async def _fetch_plate_from_r2(key: str):
+    cfg = _r2_config()
+    if not cfg or not key:
+        return None
+    account_id, api_token, bucket = cfg
+    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{quote(key, safe='/')}"
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                url,
+                headers={"Authorization": f"Bearer {api_token}"},
+            )
+            if 200 <= resp.status_code < 300 and resp.content:
+                return resp.content
+    except Exception:
+        pass
+    return None
 
 # Serve frontend
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
@@ -268,14 +319,19 @@ async def recognize(
 
     session_id = str(uuid.uuid4())
     bill_number = next_bill_number(db)
-    try:
-        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-        (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
-    except OSError:
-        pass
+    r2_key = f"plates/{bill_number}_{session_id}.jpg"
+    uploaded_to_r2 = await _upload_plate_to_r2(r2_key, image_bytes)
+    if not uploaded_to_r2:
+        r2_key = ""
+        try:
+            UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+            (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
+        except OSError:
+            pass
     session = SessionBill(
         id=session_id,
         bill_number=bill_number,
+        image_key=r2_key,
         raw_ai=json.dumps([i.dict() for i in ai_items]),
         final_bill=json.dumps([b.dict() for b in bill_items]),
     )
@@ -304,7 +360,7 @@ def _bill_payload(session: SessionBill) -> dict:
         "curlec_payment_id": session.curlec_payment_id or "",
         "created_at": (session.created_at.isoformat() + "Z") if session.created_at else "",
         "paid_at": (session.paid_at.isoformat() + "Z") if session.paid_at else "",
-        "has_image": img_path.is_file(),
+        "has_image": bool(session.image_key) or img_path.is_file(),
     }
 
 @app.get("/api/sessions/{session_id}")
@@ -315,10 +371,18 @@ def get_session(session_id: str, db: Session = Depends(get_db)):
     return _bill_payload(bill)
 
 @app.get("/api/sessions/{session_id}/image")
-def get_session_image(session_id: str, db: Session = Depends(get_db)):
+async def get_session_image(session_id: str, db: Session = Depends(get_db)):
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
+    if bill.image_key:
+        r2_bytes = await _fetch_plate_from_r2(bill.image_key)
+        if r2_bytes:
+            return Response(
+                content=r2_bytes,
+                media_type="image/jpeg",
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
     img_path = UPLOAD_DIR / f"{bill.id}.jpg"
     if not img_path.is_file():
         raise HTTPException(status_code=404, detail="Image not found")
