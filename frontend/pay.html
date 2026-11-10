@@ -725,12 +725,23 @@ function closeVoidPrompt() {
   document.getElementById("voidPromptModal").classList.remove("open");
 }
 
-function handleRetakeClick() {
-  if (currentRetakesLeft > 0) {
-    location.href = "/?retake=" + encodeURIComponent(sessionId);
+async function handleRetakeClick() {
+  if (currentRetakesLeft <= 0) {
+    document.getElementById("voidPromptModal").classList.add("open");
     return;
   }
-  document.getElementById("voidPromptModal").classList.add("open");
+  try {
+    const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/start-retake", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ client_token: getClientToken() })
+    });
+    if (res.status === 409) {
+      document.getElementById("voidPromptModal").classList.add("open");
+      return;
+    }
+  } catch (e) {}
+  location.href = "/?retake=" + encodeURIComponent(sessionId);
 }
 
 async function confirmVoidBill() {
@@ -941,6 +952,9 @@ form.onsubmit = async (event) => {
   }
 };
 
+window.addEventListener("pageshow", () => {
+  load();
+});
 load();
 </script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>

@@ -406,7 +406,7 @@ video, canvas {
 </head>
 <body style="max-width: 100%; width: 100%; margin: 0 auto; padding: 1rem 1rem 5rem; box-sizing: border-box;">
 <div id="stateLockBox"></div>
-<div class="camera-card" id="cameraCard">
+<div class="camera-card" id="cameraCard" style="display:none;">
 <div class="retake-banner" id="retakeBanner">
   <span id="retakeBannerText">Retaking photo for Bill</span>
   <a href="/pay" id="retakeBackLink">Back to Bill</a>
@@ -540,7 +540,10 @@ async function checkClientState() {
   try {
     const q = new URLSearchParams({ client_token: cToken, session_id: savedSid });
     const res = await fetch("/api/client-state?" + q.toString(), { cache: "no-store" });
-    if (!res.ok) return;
+    if (!res.ok) {
+      cameraCard.style.display = "block";
+      return true;
+    }
     const state = await res.json();
     if (state.client_token) {
       try { localStorage.setItem("afrc_client_id", state.client_token); } catch (e) {}
@@ -549,15 +552,16 @@ async function checkClientState() {
     if (state.cooldown_active) {
       clearSavedActiveSession();
       showRateLimitLock(state.cooldown_minutes || 25);
-      return;
+      return false;
     }
     if (state.active_bill) {
       const bill = state.active_bill;
       setSavedActiveSession(bill.session_id);
-      if (retakeSessionId && retakeSessionId === bill.session_id) {
+      if (bill.status === "retaking") {
+        retakeSessionId = bill.session_id;
         if ((bill.retakes_left ?? 4) <= 0) {
           location.replace("/pay?session=" + encodeURIComponent(bill.session_id));
-          return;
+          return false;
         }
         stateLockBox.innerHTML = "";
         cameraCard.style.display = "block";
@@ -565,21 +569,40 @@ async function checkClientState() {
         const left = bill.retakes_left ?? 4;
         retakeBannerText.textContent = `Retaking photo for Bill #${bill.bill_number} · ${left} ${left === 1 ? 'retry' : 'retries'} left`;
         retakeBackLink.href = "/pay?session=" + encodeURIComponent(bill.session_id);
+        return true;
       } else {
+        retakeSessionId = "";
+        if (location.search.includes("retake=")) {
+          try { history.replaceState(null, "", "/"); } catch (e) {}
+        }
         showPendingBillLock(bill);
+        return false;
       }
     } else {
       clearSavedActiveSession();
       retakeSessionId = "";
+      if (location.search.includes("retake=")) {
+        try { history.replaceState(null, "", "/"); } catch (e) {}
+      }
       stateLockBox.innerHTML = "";
       cameraCard.style.display = "block";
       retakeBanner.style.display = "none";
+      return true;
     }
-  } catch (e) {}
+  } catch (e) {
+    cameraCard.style.display = "block";
+    return true;
+  }
 }
 
 window.addEventListener("pageshow", () => {
+  cameraCard.style.display = "none";
   checkClientState();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    checkClientState();
+  }
 });
 checkClientState();
 
@@ -675,6 +698,8 @@ function getRecognizeToken() {
 }
 
 startBtn.onclick = async () => {
+  const allowed = await checkClientState();
+  if (!allowed) return;
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "environment" },
@@ -741,6 +766,7 @@ capBtn.onclick = async () => {
       form.append("retake_session_id", retakeSessionId);
     }
 
+    let redirected = false;
     try {
       const res = await fetch("/api/recognize", { method: "POST", body: form });
       const data = await res.json();
@@ -753,6 +779,9 @@ capBtn.onclick = async () => {
           return;
         }
         if (res.status === 409) {
+          if (detail && detail.session_id) {
+            setSavedActiveSession(detail.session_id);
+          }
           await checkClientState();
           return;
         }
@@ -765,15 +794,20 @@ capBtn.onclick = async () => {
         return;
       }
 
+      redirected = true;
       setSavedActiveSession(data.session_id);
+      stopCameraStream();
+      cameraCard.style.display = "none";
       location.href = "/pay?session=" + encodeURIComponent(data.session_id);
       return;
     } catch (e) {
       showError("NETWORK_ERROR", "Could not connect to recognition server. Please try again.");
     } finally {
-      status.style.display = "none";
-      capBtn.disabled = false;
-      resetRecognizeTurnstile();
+      if (!redirected) {
+        status.style.display = "none";
+        capBtn.disabled = false;
+        resetRecognizeTurnstile();
+      }
     }
   }, "image/jpeg", 0.85);
 };

@@ -8,6 +8,7 @@ import math
 import os
 import uuid
 import json
+import hashlib
 import httpx
 import razorpay
 from datetime import datetime, timedelta
@@ -123,6 +124,9 @@ def get_db():
         db.close()
 
 def _client_ip(request: Request) -> str:
+    cf_ip = request.headers.get("cf-connecting-ip", "").strip()
+    if cf_ip:
+        return cf_ip
     forwarded = request.headers.get("x-forwarded-for", "")
     if forwarded:
         return forwarded.split(",")[0].strip()
@@ -130,21 +134,69 @@ def _client_ip(request: Request) -> str:
         return request.client.host
     return ""
 
+def _device_fingerprint(request: Request) -> str:
+    ip = _client_ip(request)
+    ua = request.headers.get("user-agent", "").strip()
+    raw = f"{ip}|{ua}"
+    return "fp-" + hashlib.sha256(raw.encode("utf-8", errors="ignore")).hexdigest()[:28]
+
 def _get_client_token(request: Request, explicit: str = "") -> str:
     token = (
-        explicit.strip()
+        (explicit or "").strip()
         or request.cookies.get("afrc_client_id", "").strip()
         or request.headers.get("x-afrc-client", "").strip()
     )
     if token and len(token) <= 128:
         return token
-    return ""
+    return _device_fingerprint(request)
+
+def _all_client_tokens(request: Request, explicit: str = "") -> list:
+    tokens = []
+    for candidate in (
+        (explicit or "").strip(),
+        request.cookies.get("afrc_client_id", "").strip(),
+        request.headers.get("x-afrc-client", "").strip(),
+        _device_fingerprint(request),
+    ):
+        if candidate and len(candidate) <= 128 and candidate not in tokens:
+            tokens.append(candidate)
+    return tokens
+
+def _find_active_bill(
+    request: Request,
+    db: Session,
+    session_id: str = "",
+    explicit_token: str = "",
+):
+    active_statuses = ("open", "pending", "needs_cashier", "retaking")
+    for sid in (
+        (session_id or "").strip(),
+        request.cookies.get("afrc_active_session", "").strip(),
+    ):
+        if sid:
+            b = db.query(SessionBill).filter(SessionBill.id == sid).first()
+            if b and b.status in active_statuses:
+                return b
+    tokens = _all_client_tokens(request, explicit_token)
+    if tokens:
+        b = (
+            db.query(SessionBill)
+            .filter(
+                SessionBill.client_token.in_(tokens),
+                SessionBill.status.in_(active_statuses),
+            )
+            .order_by(SessionBill.created_at.desc())
+            .first()
+        )
+        if b:
+            return b
+    return None
 
 def _expire_stale_bills(db: Session) -> None:
     cutoff = datetime.utcnow() - timedelta(minutes=BILL_EXPIRY_MINUTES)
     stale = (
         db.query(SessionBill)
-        .filter(SessionBill.status.in_(("open", "pending")))
+        .filter(SessionBill.status.in_(("open", "pending", "retaking")))
         .all()
     )
     changed = False
@@ -159,8 +211,8 @@ def _expire_stale_bills(db: Session) -> None:
 def _check_cooldown(request: Request, client_token: str, db: Session) -> int:
     now = datetime.utcnow()
     keys = []
-    if client_token:
-        keys.append(f"token:{client_token}")
+    for t in _all_client_tokens(request, client_token):
+        keys.append(f"token:{t}")
     ip = _client_ip(request)
     if ip:
         keys.append(f"ip:{ip}")
@@ -178,8 +230,8 @@ def _check_cooldown(request: Request, client_token: str, db: Session) -> int:
 def _set_cooldown(request: Request, client_token: str, db: Session) -> None:
     until = datetime.utcnow() + timedelta(minutes=COOLDOWN_MINUTES)
     keys = []
-    if client_token:
-        keys.append(f"token:{client_token}")
+    for t in _all_client_tokens(request, client_token):
+        keys.append(f"token:{t}")
     ip = _client_ip(request)
     if ip:
         keys.append(f"ip:{ip}")
@@ -244,25 +296,31 @@ def startup():
     init_db()
     _ensure_r2_bucket()
 
+NO_CACHE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
 @app.get("/")
 async def root():
-    return FileResponse("frontend/index.html")
+    return FileResponse("frontend/index.html", headers=NO_CACHE_HEADERS)
 
 @app.get("/admin")
 async def admin():
-    return FileResponse("frontend/admin.html")
+    return FileResponse("frontend/admin.html", headers=NO_CACHE_HEADERS)
 
 @app.get("/cashier")
 async def cashier():
-    return FileResponse("frontend/cashier.html")
+    return FileResponse("frontend/cashier.html", headers=NO_CACHE_HEADERS)
 
 @app.get("/pay")
 async def pay_page():
-    return FileResponse("frontend/pay.html")
+    return FileResponse("frontend/pay.html", headers=NO_CACHE_HEADERS)
 
 @app.get("/payment/success")
 async def payment_success_page():
-    return FileResponse("frontend/success.html")
+    return FileResponse("frontend/success.html", headers=NO_CACHE_HEADERS)
 
 @app.get("/api/menu")
 def get_menu(db: Session = Depends(get_db)):
@@ -328,35 +386,25 @@ def get_client_state(
     db: Session = Depends(get_db),
 ):
     _expire_stale_bills(db)
-    c_token = _get_client_token(request, client_token) or str(uuid.uuid4())
+    c_token = _get_client_token(request, client_token)
     rem_mins = _check_cooldown(request, c_token, db)
+    active_bill = _find_active_bill(request, db, session_id=session_id, explicit_token=c_token)
 
-    active_bill = None
-    candidate_sid = (
-        session_id.strip()
-        or request.cookies.get("afrc_active_session", "").strip()
+    resp = JSONResponse(
+        content={
+            "client_token": c_token,
+            "cooldown_active": rem_mins > 0,
+            "cooldown_minutes": rem_mins,
+            "active_bill": _bill_payload(active_bill) if active_bill else None,
+        },
+        headers=NO_CACHE_HEADERS,
     )
-    if candidate_sid:
-        b = db.query(SessionBill).filter(SessionBill.id == candidate_sid).first()
-        if b and b.status in ("open", "pending", "needs_cashier"):
-            active_bill = b
-    if not active_bill and c_token:
-        active_bill = (
-            db.query(SessionBill)
-            .filter(
-                SessionBill.client_token == c_token,
-                SessionBill.status.in_(("open", "pending", "needs_cashier")),
-            )
-            .order_by(SessionBill.created_at.desc())
-            .first()
-        )
-
-    return {
-        "client_token": c_token,
-        "cooldown_active": rem_mins > 0,
-        "cooldown_minutes": rem_mins,
-        "active_bill": _bill_payload(active_bill) if active_bill else None,
-    }
+    resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
+    if active_bill and rem_mins <= 0:
+        resp.set_cookie("afrc_active_session", active_bill.id, max_age=3600, path="/", samesite="lax")
+    else:
+        resp.delete_cookie("afrc_active_session", path="/")
+    return resp
 
 @app.post("/api/recognize")
 async def recognize(
@@ -379,27 +427,19 @@ async def recognize(
         ).dict())
 
     retake_sid = retake_session_id.strip()
-    target_bill = None
-    if retake_sid:
-        target_bill = db.query(SessionBill).filter(SessionBill.id == retake_sid).first()
-        if target_bill and target_bill.status in ("paid", "void", "cancelled"):
-            target_bill = None
+    existing_open = _find_active_bill(request, db, session_id=retake_sid, explicit_token=c_token)
 
-    if not target_bill and c_token:
-        existing_open = (
-            db.query(SessionBill)
-            .filter(
-                SessionBill.client_token == c_token,
-                SessionBill.status.in_(("open", "pending", "needs_cashier")),
-            )
-            .order_by(SessionBill.created_at.desc())
-            .first()
-        )
-        if existing_open:
-            raise HTTPException(status_code=409, detail=ErrorResponse(
-                error_code="PENDING_BILL",
-                message=f"You have a pending bill (#{existing_open.bill_number}). Please pay your pending bill first."
-            ).dict())
+    target_bill = None
+    if existing_open:
+        if existing_open.status == "retaking" or (retake_sid and existing_open.id == retake_sid and existing_open.status == "retaking"):
+            target_bill = existing_open
+        else:
+            raise HTTPException(status_code=409, detail={
+                "error_code": "PENDING_BILL",
+                "message": f"You have a pending bill (#{existing_open.bill_number}). Please pay your pending bill first.",
+                "session_id": existing_open.id,
+                "bill_number": existing_open.bill_number,
+            })
 
     if target_bill and (target_bill.retake_count or 0) >= MAX_RETAKES:
         target_bill.status = "void"
@@ -430,6 +470,7 @@ async def recognize(
             message="Failed to receive photo. Please try again."
         ).dict())
 
+    target_bill_id = target_bill.id if target_bill else ""
     available = [_dish_json(d) for d in db.query(Dish).filter(Dish.available == True).all()]
     # The menu is now a plain list. End the read so Grok runs without holding a transaction.
     db.rollback()
@@ -485,8 +526,9 @@ async def recognize(
         ).dict())
 
     # Re-fetch target_bill after rollback if this is a retake (Option B: reuse same bill)
-    if retake_sid:
-        target_bill = db.query(SessionBill).filter(SessionBill.id == retake_sid).first()
+    target_bill = None
+    if target_bill_id:
+        target_bill = db.query(SessionBill).filter(SessionBill.id == target_bill_id).first()
         if target_bill and target_bill.status in ("paid", "void", "cancelled"):
             target_bill = None
 
@@ -538,12 +580,16 @@ async def recognize(
         db.add(session)
         db.commit()
 
-    return BillResponse(
+    payload = BillResponse(
         items=bill_items,
         total=round(total, 2),
         session_id=session_id,
         bill_number=bill_number,
-    )
+    ).dict()
+    resp = JSONResponse(content=payload, headers=NO_CACHE_HEADERS)
+    resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
+    resp.set_cookie("afrc_active_session", session_id, max_age=3600, path="/", samesite="lax")
+    return resp
 
 def _bill_payload(session: SessionBill) -> dict:
     items = json.loads(session.final_bill or "[]")
@@ -569,12 +615,59 @@ def _bill_payload(session: SessionBill) -> dict:
     }
 
 @app.get("/api/sessions/{session_id}")
-def get_session(session_id: str, db: Session = Depends(get_db)):
+def get_session(session_id: str, request: Request, db: Session = Depends(get_db)):
     _expire_stale_bills(db)
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
-    return _bill_payload(bill)
+    c_token = _get_client_token(request)
+    changed = False
+    if bill.status == "retaking":
+        bill.status = "open"
+        changed = True
+    if bill.status in ("open", "pending", "needs_cashier") and not bill.client_token and c_token:
+        bill.client_token = c_token
+        changed = True
+    if changed:
+        db.commit()
+    resp = JSONResponse(content=_bill_payload(bill), headers=NO_CACHE_HEADERS)
+    resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
+    if bill.status in ("open", "pending", "needs_cashier"):
+        resp.set_cookie("afrc_active_session", bill.id, max_age=3600, path="/", samesite="lax")
+    elif bill.status in ("paid", "void", "cancelled"):
+        resp.delete_cookie("afrc_active_session", path="/")
+    return resp
+
+@app.post("/api/sessions/{session_id}/start-retake")
+def start_retake(session_id: str, request: Request, payload: dict = None, db: Session = Depends(get_db)):
+    _expire_stale_bills(db)
+    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    if bill.status == "paid":
+        raise HTTPException(status_code=409, detail="This bill is already paid")
+    if bill.status in ("void", "cancelled"):
+        raise HTTPException(status_code=409, detail="This bill has been voided. Please pay at the counter.")
+    if (bill.retake_count or 0) >= MAX_RETAKES:
+        raise HTTPException(status_code=409, detail="No retries remaining")
+    c_token = _get_client_token(request, (payload or {}).get("client_token", ""))
+    bill.status = "retaking"
+    bill.updated_at = datetime.utcnow()
+    if c_token:
+        bill.client_token = c_token
+    db.commit()
+    resp = JSONResponse(
+        content={
+            "status": "retaking",
+            "session_id": bill.id,
+            "bill_number": bill.bill_number,
+            "retakes_left": max(0, MAX_RETAKES - (bill.retake_count or 0)),
+        },
+        headers=NO_CACHE_HEADERS,
+    )
+    resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
+    resp.set_cookie("afrc_active_session", bill.id, max_age=3600, path="/", samesite="lax")
+    return resp
 
 @app.get("/api/sessions/{session_id}/image")
 async def get_session_image(session_id: str, db: Session = Depends(get_db)):
@@ -620,11 +713,16 @@ def void_retake(session_id: str, request: Request, payload: dict = None, db: Ses
     bill.updated_at = datetime.utcnow()
     db.commit()
     _set_cooldown(request, c_token, db)
-    return {
-        "status": "void",
-        "cooldown_minutes": COOLDOWN_MINUTES,
-        "message": f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min.",
-    }
+    resp = JSONResponse(
+        content={
+            "status": "void",
+            "cooldown_minutes": COOLDOWN_MINUTES,
+            "message": f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min.",
+        },
+        headers=NO_CACHE_HEADERS,
+    )
+    resp.delete_cookie("afrc_active_session", path="/")
+    return resp
 
 def _curlec_client():
     key_id = os.getenv("CURLEC_KEY_ID", "").strip()
