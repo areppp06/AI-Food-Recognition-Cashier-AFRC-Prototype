@@ -161,6 +161,92 @@ input[type="email"]:focus {
   box-shadow: none;
   cursor: not-allowed;
 }
+.btn-secondary {
+  background: #ffffff;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px -2px rgba(0,0,0,0.06);
+}
+.btn-secondary:disabled {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+}
+.confirm-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin-top: 1.25rem;
+  cursor: pointer;
+}
+.confirm-wrapper input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  margin-top: 2px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.confirm-wrapper input[type="checkbox"]:checked {
+  background: #ff5e36;
+  border-color: #ff5e36;
+}
+.confirm-wrapper input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.confirm-text {
+  font-size: 0.85rem;
+  color: #334155;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.action-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.action-row .btn {
+  flex: 1;
+  margin-top: 0;
+  padding: 0.95rem 1.2rem;
+}
+.wait-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+  color: #92400e;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
 .spinner {
   width: 20px;
   height: 20px;
@@ -218,10 +304,18 @@ input[type="email"]:focus {
 <input autocomplete="email" id="email" placeholder="name@domain.com" type="email">
 <p class="note">Leave blank if you do not require a digital receipt.</p>
 </div>
+<label class="confirm-wrapper">
+<input id="confirmItems" type="checkbox">
+<span class="confirm-text">I confirm that all listed dishes and quantities on my plate are accurate.</span>
+</label>
 <div class="turnstile-slot" id="pay-turnstile"></div>
-<button class="btn" id="payBtn" type="submit">
-<span class="btn-text">Pay Now</span>
+<div class="action-row">
+<button class="btn btn-secondary" id="needCashier" type="button">Need Cashier</button>
+<button class="btn" disabled id="payBtn" type="submit">
+<span class="btn-text">Confirm &amp; Pay</span>
 </button>
+</div>
+<div id="cashierWait"></div>
 <p class="error-msg" id="error"></p>
 </form>
 </div>
@@ -231,6 +325,46 @@ const sessionId = params.get("session") || "";
 const billBox = document.getElementById("bill");
 const form = document.getElementById("payForm");
 const errorBox = document.getElementById("error");
+const confirmBox = document.getElementById("confirmItems");
+const payBtn = document.getElementById("payBtn");
+const cashierBtn = document.getElementById("needCashier");
+const cashierWait = document.getElementById("cashierWait");
+
+function syncButtons() {
+  const confirmed = confirmBox.checked;
+  payBtn.disabled = !confirmed;
+  cashierBtn.disabled = confirmed;
+}
+confirmBox.addEventListener("change", syncButtons);
+
+cashierBtn.onclick = async () => {
+  if (confirmBox.checked) return;
+  errorBox.textContent = "";
+  cashierBtn.disabled = true;
+  cashierBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-color:rgba(0,0,0,0.1);border-top-color:#333;"></span> Calling...';
+  try {
+    const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/need-cashier", { method: "POST" });
+    if (!res.ok) {
+      cashierBtn.disabled = false;
+      cashierBtn.textContent = "Need Cashier";
+      cashierWait.innerHTML = '<p style="color:#ef4444; font-size:0.85rem; margin-top:0.75rem;">Failed to notify cashier. Please approach the counter directly.</p>';
+      return;
+    }
+    confirmBox.disabled = true;
+    payBtn.disabled = true;
+    cashierBtn.textContent = "Help Requested";
+    cashierWait.innerHTML = `
+      <div class="wait-alert">
+        <span style="font-size:1.2rem;">🙋</span>
+        <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
+      </div>`;
+  } catch (e) {
+    cashierBtn.disabled = false;
+    cashierBtn.textContent = "Need Cashier";
+    cashierWait.innerHTML = '<p style="color:#ef4444; font-size:0.85rem; margin-top:0.75rem;">Failed to notify cashier. Please approach the counter directly.</p>';
+  }
+};
+
 let payWidgetId;
 function renderPayTurnstile() {
   if (payWidgetId !== undefined || !window.turnstile) return;
@@ -277,10 +411,6 @@ async function load() {
       location.replace("/payment/success?session=" + encodeURIComponent(sessionId));
       return;
     }
-    if (data.status === "needs_cashier") {
-      billBox.innerHTML = '<p class="note" style="color:#d97706; font-weight:500;">A cashier is currently reviewing this bill. Payment is paused.</p>';
-      return;
-    }
     if (params.get("payment") === "failed") {
       errorBox.textContent = "Payment was not completed. You can try again.";
     }
@@ -304,6 +434,21 @@ async function load() {
 
     billBox.innerHTML = html;
     form.hidden = false;
+    syncButtons();
+
+    if (data.status === "needs_cashier") {
+      confirmBox.disabled = true;
+      payBtn.disabled = true;
+      cashierBtn.disabled = true;
+      cashierBtn.textContent = "Help Requested";
+      cashierWait.innerHTML = `
+        <div class="wait-alert">
+          <span style="font-size:1.2rem;">🙋</span>
+          <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
+        </div>`;
+      return;
+    }
+
     renderPayTurnstile();
   } catch (e) {
     billBox.innerHTML = '<p class="note">Could not load this bill. Please try again.</p>';
@@ -312,6 +457,7 @@ async function load() {
 
 form.onsubmit = async (event) => {
   event.preventDefault();
+  if (!confirmBox.checked) return;
   errorBox.textContent = "";
   const button = document.getElementById("payBtn");
   button.disabled = true;
@@ -329,8 +475,8 @@ form.onsubmit = async (event) => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      button.disabled = false;
-      button.innerHTML = '<span class="btn-text">Pay Now</span>';
+      button.disabled = !confirmBox.checked;
+      button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
       errorBox.textContent = messageOf(data) || "Payment could not be completed.";
       return;
     }
@@ -339,8 +485,8 @@ form.onsubmit = async (event) => {
       return;
     }
     if (!window.Razorpay) {
-      button.disabled = false;
-      button.innerHTML = '<span class="btn-text">Pay Now</span>';
+      button.disabled = !confirmBox.checked;
+      button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
       errorBox.textContent = "Payment checkout could not be loaded. Please refresh and try again.";
       return;
     }
@@ -363,8 +509,8 @@ form.onsubmit = async (event) => {
           body: JSON.stringify(response)
         });
         if (!confirmRes.ok) {
-          button.disabled = false;
-          button.innerHTML = '<span class="btn-text">Pay Now</span>';
+          button.disabled = !confirmBox.checked;
+          button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
           errorBox.textContent = "Payment was not completed.";
           return;
         }
@@ -372,16 +518,16 @@ form.onsubmit = async (event) => {
       },
       modal: {
         ondismiss: function () {
-          button.disabled = false;
-          button.innerHTML = '<span class="btn-text">Pay Now</span>';
+          button.disabled = !confirmBox.checked;
+          button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
           errorBox.textContent = "Payment was not completed.";
         }
       }
     });
     checkout.open();
   } catch (e) {
-    button.disabled = false;
-    button.innerHTML = '<span class="btn-text">Pay Now</span>';
+    button.disabled = !confirmBox.checked;
+    button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
     errorBox.textContent = "Could not reach the payment server. Please try again.";
   } finally {
     resetPayTurnstile();

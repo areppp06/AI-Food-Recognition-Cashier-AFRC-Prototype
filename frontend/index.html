@@ -428,7 +428,8 @@ capBtn.onclick = async () => {
         return;
       }
 
-      showBill(data);
+      location.href = "/pay?session=" + encodeURIComponent(data.session_id);
+      return;
     } catch (e) {
       showError("NETWORK_ERROR", "Could not connect to recognition server. Please try again.");
     } finally {
