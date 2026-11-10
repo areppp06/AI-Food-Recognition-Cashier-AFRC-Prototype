@@ -370,17 +370,42 @@ video, canvas {
 }
 
 /* Pending Bill Template Styles */
-@keyframes sandDrop {
+@keyframes sandStream {
+  0%, 80% {
+    stroke-dashoffset: 0;
+    opacity: 0.95;
+  }
+  85%, 100% {
+    stroke-dashoffset: -12;
+    opacity: 0;
+  }
+}
+@keyframes sandTopDrain {
   0% {
-    transform: translateY(-8px) scaleY(0.6);
-    opacity: 0.1;
+    transform: scaleY(1);
+    opacity: 0.9;
   }
-  50% {
-    opacity: 0.85;
+  78%, 100% {
+    transform: scaleY(0.15);
+    opacity: 0.25;
   }
-  100% {
-    transform: translateY(14px) scaleY(1.1);
-    opacity: 0.2;
+}
+@keyframes sandBottomFill {
+  0% {
+    transform: scaleY(0.2);
+    opacity: 0.4;
+  }
+  78%, 100% {
+    transform: scaleY(1);
+    opacity: 0.95;
+  }
+}
+@keyframes hourglassFlip {
+  0%, 78% {
+    transform: rotate(0deg);
+  }
+  92%, 100% {
+    transform: rotate(180deg);
   }
 }
 @keyframes pulseGlow {
@@ -398,14 +423,6 @@ video, canvas {
   50% {
     transform: translateY(-3px);
   }
-}
-.sand-particle {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  border-radius: 9999px;
-  background: #d97706;
-  animation: sandDrop 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 .cta-pulse {
   animation: pulseGlow 2.4s ease-in-out infinite;
@@ -426,62 +443,44 @@ video, canvas {
   border-radius: 24px;
   border: 1px solid #f1f5f9;
   box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.08), 0 4px 16px -4px rgba(15, 23, 42, 0.04);
-  padding: 1.65rem 1.5rem;
+  padding: 1.85rem 1.5rem 1.65rem;
   position: relative;
   overflow: hidden;
   text-align: center;
 }
-.pb-glow {
-  position: absolute;
-  top: -5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 12rem;
-  height: 12rem;
-  background: radial-gradient(circle, rgba(253, 230, 138, 0.45) 0%, rgba(254, 215, 170, 0.2) 55%, transparent 75%);
-  border-radius: 9999px;
-  filter: blur(24px);
-  pointer-events: none;
-}
-.pb-badge-row {
-  position: relative;
+.pb-hero-icon-row {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.15rem;
 }
-.pb-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.875rem;
+.pb-sandclock-circle {
+  width: 76px;
+  height: 76px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, #fffbeb, #fff7ed);
-  border: 1px solid rgba(253, 230, 138, 0.85);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  color: #78350f;
-}
-.pb-hourglass {
-  position: relative;
-  width: 20px;
-  height: 20px;
+  background: #fffbeb;
+  border: 1.5px solid #fde68a;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #d97706;
+  box-shadow: 0 8px 20px -6px rgba(217, 119, 6, 0.2);
 }
-.pb-hourglass svg {
-  width: 20px;
-  height: 20px;
+.pb-sandclock-svg {
+  width: 42px;
+  height: 42px;
+  animation: hourglassFlip 3.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
-.pb-badge-text {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: #92400e;
+.pb-sand-top {
+  transform-origin: 12px 11.5px;
+  animation: sandTopDrain 3.2s ease-in-out infinite;
 }
-.pb-badge-text strong {
-  font-weight: 800;
-  color: #451a03;
+.pb-sand-bottom {
+  transform-origin: 12px 19.5px;
+  animation: sandBottomFill 3.2s ease-in-out infinite;
+}
+.pb-sand-stream {
+  stroke-dasharray: 2 2;
+  animation: sandStream 3.2s linear infinite;
 }
 .pb-copy {
   text-align: center;
@@ -925,23 +924,16 @@ function showPendingBillLock(bill) {
   stateLockBox.innerHTML = `
     <div class="pb-wrap" data-purpose="main-alert-container">
       <section class="pb-card card-float" data-purpose="pending-bill-card">
-        <div aria-hidden="true" class="pb-glow"></div>
-
-        <div class="pb-badge-row" data-purpose="status-badge-container">
-          <div class="pb-badge">
-            <div aria-label="Hourglass timer graphic" class="pb-hourglass">
-              <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                <path d="M6 3h12M6 21h12" stroke-linecap="round" stroke-linejoin="round"></path>
-                <path d="M7 3v3.2c0 2.2 1.3 4.2 3.3 5.1L12 12l-1.7.7C8.3 13.6 7 15.6 7 17.8V21" stroke-linecap="round" stroke-linejoin="round"></path>
-                <path d="M17 3v3.2c0 2.2-1.3 4.2-3.3 5.1L12 12l1.7.7c2 1 3.3 2.9 3.3 5.1V21" stroke-linecap="round" stroke-linejoin="round"></path>
-                <path d="M8.5 7h7c-.4 1.6-1.8 2.6-3.5 2.6s-3.1-1-3.5-2.6z" fill="#f59e0b" fill-opacity="0.45" stroke="none"></path>
-                <path d="M8.5 19.5h7c-.4-1.8-1.8-3-3.5-3s-3.1 1.2-3.5 3z" fill="#f59e0b" fill-opacity="0.8" stroke="none"></path>
-              </svg>
-              <span class="sand-particle"></span>
-            </div>
-            <span class="pb-badge-text">
-              Pending Bill <strong>#${esc(bill.bill_number)}</strong>
-            </span>
+        <div class="pb-hero-icon-row" data-purpose="status-badge-container">
+          <div aria-label="Animated sand clock" class="pb-sandclock-circle">
+            <svg class="pb-sandclock-svg" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+              <path d="M5.5 3h13M5.5 21h13" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M6.8 3v3.3c0 2.3 1.4 4.3 3.5 5.2L12 12l-1.7.5c-2.1.9-3.5 2.9-3.5 5.2V21" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M17.2 3v3.3c0 2.3-1.4 4.3-3.5 5.2L12 12l1.7.5c2.1.9 3.5 2.9 3.5 5.2V21" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path class="pb-sand-top" d="M8.2 6.8h7.6c-.45 1.85-1.95 3.1-3.8 3.1s-3.35-1.25-3.8-3.1z" fill="#f59e0b" stroke="none"></path>
+              <line class="pb-sand-stream" x1="12" y1="11.8" x2="12" y2="17.8" stroke="#d97706" stroke-width="1.6" stroke-linecap="round"></line>
+              <path class="pb-sand-bottom" d="M8.1 19.6h7.8c-.45-2.1-1.95-3.5-3.9-3.5s-3.45 1.4-3.9 3.5z" fill="#d97706" stroke="none"></path>
+            </svg>
           </div>
         </div>
 
