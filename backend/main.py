@@ -11,12 +11,14 @@ import json
 import httpx
 import razorpay
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import quote
 
 from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill
 from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
+UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 app = FastAPI(title="AFRC Prototype", version="1.0")
 
 # Serve frontend
@@ -265,6 +267,11 @@ async def recognize(
         ).dict())
 
     session_id = str(uuid.uuid4())
+    try:
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
+    except OSError:
+        pass
     session = SessionBill(id=session_id, raw_ai=json.dumps([i.dict() for i in ai_items]),
                           final_bill=json.dumps([b.dict() for b in bill_items]))
     db.add(session)
@@ -293,6 +300,16 @@ def get_session(session_id: str, db: Session = Depends(get_db)):
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
     return _bill_payload(bill)
+
+@app.get("/api/sessions/{session_id}/image")
+def get_session_image(session_id: str, db: Session = Depends(get_db)):
+    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    img_path = UPLOAD_DIR / f"{bill.id}.jpg"
+    if not img_path.is_file():
+        raise HTTPException(status_code=404, detail="Image not found")
+    return FileResponse(img_path, media_type="image/jpeg")
 
 @app.post("/api/sessions/{session_id}/need-cashier")
 def need_cashier(session_id: str, db: Session = Depends(get_db)):
