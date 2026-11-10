@@ -219,7 +219,25 @@ input[type="email"]:focus {
   line-height: 1.4;
   margin-top: 0.35rem;
 }
-.turnstile-slot { display: flex; justify-content: center; min-height: 65px; margin-top: 1rem; width: 100%; max-width: 100%; overflow: hidden; }
+.turnstile-slot {
+  display: flex;
+  justify-content: center;
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease, margin 0.2s ease;
+}
+.turnstile-slot.interactive {
+  height: auto;
+  min-height: 65px;
+  margin-top: 1rem;
+  opacity: 1;
+  overflow: visible;
+}
 .btn {
   display: inline-flex;
   align-items: center;
@@ -491,21 +509,96 @@ function closePhotoLightbox() {
 }
 
 let payWidgetId;
+let payToken = "";
+let payFailed = false;
+let payInteractive = false;
+let payWaiters = [];
+const paySlot = document.getElementById("pay-turnstile");
+
+function settlePayWaiters(token, error) {
+  const list = payWaiters.splice(0, payWaiters.length);
+  list.forEach(w => {
+    clearTimeout(w.timer);
+    if (token) w.resolve(token);
+    else w.reject(error || new Error("CAPTCHA_FAILED"));
+  });
+}
+
 function renderPayTurnstile() {
   if (payWidgetId !== undefined || !window.turnstile) return;
   payWidgetId = window.turnstile.render("#pay-turnstile", {
     sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
     action: "pay",
     size: "flexible",
+    appearance: "interaction-only",
+    "before-interactive-callback": () => {
+      payInteractive = true;
+      paySlot.classList.add("interactive");
+    },
+    "after-interactive-callback": () => {
+      payInteractive = false;
+      paySlot.classList.remove("interactive");
+    },
+    callback: (token) => {
+      payToken = token || "";
+      payFailed = false;
+      payInteractive = false;
+      paySlot.classList.remove("interactive");
+      if (payToken) settlePayWaiters(payToken, null);
+    },
+    "expired-callback": () => {
+      payToken = "";
+      if (payWidgetId !== undefined && window.turnstile) {
+        window.turnstile.reset(payWidgetId);
+      }
+    },
+    "error-callback": () => {
+      payToken = "";
+      payFailed = true;
+      paySlot.classList.remove("interactive");
+      settlePayWaiters(null, new Error("CAPTCHA_FAILED"));
+    },
+    "timeout-callback": () => {
+      payToken = "";
+      payFailed = true;
+      paySlot.classList.remove("interactive");
+      settlePayWaiters(null, new Error("CAPTCHA_FAILED"));
+    }
   });
 }
 window.onPayTurnstileLoad = () => {
   if (!form.hidden) renderPayTurnstile();
 };
 function resetPayTurnstile() {
+  payToken = "";
+  payFailed = false;
+  payInteractive = false;
+  paySlot.classList.remove("interactive");
   if (payWidgetId !== undefined && window.turnstile) {
     window.turnstile.reset(payWidgetId);
   }
+}
+function getPayToken() {
+  renderPayTurnstile();
+  const existing = payToken || (payWidgetId !== undefined && window.turnstile && window.turnstile.getResponse(payWidgetId)) || "";
+  if (existing) return Promise.resolve(existing);
+  if (payFailed && payWidgetId !== undefined && window.turnstile) {
+    payFailed = false;
+    window.turnstile.reset(payWidgetId);
+  }
+  return new Promise((resolve, reject) => {
+    const waiter = {
+      resolve,
+      reject,
+      timer: setTimeout(() => {
+        if (payInteractive) return;
+        const idx = payWaiters.indexOf(waiter);
+        if (idx !== -1) payWaiters.splice(idx, 1);
+        reject(new Error("CAPTCHA_FAILED"));
+      }, 15000)
+    };
+    payWaiters.push(waiter);
+  });
 }
 
 function esc(value) {
@@ -594,6 +687,17 @@ form.onsubmit = async (event) => {
   button.disabled = true;
   button.innerHTML = '<span class="spinner"></span> Processing...';
 
+  let token = "";
+  try {
+    token = await getPayToken();
+  } catch (err) {
+    button.disabled = !confirmBox.checked;
+    button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
+    errorBox.textContent = "Captcha verification failed. Please try again.";
+    resetPayTurnstile();
+    return;
+  }
+
   try {
     const res = await fetch("/api/pay", {
       method: "POST",
@@ -601,14 +705,18 @@ form.onsubmit = async (event) => {
       body: JSON.stringify({
         session_id: sessionId,
         email: document.getElementById("email").value,
-        "cf-turnstile-response": (window.turnstile && window.turnstile.getResponse(payWidgetId)) || ""
+        "cf-turnstile-response": token
       })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       button.disabled = !confirmBox.checked;
       button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
-      errorBox.textContent = messageOf(data) || "Payment could not be completed.";
+      if (res.status === 403 || messageOf(data) === "forbidden") {
+        errorBox.textContent = "Captcha verification failed. Please try again.";
+      } else {
+        errorBox.textContent = messageOf(data) || "Payment could not be completed.";
+      }
       return;
     }
     if (data.status === "paid") {

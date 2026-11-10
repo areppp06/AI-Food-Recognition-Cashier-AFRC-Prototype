@@ -15,21 +15,95 @@ input, button { padding: 10px; margin: 5px; font-size: 1rem; }
 <input id="session" placeholder="Session ID from customer screen">
 <button onclick="loadSession()">Load</button>
 <div id="corrections"></div>
-<div id="verify-turnstile" style="margin: 1rem 0;"></div>
-<button onclick="verify()">Confirm & Recalculate</button>
+<div id="verify-turnstile" style="display:none; margin: 1rem 0;"></div>
+<button id="verifyBtn" onclick="verify()">Confirm & Recalculate</button>
 <div id="final"></div>
 <script>
 let verifyWidgetId;
+let verifyToken = "";
+let verifyFailed = false;
+let verifyInteractive = false;
+let verifyWaiters = [];
+const verifySlot = document.getElementById("verify-turnstile");
+
+function settleVerifyWaiters(token, error) {
+  const list = verifyWaiters.splice(0, verifyWaiters.length);
+  list.forEach(w => {
+    clearTimeout(w.timer);
+    if (token) w.resolve(token);
+    else w.reject(error || new Error("CAPTCHA_FAILED"));
+  });
+}
+
 window.onVerifyTurnstileLoad = () => {
   verifyWidgetId = window.turnstile.render("#verify-turnstile", {
     sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
     action: "verify",
+    appearance: "interaction-only",
+    "before-interactive-callback": () => {
+      verifyInteractive = true;
+      verifySlot.style.display = "block";
+    },
+    "after-interactive-callback": () => {
+      verifyInteractive = false;
+      verifySlot.style.display = "none";
+    },
+    callback: (token) => {
+      verifyToken = token || "";
+      verifyFailed = false;
+      verifyInteractive = false;
+      verifySlot.style.display = "none";
+      if (verifyToken) settleVerifyWaiters(verifyToken, null);
+    },
+    "expired-callback": () => {
+      verifyToken = "";
+      if (verifyWidgetId !== undefined && window.turnstile) {
+        window.turnstile.reset(verifyWidgetId);
+      }
+    },
+    "error-callback": () => {
+      verifyToken = "";
+      verifyFailed = true;
+      verifySlot.style.display = "none";
+      settleVerifyWaiters(null, new Error("CAPTCHA_FAILED"));
+    },
+    "timeout-callback": () => {
+      verifyToken = "";
+      verifyFailed = true;
+      verifySlot.style.display = "none";
+      settleVerifyWaiters(null, new Error("CAPTCHA_FAILED"));
+    }
   });
 };
 function resetVerifyTurnstile() {
+  verifyToken = "";
+  verifyFailed = false;
+  verifyInteractive = false;
+  verifySlot.style.display = "none";
   if (verifyWidgetId !== undefined && window.turnstile) {
     window.turnstile.reset(verifyWidgetId);
   }
+}
+function getVerifyToken() {
+  const existing = verifyToken || (verifyWidgetId !== undefined && window.turnstile && window.turnstile.getResponse(verifyWidgetId)) || "";
+  if (existing) return Promise.resolve(existing);
+  if (verifyFailed && verifyWidgetId !== undefined && window.turnstile) {
+    verifyFailed = false;
+    window.turnstile.reset(verifyWidgetId);
+  }
+  return new Promise((resolve, reject) => {
+    const waiter = {
+      resolve,
+      reject,
+      timer: setTimeout(() => {
+        if (verifyInteractive) return;
+        const idx = verifyWaiters.indexOf(waiter);
+        if (idx !== -1) verifyWaiters.splice(idx, 1);
+        reject(new Error("CAPTCHA_FAILED"));
+      }, 15000)
+    };
+    verifyWaiters.push(waiter);
+  });
 }
 async function loadSession() {
   // In full version, fetch session. For proto, show editable common items
@@ -51,6 +125,18 @@ async function verify() {
     {name: "Ikan bawal (per piece)", quantity: parseFloat(document.getElementById("q-ikan").value)}
   ].filter(c => c.quantity > 0);
   
+  const btn = document.getElementById("verifyBtn");
+  btn.disabled = true;
+  let token = "";
+  try {
+    token = await getVerifyToken();
+  } catch (err) {
+    btn.disabled = false;
+    alert("Captcha verification failed. Please try again.");
+    resetVerifyTurnstile();
+    return;
+  }
+
   try {
     const res = await fetch("/api/verify", {
       method: "POST",
@@ -59,13 +145,21 @@ async function verify() {
         session_id: session,
         pin,
         corrections,
-        "cf-turnstile-response": (window.turnstile && window.turnstile.getResponse(verifyWidgetId)) || ""
+        "cf-turnstile-response": token
       })
     });
     const data = await res.json();
-    if (!res.ok || data.detail) { alert(data.detail || "Verification failed."); return; }
+    if (!res.ok || data.detail) {
+      if (res.status === 403 || data.detail === "forbidden") {
+        alert("Captcha verification failed. Please try again.");
+      } else {
+        alert(data.detail || "Verification failed.");
+      }
+      return;
+    }
     document.getElementById("final").innerHTML = `<h2>Verified Total: RM ${data.total.toFixed(2)}</h2>`;
   } finally {
+    btn.disabled = false;
     resetVerifyTurnstile();
   }
 }

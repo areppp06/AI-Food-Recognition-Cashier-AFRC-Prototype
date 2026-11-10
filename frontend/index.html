@@ -330,7 +330,23 @@ video, canvas {
   font-size: 0.8rem;
   margin-bottom: 1.25rem;
 }
-.turnstile-slot { display: flex; justify-content: center; min-height: 65px; margin-bottom: 0.75rem; }
+.turnstile-slot {
+  display: flex;
+  justify-content: center;
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.2s ease, margin 0.2s ease;
+}
+.turnstile-slot.interactive {
+  height: auto;
+  min-height: 65px;
+  margin-bottom: 0.75rem;
+  opacity: 1;
+  overflow: visible;
+}
 </style>
 </head>
 <body style="max-width: 100%; width: 100%; margin: 0 auto; padding: 1rem 1rem 5rem; box-sizing: border-box;">
@@ -372,17 +388,93 @@ const camPlaceholder = document.getElementById('camPlaceholder');
 
 let stream;
 let recognizeWidgetId;
+let recognizeToken = "";
+let recognizeFailed = false;
+let recognizeInteractive = false;
+let recognizeWaiters = [];
+const recognizeSlot = document.getElementById("recognize-turnstile");
+
+function settleRecognizeWaiters(token, error) {
+  const list = recognizeWaiters.splice(0, recognizeWaiters.length);
+  list.forEach(w => {
+    clearTimeout(w.timer);
+    if (token) w.resolve(token);
+    else w.reject(error || new Error("CAPTCHA_FAILED"));
+  });
+}
+
 window.onRecognizeTurnstileLoad = () => {
   recognizeWidgetId = window.turnstile.render("#recognize-turnstile", {
     sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
     action: "recognize",
     size: "flexible",
+    appearance: "interaction-only",
+    "before-interactive-callback": () => {
+      recognizeInteractive = true;
+      recognizeSlot.classList.add("interactive");
+    },
+    "after-interactive-callback": () => {
+      recognizeInteractive = false;
+      recognizeSlot.classList.remove("interactive");
+    },
+    callback: (token) => {
+      recognizeToken = token || "";
+      recognizeFailed = false;
+      recognizeInteractive = false;
+      recognizeSlot.classList.remove("interactive");
+      if (recognizeToken) settleRecognizeWaiters(recognizeToken, null);
+    },
+    "expired-callback": () => {
+      recognizeToken = "";
+      if (recognizeWidgetId !== undefined && window.turnstile) {
+        window.turnstile.reset(recognizeWidgetId);
+      }
+    },
+    "error-callback": () => {
+      recognizeToken = "";
+      recognizeFailed = true;
+      recognizeSlot.classList.remove("interactive");
+      settleRecognizeWaiters(null, new Error("CAPTCHA_FAILED"));
+    },
+    "timeout-callback": () => {
+      recognizeToken = "";
+      recognizeFailed = true;
+      recognizeSlot.classList.remove("interactive");
+      settleRecognizeWaiters(null, new Error("CAPTCHA_FAILED"));
+    }
   });
 };
+
 function resetRecognizeTurnstile() {
+  recognizeToken = "";
+  recognizeFailed = false;
+  recognizeInteractive = false;
+  recognizeSlot.classList.remove("interactive");
   if (recognizeWidgetId !== undefined && window.turnstile) {
     window.turnstile.reset(recognizeWidgetId);
   }
+}
+
+function getRecognizeToken() {
+  const existing = recognizeToken || (recognizeWidgetId !== undefined && window.turnstile && window.turnstile.getResponse(recognizeWidgetId)) || "";
+  if (existing) return Promise.resolve(existing);
+  if (recognizeFailed && recognizeWidgetId !== undefined && window.turnstile) {
+    recognizeFailed = false;
+    window.turnstile.reset(recognizeWidgetId);
+  }
+  return new Promise((resolve, reject) => {
+    const waiter = {
+      resolve,
+      reject,
+      timer: setTimeout(() => {
+        if (recognizeInteractive) return;
+        const idx = recognizeWaiters.indexOf(waiter);
+        if (idx !== -1) recognizeWaiters.splice(idx, 1);
+        reject(new Error("CAPTCHA_FAILED"));
+      }, 15000)
+    };
+    recognizeWaiters.push(waiter);
+  });
 }
 
 startBtn.onclick = async () => {
@@ -420,9 +512,19 @@ capBtn.onclick = async () => {
       resetRecognizeTurnstile();
       return;
     }
+
+    let token = "";
+    try {
+      token = await getRecognizeToken();
+    } catch (err) {
+      showError("CAPTCHA_FAILED", "Captcha verification failed. Please try again.");
+      resetRecognizeTurnstile();
+      return;
+    }
+
     const form = new FormData();
     form.append("file", blob, "plate.jpg");
-    form.append("cf-turnstile-response", (window.turnstile && window.turnstile.getResponse(recognizeWidgetId)) || "");
+    form.append("cf-turnstile-response", token);
 
     try {
       const res = await fetch("/api/recognize", { method: "POST", body: form });
@@ -430,8 +532,12 @@ capBtn.onclick = async () => {
 
       if (!res.ok) {
         const detail = data.detail || data;
-        const message = typeof detail === "string" ? detail : (detail.message || "Something went wrong. Please retake the photo.");
-        showError(typeof detail === "string" ? "FORBIDDEN" : (detail.error_code || "UNKNOWN"), message);
+        if (res.status === 403 || detail === "forbidden") {
+          showError("CAPTCHA_FAILED", "Captcha verification failed. Please try again.");
+        } else {
+          const message = typeof detail === "string" ? detail : (detail.message || "Something went wrong. Please retake the photo.");
+          showError(typeof detail === "string" ? "FORBIDDEN" : (detail.error_code || "UNKNOWN"), message);
+        }
         return;
       }
 
@@ -448,6 +554,10 @@ capBtn.onclick = async () => {
 };
 
 function showError(code, message) {
+  if (stream) {
+    canvas.style.display = "none";
+    video.style.display = "block";
+  }
   result.innerHTML = `
     <div class="error-card">
       <div class="error-title">Retake Required</div>
@@ -455,13 +565,13 @@ function showError(code, message) {
       <div class="error-badge">CODE: ${code}</div>
       <div>
         <button class="btn btn-secondary" onclick="location.reload()">
-          🔄 Try Again
+          Try Again
         </button>
       </div>
     </div>
   `;
   status.style.display = "none";
-  capBtn.disabled = false;
+  capBtn.disabled = !stream;
 }
 
 function esc(value) {
