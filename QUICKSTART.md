@@ -56,8 +56,9 @@ During the interactive setup, `install.sh` walks through two files inside the `e
 | `OPENROUTER_SITE_URL` | `http://localhost:8000` | Site URL header sent to OpenRouter |
 | `AI_PROVIDER` | `grok` | Active AI backend: `grok`, `openrouter`, `gemini`, `openai`, or `mock` |
 | `DATABASE_URL` | `sqlite:///./afrc.db` | SQLAlchemy database connection URL |
-| `CLOUDFLARE_API_TOKEN` | `your-cloudflare-api-token` | Cloudflare API token (optional) |
-| `CLOUDFLARE_ACCOUNT_ID` | `your-cloudflare-account-id` | Cloudflare account ID (optional) |
+| `CLOUDFLARE_API_TOKEN` | `your-cloudflare-api-token` | Cloudflare API token (with **Workers R2 Storage: Edit** permission for R2 plate image storage) |
+| `CLOUDFLARE_ACCOUNT_ID` | `your-cloudflare-account-id` | Cloudflare account ID |
+| `R2_BUCKET_NAME` | `afrc-plates` | Cloudflare R2 bucket name for plate photos (auto-created in `APAC` on startup if missing) |
 | `TURNSTILE_SITEKEY` | `your-turnstile-sitekey` | Cloudflare Turnstile widget sitekey |
 | `TURNSTILE_SECRET` | `your-turnstile-secret` | Cloudflare Turnstile secret key for backend verification |
 | `TURNSTILE_HOSTNAMES` | `localhost,127.0.0.1` | Comma-separated allowed hostnames/IPs (add your VPS IP or domain here, e.g. `localhost,127.0.0.1,203.0.113.10`) |

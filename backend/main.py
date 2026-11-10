@@ -156,9 +156,29 @@ def _require_turnstile(token: str, expected_action: str, request: Request) -> No
     ):
         raise HTTPException(status_code=403, detail="forbidden")
 
+def _ensure_r2_bucket():
+    cfg = _r2_config()
+    if not cfg:
+        return
+    account_id, api_token, bucket = cfg
+    headers = {"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"}
+    base = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets"
+    try:
+        check = httpx.get(f"{base}/{quote(bucket, safe='')}", headers=headers, timeout=10.0)
+        if check.status_code == 404:
+            httpx.post(
+                base,
+                headers=headers,
+                json={"name": bucket, "locationHint": "apac"},
+                timeout=10.0,
+            )
+    except Exception:
+        pass
+
 @app.on_event("startup")
 def startup():
     init_db()
+    _ensure_r2_bucket()
 
 @app.get("/")
 async def root():
