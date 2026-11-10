@@ -10,6 +10,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   max-width: 640px;
@@ -370,6 +376,7 @@ window.onRecognizeTurnstileLoad = () => {
   recognizeWidgetId = window.turnstile.render("#recognize-turnstile", {
     sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
     action: "recognize",
+    size: "flexible",
   });
 };
 function resetRecognizeTurnstile() {

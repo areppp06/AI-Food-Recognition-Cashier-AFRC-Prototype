@@ -9,11 +9,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+}
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  max-width: 580px;
-  margin: 2.5rem auto;
-  padding: 0 1.25rem 3rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2.5rem;
   background: #f8fafc;
   color: #0f172a;
 }
@@ -79,21 +84,63 @@ h1 {
   justify-content: center;
   gap: 0.75rem;
   margin-top: 1.15rem;
-  padding: 1rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  padding: 0.25rem 0;
+  background: transparent;
+  border: none;
   text-align: center;
 }
 .plate-preview-img {
   width: 100%;
-  max-width: 220px;
-  height: 145px;
+  max-width: 300px;
+  height: 210px;
   object-fit: cover;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid #cbd5e1;
   background: #0f172a;
   display: block;
+  cursor: zoom-in;
+  transition: transform 0.2s ease;
+}
+.plate-preview-img:active {
+  transform: scale(0.98);
+}
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.88);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 9999;
+  cursor: zoom-out;
+}
+.photo-lightbox.open {
+  display: flex;
+}
+.photo-lightbox img {
+  max-width: 100%;
+  max-height: 88vh;
+  border-radius: 16px;
+  object-fit: contain;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.photo-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-retake {
   display: inline-flex;
@@ -172,7 +219,7 @@ input[type="email"]:focus {
   line-height: 1.4;
   margin-top: 0.35rem;
 }
-.turnstile-slot { display: flex; justify-content: center; min-height: 65px; margin-top: 1rem; }
+.turnstile-slot { display: flex; justify-content: center; min-height: 65px; margin-top: 1rem; width: 100%; max-width: 100%; overflow: hidden; }
 .btn {
   display: inline-flex;
   align-items: center;
@@ -352,7 +399,7 @@ input[type="email"]:focus {
 <div class="header" style="max-width: 480px; margin: 0 auto 1.25rem auto; padding: 0 0.25rem; display: flex; align-items: center; justify-content: space-between;">
 <h1>Bill Payment</h1>
 </div>
-<div class="bill-card" style="max-width: 480px; margin: 0px auto; padding: 2.25rem 1.75rem 2.5rem; background: rgb(255, 255, 255); mask-image: radial-gradient(9px at 50% 0px, transparent 9px, black 9.5px), radial-gradient(9px at 50% 100%, transparent 9px, black 9.5px); mask-position: 0px 0px, 0px 100%; mask-size: 24px 51%; mask-repeat: repeat-x; filter: drop-shadow(rgba(15, 23, 42, 0.16) 0px 18px 30px) drop-shadow(rgba(15, 23, 42, 0.08) 0px 2px 6px); border-radius: 0px;">
+<div class="bill-card" style="max-width: 480px; width: 100%; margin: 0px auto; padding: 2.25rem 1.75rem 2.5rem; background: rgb(255, 255, 255); mask-image: radial-gradient(9px at 50% 0px, transparent 9px, black 9.5px), radial-gradient(9px at 50% 100%, transparent 9px, black 9.5px); mask-position: 0px 0px, 0px 100%; mask-size: 24px 51%; mask-repeat: repeat-x; box-shadow: rgba(15, 23, 42, 0.14) 0px 18px 30px, rgba(15, 23, 42, 0.08) 0px 2px 6px; border-radius: 0px;">
 <div class="section-title">Order Summary</div>
 <div id="bill">
 <div class="skeleton-loader">
@@ -381,6 +428,10 @@ input[type="email"]:focus {
 <div id="cashierWait"></div>
 <p class="error-msg" id="error"></p>
 </form>
+</div>
+<div class="photo-lightbox" id="photoLightbox" onclick="closePhotoLightbox()">
+<button aria-label="Close" class="photo-lightbox-close" onclick="closePhotoLightbox()" type="button">&times;</button>
+<img alt="Full size plate photo" id="photoLightboxImg" src="">
 </div>
 <script>
 const params = new URLSearchParams(location.search);
@@ -428,12 +479,24 @@ cashierBtn.onclick = async () => {
   }
 };
 
+function openPhotoLightbox(src) {
+  const lb = document.getElementById("photoLightbox");
+  const img = document.getElementById("photoLightboxImg");
+  img.src = src;
+  lb.classList.add("open");
+}
+function closePhotoLightbox() {
+  const lb = document.getElementById("photoLightbox");
+  lb.classList.remove("open");
+}
+
 let payWidgetId;
 function renderPayTurnstile() {
   if (payWidgetId !== undefined || !window.turnstile) return;
   payWidgetId = window.turnstile.render("#pay-turnstile", {
     sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
     action: "pay",
+    size: "flexible",
   });
 }
 window.onPayTurnstileLoad = () => {
@@ -490,7 +553,7 @@ async function load() {
     html += '</div>';
     html += `
       <div class="plate-preview-row" id="platePreviewRow">
-        <img class="plate-preview-img" src="/api/sessions/${encodeURIComponent(sessionId)}/image" alt="Captured plate" onerror="this.style.display='none'">
+        <img class="plate-preview-img" src="/api/sessions/${encodeURIComponent(sessionId)}/image" alt="Captured plate" title="Tap to view full photo" onclick="openPhotoLightbox(this.src)" onerror="this.style.display='none'">
         <a class="btn-retake" href="/">Retake Photo</a>
       </div>`;
     html += '<div class="total-divider"></div>';
