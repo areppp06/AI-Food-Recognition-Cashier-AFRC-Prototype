@@ -24,6 +24,8 @@
 
 ## Quick Start / VPS Deployment (One-Command Setup)
 
+> 📖 **See [QUICKSTART.md](./QUICKSTART.md)** for the full step-by-step VPS deployment guide, environment variables reference table, `systemd` service setup, and HTTPS camera configuration.
+
 ### 1. Install Prerequisites (Fresh Ubuntu/Debian VPS)
 ```bash
 sudo apt update && sudo apt install -y git python3 python3-venv python3-pip
@@ -97,6 +99,7 @@ What `bash install.sh` does automatically:
 │   ├── pay.html
 │   └── success.html
 ├── install.sh           # One-command interactive setup & launcher
+├── QUICKSTART.md        # Dedicated VPS deployment & quickstart guide
 ├── requirements.txt
 └── README.md
 ```
