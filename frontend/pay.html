@@ -1,35 +1,229 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>AFRC - Payment</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <style>
-* { box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, sans-serif; max-width: 720px; margin: 1.5rem auto; padding: 0 1.25rem 2rem; background: #f5f6f8; color: #222; }
-.bill { background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
-.item { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #eee; }
-.total { font-size: 1.6rem; font-weight: 700; color: #ff6b35; margin-top: 1rem; }
-label { display: block; margin-top: 1.25rem; font-weight: 600; }
-input[type="email"] { width: 100%; margin-top: 0.4rem; padding: 0.75rem; border: 1px solid #ccc; border-radius: 10px; font: inherit; }
-.btn { display: inline-block; background: #ff6b35; color: white; border: none; padding: 14px 28px; border-radius: 10px; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 1rem; }
-.btn:disabled { background: #ccc; cursor: not-allowed; }
-.note { color: #555; }
-.error { color: #c53030; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  max-width: 580px;
+  margin: 2.5rem auto;
+  padding: 0 1.25rem 3rem;
+  background: #f8fafc;
+  color: #0f172a;
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+}
+h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.bill-card {
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 24px;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.03);
+  border: 1px solid #f1f5f9;
+  transition: all 0.3s ease;
+}
+.section-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+.item-list {
+  display: flex;
+  flex-direction: column;
+}
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+.item:last-child {
+  border-bottom: none;
+}
+.item-name {
+  font-weight: 600;
+  color: #1e293b;
+}
+.item-pieces {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 400;
+  margin-left: 0.3rem;
+}
+.item-price {
+  font-weight: 600;
+  color: #0f172a;
+}
+.total-divider {
+  margin: 1.25rem 0 1rem;
+  height: 1px;
+  background: #e2e8f0;
+}
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0;
+}
+.total-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #475569;
+}
+.total-amount {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #ff5e36;
+  letter-spacing: -0.03em;
+}
+.input-group {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+}
+input[type="email"] {
+  width: 100%;
+  padding: 0.9rem 1.15rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 0.95rem;
+  background: #f8fafc;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.2s ease;
+}
+input[type="email"]:focus {
+  border-color: #ff5e36;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(255, 94, 54, 0.1);
+}
+.note {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin-top: 0.35rem;
+}
+.turnstile-slot { display: flex; justify-content: center; min-height: 65px; margin-top: 1rem; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: #ff5e36;
+  color: #ffffff;
+  border: none;
+  padding: 1rem 1.8rem;
+  border-radius: 9999px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  width: 100%;
+  box-shadow: 0 8px 20px -6px rgba(255, 94, 54, 0.45);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+.btn:hover:not(:disabled) {
+  background: #f04e26;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -6px rgba(255, 94, 54, 0.55);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn:disabled {
+  background: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.skeleton-loader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+.skeleton-bar {
+  height: 20px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.error-msg {
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 0.75rem;
+  text-align: center;
+}
 </style>
 </head>
-<body>
-<div class="bill">
-  <h1>Payment</h1>
-  <div id="bill" class="note">Loading bill...</div>
-  <form id="payForm" hidden>
-    <label>Email for receipt (optional)
-      <input id="email" type="email" placeholder="you@email.com" autocomplete="email">
-    </label>
-    <p class="note">Leave this blank if you do not want a receipt. Email sending will be connected later.</p>
-    <button id="payBtn" class="btn" type="submit">Pay now</button>
-    <p id="error" class="error"></p>
-  </form>
+<body style="max-width: 100%; margin: 0px auto; padding: 1.5rem 1rem 2.5rem; background: rgb(233, 238, 245); color: rgb(15, 23, 42);">
+<div class="header" style="max-width: 480px; margin: 0 auto 1.25rem auto; padding: 0 0.25rem; display: flex; align-items: center; justify-content: space-between;">
+<h1>Bill Payment</h1>
+</div>
+<div class="bill-card" style="max-width: 480px; margin: 0px auto; padding: 2.25rem 1.75rem 2.5rem; background: rgb(255, 255, 255); mask-image: radial-gradient(9px at 50% 0px, transparent 9px, black 9.5px), radial-gradient(9px at 50% 100%, transparent 9px, black 9.5px); mask-position: 0px 0px, 0px 100%; mask-size: 24px 51%; mask-repeat: repeat-x; filter: drop-shadow(rgba(15, 23, 42, 0.16) 0px 18px 30px) drop-shadow(rgba(15, 23, 42, 0.08) 0px 2px 6px); border-radius: 0px;">
+<div class="section-title">Order Summary</div>
+<div id="bill">
+<div class="skeleton-loader">
+<div class="skeleton-bar" style="width: 88%;"></div>
+<div class="skeleton-bar" style="width: 72%;"></div>
+<div class="skeleton-bar" style="width: 40%;"></div>
+</div>
+</div>
+<form id="payForm" hidden>
+<div class="input-group">
+<label for="email">Email for receipt (optional)</label>
+<input autocomplete="email" id="email" placeholder="name@domain.com" type="email">
+<p class="note">Leave blank if you do not require a digital receipt.</p>
+</div>
+<div class="turnstile-slot" id="pay-turnstile"></div>
+<button class="btn" id="payBtn" type="submit">
+<span class="btn-text">Pay Now</span>
+</button>
+<p class="error-msg" id="error"></p>
+</form>
 </div>
 <script>
 const params = new URLSearchParams(location.search);
@@ -37,6 +231,22 @@ const sessionId = params.get("session") || "";
 const billBox = document.getElementById("bill");
 const form = document.getElementById("payForm");
 const errorBox = document.getElementById("error");
+let payWidgetId;
+function renderPayTurnstile() {
+  if (payWidgetId !== undefined || !window.turnstile) return;
+  payWidgetId = window.turnstile.render("#pay-turnstile", {
+    sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
+    action: "pay",
+  });
+}
+window.onPayTurnstileLoad = () => {
+  if (!form.hidden) renderPayTurnstile();
+};
+function resetPayTurnstile() {
+  if (payWidgetId !== undefined && window.turnstile) {
+    window.turnstile.reset(payWidgetId);
+  }
+}
 
 function esc(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({
@@ -44,31 +254,60 @@ function esc(value) {
   }[ch]));
 }
 
+function messageOf(data) {
+  if (!data) return "";
+  if (typeof data.detail === "string") return data.detail;
+  if (data.detail && typeof data.detail.message === "string") return data.detail.message;
+  return "";
+}
+
 async function load() {
   if (!sessionId) {
-    billBox.textContent = "This payment link is missing a bill.";
+    billBox.innerHTML = '<p class="note">This payment link is missing a bill.</p>';
     return;
   }
-  const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId));
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    billBox.textContent = data.detail || "Bill not found.";
-    return;
+  try {
+    const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId));
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      billBox.innerHTML = '<p class="note">' + esc(messageOf(data) || "Bill not found.") + '</p>';
+      return;
+    }
+    if (data.status === "paid") {
+      location.replace("/payment/success?session=" + encodeURIComponent(sessionId));
+      return;
+    }
+    if (data.status === "needs_cashier") {
+      billBox.innerHTML = '<p class="note" style="color:#d97706; font-weight:500;">A cashier is currently reviewing this bill. Payment is paused.</p>';
+      return;
+    }
+    if (params.get("payment") === "failed") {
+      errorBox.textContent = "Payment was not completed. You can try again.";
+    }
+
+    let html = '<div class="item-list">';
+    data.items.forEach(item => {
+      const pieces = item.piece_count ? `<span class="item-pieces">(${esc(item.piece_count)} pcs)</span>` : "";
+      html += `
+        <div class="item">
+          <span class="item-name">${esc(item.name)} <span style="color:#94a3b8; font-weight:400;">× ${esc(item.quantity)}</span>${pieces}</span>
+          <span class="item-price">RM ${Number(item.subtotal).toFixed(2)}</span>
+        </div>`;
+    });
+    html += '</div>';
+    html += '<div class="total-divider"></div>';
+    html += `
+      <div class="total-row">
+        <span class="total-label">Total Due</span>
+        <span class="total-amount">RM ${Number(data.total).toFixed(2)}</span>
+      </div>`;
+
+    billBox.innerHTML = html;
+    form.hidden = false;
+    renderPayTurnstile();
+  } catch (e) {
+    billBox.innerHTML = '<p class="note">Could not load this bill. Please try again.</p>';
   }
-  if (data.status === "paid") {
-    location.replace("/payment/success?session=" + encodeURIComponent(sessionId));
-    return;
-  }
-  if (data.status === "needs_cashier") {
-    billBox.textContent = "A cashier is checking this bill. Payment stays closed until they finish.";
-    return;
-  }
-  let html = data.items.map(item =>
-    `<div class="item"><span>${esc(item.name)} × ${esc(item.quantity)}${item.piece_count ? ` <small>(${esc(item.piece_count)} pieces)</small>` : ""}</span><span>RM ${Number(item.subtotal).toFixed(2)}</span></div>`
-  ).join("");
-  html += `<div class="total">Total: RM ${Number(data.total).toFixed(2)}</div>`;
-  billBox.innerHTML = html;
-  form.hidden = false;
 }
 
 form.onsubmit = async (event) => {
@@ -76,21 +315,82 @@ form.onsubmit = async (event) => {
   errorBox.textContent = "";
   const button = document.getElementById("payBtn");
   button.disabled = true;
-  const res = await fetch("/api/pay", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ session_id: sessionId, email: document.getElementById("email").value })
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
+  button.innerHTML = '<span class="spinner"></span> Processing...';
+
+  try {
+    const res = await fetch("/api/pay", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        session_id: sessionId,
+        email: document.getElementById("email").value,
+        "cf-turnstile-response": (window.turnstile && window.turnstile.getResponse(payWidgetId)) || ""
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      button.disabled = false;
+      button.innerHTML = '<span class="btn-text">Pay Now</span>';
+      errorBox.textContent = messageOf(data) || "Payment could not be completed.";
+      return;
+    }
+    if (data.status === "paid") {
+      location.href = "/payment/success?session=" + encodeURIComponent(sessionId);
+      return;
+    }
+    if (!window.Razorpay) {
+      button.disabled = false;
+      button.innerHTML = '<span class="btn-text">Pay Now</span>';
+      errorBox.textContent = "Payment checkout could not be loaded. Please refresh and try again.";
+      return;
+    }
+    const email = document.getElementById("email").value;
+    const checkout = new window.Razorpay({
+      key: data.key_id,
+      amount: data.amount,
+      currency: data.currency,
+      name: "AFRC",
+      description: "Plate payment",
+      order_id: data.order_id,
+      callback_url: location.origin + "/api/pay/callback",
+      redirect: true,
+      prefill: email ? { email } : {},
+      theme: { color: "#ff5e36" },
+      handler: async function (response) {
+        const confirmRes = await fetch("/api/pay/confirm", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(response)
+        });
+        if (!confirmRes.ok) {
+          button.disabled = false;
+          button.innerHTML = '<span class="btn-text">Pay Now</span>';
+          errorBox.textContent = "Payment was not completed.";
+          return;
+        }
+        location.href = "/payment/success?session=" + encodeURIComponent(sessionId);
+      },
+      modal: {
+        ondismiss: function () {
+          button.disabled = false;
+          button.innerHTML = '<span class="btn-text">Pay Now</span>';
+          errorBox.textContent = "Payment was not completed.";
+        }
+      }
+    });
+    checkout.open();
+  } catch (e) {
     button.disabled = false;
-    errorBox.textContent = data.detail || "Payment could not be completed.";
-    return;
+    button.innerHTML = '<span class="btn-text">Pay Now</span>';
+    errorBox.textContent = "Could not reach the payment server. Please try again.";
+  } finally {
+    resetPayTurnstile();
   }
-  location.href = "/payment/success?session=" + encodeURIComponent(sessionId);
 };
 
 load();
 </script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onPayTurnstileLoad&render=explicit" async defer></script>
 </body>
 </html>

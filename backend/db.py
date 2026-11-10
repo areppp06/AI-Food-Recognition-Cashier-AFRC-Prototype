@@ -3,8 +3,12 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+ROOT = Path(__file__).resolve().parent.parent
+ENV_DIR = ROOT / "env"
+load_dotenv(ENV_DIR / ".env")
+load_dotenv(ENV_DIR / "curlec.env")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./afrc.db")
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -43,6 +47,8 @@ class SessionBill(Base):
     final_bill = Column(Text)
     status = Column(String, default="open")
     receipt_email = Column(String, default="")
+    curlec_order_id = Column(String, default="")
+    curlec_payment_id = Column(String, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 def init_db():
@@ -59,6 +65,10 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN status TEXT DEFAULT 'open'")
         if session_columns and "receipt_email" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN receipt_email TEXT DEFAULT ''")
+        if session_columns and "curlec_order_id" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN curlec_order_id TEXT DEFAULT ''")
+        if session_columns and "curlec_payment_id" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN curlec_payment_id TEXT DEFAULT ''")
     db = SessionLocal()
     # Seed default dishes if empty
     if db.query(Dish).count() == 0:

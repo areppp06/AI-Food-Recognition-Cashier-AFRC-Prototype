@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class DishBase(BaseModel):
@@ -47,3 +47,7 @@ class VerifyRequest(BaseModel):
     session_id: str
     pin: str
     corrections: List[dict]  # [{"name": "Chicken", "quantity": 2}, ...]
+    cf_turnstile_response: str = Field(default="", alias="cf-turnstile-response")
+
+    class Config:
+        populate_by_name = True

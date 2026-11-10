@@ -1,115 +1,359 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>AFRC - Self Service</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <style>
-* { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: system-ui, -apple-system, sans-serif;
-  max-width: 720px;
-  margin: 1.5rem auto;
-  padding: 0 1.25rem 2rem;
-  background: #f5f6f8;
-  color: #222;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  max-width: 640px;
+  margin: 1.75rem auto;
+  padding: 0 1.25rem 3rem;
+  background: #f8fafc;
+  color: #0f172a;
 }
-h1 { margin: 0 0 0.5rem; font-size: 1.75rem; }
-.subtitle { color: #555; margin-bottom: 1.5rem; }
-.camera-box {
-  border: 2px dashed #ddd;
-  border-radius: 16px;
+.camera-card {
+  background: #ffffff;
+  border-radius: 24px;
   padding: 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
   text-align: center;
-  background: white;
   margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+  background: #0f172a;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+.camera-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+.camera-placeholder svg {
+  width: 48px;
+  height: 48px;
+  stroke: #64748b;
+  stroke-width: 1.5;
+  fill: none;
 }
 video, canvas {
-  max-width: 100%;
-  border-radius: 12px;
-  margin: 0.5rem 0;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 18px;
+}
+
+/* Modern Rounded Buttons */
+.controls-group {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 .btn {
-  display: inline-block;
-  background: #ff6b35;
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #ff5e36;
+  color: #ffffff;
   border: none;
-  padding: 14px 28px;
-  border-radius: 10px;
-  font-size: 1.05rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: 9999px;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  margin: 0.4rem;
+  box-shadow: 0 6px 16px -3px rgba(255, 94, 54, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 160px;
-  transition: background 0.15s;
 }
-.btn:hover { background: #e55a2b; }
-.btn:disabled { background: #ccc; cursor: not-allowed; filter: blur(1px); opacity: 0.45; }
-.confirm-row { display: flex; gap: 0.75rem; align-items: flex-start; margin: 1rem 0; text-align: left; }
-.confirm-row input { margin-top: 0.2rem; width: 1.15rem; height: 1.15rem; }
-.note { color: #444; margin: 0.75rem 0 0; }
-.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
-.wait-note { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 1rem; margin-top: 1rem; }
-.btn-secondary { background: #4a5568; }
-.btn-secondary:hover { background: #2d3748; }
-.bill {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 16px;
+.btn:hover:not(:disabled) {
+  background: #f04e26;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -3px rgba(255, 94, 54, 0.45);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.btn:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-secondary {
+  background: #ffffff;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px -2px rgba(0,0,0,0.06);
+}
+
+/* Pulsing Scanner Radar Effect */
+.scanner-active::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #ff5e36, transparent);
+  animation: scanLine 2s ease-in-out infinite alternate;
+  box-shadow: 0 0 12px #ff5e36;
+}
+@keyframes scanLine {
+  0% { top: 5%; }
+  100% { top: 95%; }
+}
+
+/* Loading status */
+.loading-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
   margin-top: 1rem;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  padding: 0.75rem;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease;
 }
-.item {
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 94, 54, 0.2);
+  border-radius: 50%;
+  border-top-color: #ff5e36;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Bill Card */
+.bill-card {
+  background: #ffffff;
+  padding: 1.75rem;
+  border-radius: 24px;
+  margin-top: 1.25rem;
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f1f5f9;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.bill-header {
   display: flex;
   justify-content: space-between;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid #eee;
+  align-items: center;
+  margin-bottom: 1.25rem;
 }
-.total {
-  font-size: 1.6rem;
+.bill-title {
+  font-size: 1.15rem;
   font-weight: 700;
-  color: #ff6b35;
-  margin-top: 1rem;
 }
-.low { color: #e53e3e; font-weight: 600; margin: 0.5rem 0; }
-.error-box {
-  background: #fff5f5;
-  border: 1px solid #fed7d7;
-  color: #c53030;
-  padding: 1.25rem;
-  border-radius: 12px;
-  margin: 1rem 0;
+.guide-text {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+  background: #f8fafc;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
 }
-.error-code {
-  font-family: monospace;
-  background: #fed7d7;
-  padding: 2px 6px;
-  border-radius: 4px;
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+.item-desc {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.item-amt {
+  font-weight: 600;
+}
+.total-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 1.25rem 0;
+  padding-top: 0.5rem;
+}
+.total-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #64748b;
+}
+.total-num {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ff5e36;
+  letter-spacing: -0.02em;
+}
+
+.confirm-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  margin: 1.25rem 0;
+  cursor: pointer;
+}
+.confirm-wrapper input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  margin-top: 2px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.confirm-wrapper input[type="checkbox"]:checked {
+  background: #ff5e36;
+  border-color: #ff5e36;
+}
+.confirm-wrapper input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.confirm-text {
   font-size: 0.85rem;
+  color: #334155;
+  font-weight: 500;
+  line-height: 1.4;
 }
-.loading {
-  color: #666;
-  font-style: italic;
+
+.action-row {
+  display: flex;
+  gap: 0.75rem;
+}
+.action-row .btn {
+  flex: 1;
+}
+
+.wait-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+  color: #92400e;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.error-card {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 20px;
+  padding: 1.5rem;
+  text-align: center;
   margin: 1rem 0;
 }
+.error-title {
+  color: #991b1b;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+.error-text {
+  color: #b91c1c;
+  font-size: 0.88rem;
+  margin-bottom: 1rem;
+}
+.error-badge {
+  display: inline-block;
+  background: #fee2e2;
+  color: #991b1b;
+  font-family: monospace;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-bottom: 1.25rem;
+}
+.turnstile-slot { display: flex; justify-content: center; min-height: 65px; margin-bottom: 0.75rem; }
 </style>
 </head>
-<body>
-<h1>🍛 AFRC Self Service</h1>
-<p class="subtitle">Place your plate under the camera and capture. Prices come from the menu, not the AI.</p>
-
-<div class="camera-box">
-  <video id="video" autoplay playsinline width="640" height="480" style="display:none;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
-  <div id="controls">
-    <button id="startCam" class="btn">📷 Start Camera</button>
-    <button id="capture" class="btn" disabled>📸 Capture Plate</button>
-  </div>
-  <div id="status" class="loading" style="display:none;">Processing photo...</div>
+<body style="max-width: 100%; width: 100%; margin: 0 auto; padding: 1rem 1rem 5rem; box-sizing: border-box;">
+<div class="camera-card">
+<div class="video-container" id="videoBox">
+<div class="camera-placeholder" id="camPlaceholder">
+<svg viewbox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+<span>Ready to scan plate</span>
 </div>
-
+<video autoplay="" id="video" playsinline="" style="display:none;"></video>
+<canvas id="canvas" style="display:none;"></canvas>
+</div>
+<div class="turnstile-slot" id="recognize-turnstile"></div>
+<div class="controls-group" id="controls">
+<button class="btn btn-secondary" id="startCam">
+<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="12" r="4"></circle></svg>
+      Start Camera
+    </button>
+<button class="btn" disabled="" id="capture">
+<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+      Capture Plate
+    </button>
+</div>
+<div class="loading-box" id="status" style="display:none;">
+<div class="spinner"></div>
+<span>Analyzing plate with AI...</span>
+</div>
+</div>
 <div id="result"></div>
-
 <script>
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
@@ -117,8 +361,22 @@ const startBtn = document.getElementById('startCam');
 const capBtn = document.getElementById('capture');
 const result = document.getElementById('result');
 const status = document.getElementById('status');
+const videoBox = document.getElementById('videoBox');
+const camPlaceholder = document.getElementById('camPlaceholder');
 
 let stream;
+let recognizeWidgetId;
+window.onRecognizeTurnstileLoad = () => {
+  recognizeWidgetId = window.turnstile.render("#recognize-turnstile", {
+    sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
+    action: "recognize",
+  });
+};
+function resetRecognizeTurnstile() {
+  if (recognizeWidgetId !== undefined && window.turnstile) {
+    window.turnstile.reset(recognizeWidgetId);
+  }
+}
 
 startBtn.onclick = async () => {
   try {
@@ -127,32 +385,37 @@ startBtn.onclick = async () => {
       audio: false
     });
     video.srcObject = stream;
+    camPlaceholder.style.display = "none";
     video.style.display = "block";
+    videoBox.classList.add("scanner-active");
     capBtn.disabled = false;
     startBtn.disabled = true;
     result.innerHTML = "";
   } catch (e) {
-    showError("CAMERA_DENIED", "Camera access is required. Please allow camera permission and try again.");
+    showError("CAMERA_DENIED", "Camera access is required. Please allow camera permissions and try again.");
   }
 };
 
 capBtn.onclick = async () => {
-  status.style.display = "block";
+  status.style.display = "inline-flex";
   capBtn.disabled = true;
   result.innerHTML = "";
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
   canvas.getContext('2d').drawImage(video, 0, 0);
   canvas.style.display = "block";
+  video.style.display = "none";
 
   canvas.toBlob(async (blob) => {
     if (!blob) {
-      showError("UPLOAD_FAILED", "Could not capture photo. Please try again.");
+      showError("UPLOAD_FAILED", "Could not capture plate image. Please try again.");
+      resetRecognizeTurnstile();
       return;
     }
     const form = new FormData();
     form.append("file", blob, "plate.jpg");
+    form.append("cf-turnstile-response", (window.turnstile && window.turnstile.getResponse(recognizeWidgetId)) || "");
 
     try {
       const res = await fetch("/api/recognize", { method: "POST", body: form });
@@ -160,28 +423,33 @@ capBtn.onclick = async () => {
 
       if (!res.ok) {
         const detail = data.detail || data;
-        showError(detail.error_code || "UNKNOWN", detail.message || "Something went wrong. Please retake the photo.");
+        const message = typeof detail === "string" ? detail : (detail.message || "Something went wrong. Please retake the photo.");
+        showError(typeof detail === "string" ? "FORBIDDEN" : (detail.error_code || "UNKNOWN"), message);
         return;
       }
 
       showBill(data);
     } catch (e) {
-      showError("NETWORK_ERROR", "Could not reach the server. Please check your connection and try again.");
+      showError("NETWORK_ERROR", "Could not connect to recognition server. Please try again.");
     } finally {
       status.style.display = "none";
       capBtn.disabled = false;
+      resetRecognizeTurnstile();
     }
   }, "image/jpeg", 0.85);
 };
 
 function showError(code, message) {
   result.innerHTML = `
-    <div class="error-box">
-      <strong>Please retake photo</strong><br>
-      ${message}<br>
-      <span class="error-code">${code}</span>
-      <br><br>
-      <button class="btn" onclick="location.reload()">📸 Retake Photo</button>
+    <div class="error-card">
+      <div class="error-title">Retake Required</div>
+      <p class="error-text">${message}</p>
+      <div class="error-badge">CODE: ${code}</div>
+      <div>
+        <button class="btn btn-secondary" onclick="location.reload()">
+          🔄 Try Again
+        </button>
+      </div>
     </div>
   `;
   status.style.display = "none";
@@ -195,23 +463,46 @@ function esc(value) {
 }
 
 function showBill(data) {
-  let html = `<div class="bill"><h2>Your Bill</h2>`;
-  html += `<p class="note">Check the items and quantities below. Tick the box only if the list is correct, then pay. If something is wrong, tap Need Cashier and wait at the counter.</p>`;
+  let html = `
+    <div class="bill-card">
+      <div class="bill-header">
+        <span class="bill-title">Detected Items</span>
+        <span style="font-size: 0.85rem; color:#64748b; font-weight:500;">Ref: #${esc(data.session_id ? data.session_id.slice(0,6) : '')}</span>
+      </div>
+      <p class="guide-text">Verify your items and quantities below. If accurate, check the confirmation box and proceed to pay.</p>
+  `;
+  
   data.items.forEach(i => {
-    const pieces = i.piece_count ? ` <small>(${esc(i.piece_count)} pieces)</small>` : "";
-    html += `<div class="item"><span>${esc(i.name)} × ${esc(i.quantity)}${pieces}</span><span>RM ${Number(i.subtotal).toFixed(2)}</span></div>`;
+    const pieces = i.piece_count ? `<small style="color:#64748b; font-weight:normal;"> (${esc(i.piece_count)} pcs)</small>` : "";
+    html += `
+      <div class="item-row">
+        <span class="item-desc">${esc(i.name)} × ${esc(i.quantity)}${pieces}</span>
+        <span class="item-amt">RM ${Number(i.subtotal).toFixed(2)}</span>
+      </div>`;
   });
-  html += `<div class="total">Total: RM ${Number(data.total).toFixed(2)}</div>`;
-  html += `<label class="confirm-row"><input id="confirmItems" type="checkbox"> <span>I confirmed that the list of items and quantities are correct</span></label>`;
-  html += `<div class="actions">`;
-  html += `<button id="needCashier" class="btn btn-secondary" type="button">Need Cashier</button>`;
-  html += `<button id="payNow" class="btn" type="button">PAY NOW</button>`;
-  html += `</div><div id="cashierWait"></div></div>`;
+
+  html += `
+      <div class="total-box">
+        <span class="total-title">Total</span>
+        <span class="total-num">RM ${Number(data.total).toFixed(2)}</span>
+      </div>
+      <label class="confirm-wrapper">
+        <input id="confirmItems" type="checkbox">
+        <span class="confirm-text">I confirm that all listed dishes and quantities on my plate are accurate.</span>
+      </label>
+      <div class="action-row">
+        <button id="needCashier" class="btn btn-secondary" type="button">Help / Cashier</button>
+        <button id="payNow" class="btn" type="button" disabled>Pay Now</button>
+      </div>
+      <div id="cashierWait"></div>
+    </div>
+  `;
   result.innerHTML = html;
 
   const confirmBox = document.getElementById("confirmItems");
   const payBtn = document.getElementById("payNow");
   const cashierBtn = document.getElementById("needCashier");
+
   const sync = () => {
     const confirmed = confirmBox.checked;
     payBtn.disabled = !confirmed;
@@ -224,20 +515,29 @@ function showBill(data) {
     if (!confirmBox.checked) return;
     location.href = "/pay?session=" + encodeURIComponent(data.session_id);
   };
+
   cashierBtn.onclick = async () => {
     if (confirmBox.checked) return;
     cashierBtn.disabled = true;
+    cashierBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-color:rgba(0,0,0,0.1);border-top-color:#333;"></span> Calling...';
     const res = await fetch("/api/sessions/" + encodeURIComponent(data.session_id) + "/need-cashier", { method: "POST" });
     if (!res.ok) {
       cashierBtn.disabled = false;
-      document.getElementById("cashierWait").innerHTML = `<p class="low">Could not call a cashier. Please try again.</p>`;
+      cashierBtn.textContent = 'Help / Cashier';
+      document.getElementById("cashierWait").innerHTML = `<p style="color:#ef4444; font-size:0.85rem; margin-top:0.75rem;">Failed to notify cashier. Please approach the counter directly.</p>`;
       return;
     }
     confirmBox.disabled = true;
     payBtn.disabled = true;
-    document.getElementById("cashierWait").innerHTML = `<div class="wait-note"><strong>A cashier is on the way.</strong><br>Please stay at the counter. They will check this plate with you.</div>`;
+    cashierBtn.textContent = 'Help Requested';
+    document.getElementById("cashierWait").innerHTML = `
+      <div class="wait-alert">
+        <span style="font-size:1.2rem;">🙋</span>
+        <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
+      </div>`;
   };
 }
 </script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onRecognizeTurnstileLoad&render=explicit" async defer></script>
 </body>
 </html>

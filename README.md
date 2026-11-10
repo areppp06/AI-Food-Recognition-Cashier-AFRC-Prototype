@@ -20,17 +20,27 @@
 ## Tech Stack
 - Backend: Python + FastAPI + SQLite
 - Frontend: Vanilla HTML/JS (camera via getUserMedia)
-- AI: xAI Grok, OpenRouter, OpenAI Vision, or Google Gemini (configurable via .env)
+- AI: xAI Grok, OpenRouter, OpenAI Vision, or Google Gemini (configurable via `env/.env`)
 
-## Quick Start
+## Quick Start (One-Command Setup)
 
-1. Clone the repo
-2. `cd AI-Food-Recognition-Cashier-AFRC-Prototype`
-3. `python -m venv venv && source venv/bin/activate` (or venv\Scripts\activate on Windows)
-4. `pip install -r requirements.txt`
-5. Copy `.env.example` to `.env` and add your API key (optional for mock mode)
-6. `uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000`
-7. Open http://localhost:8000
+1. Clone the repo and enter the directory:
+   ```bash
+   git clone https://github.com/areppp06/AI-Food-Recognition-Cashier-AFRC-Prototype.git
+   cd AI-Food-Recognition-Cashier-AFRC-Prototype
+   ```
+2. Run the installer / launcher:
+   ```bash
+   bash install.sh
+   ```
+   - On first run, `install.sh` interactively prompts you to configure all environment variables for `env/.env` and `env/curlec.env` (or you can re-run prompts anytime with `bash install.sh --configure`), creates the Python virtual environment, installs `requirements.txt`, and starts the server on `http://0.0.0.0:8000`.
+
+### Manual Setup
+1. `python3 -m venv venv && source venv/bin/activate`
+2. `pip install -r requirements.txt`
+3. Copy `env/.env.example` to `env/.env` and `env/curlec.env.example` to `env/curlec.env` and add your keys
+4. `uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000`
+5. Open http://localhost:8000
 
 ### Default Credentials
 - Admin / Cashier PIN: `1234` (change immediately in admin panel)
@@ -51,12 +61,17 @@
 │   ├── db.py            # SQLite + models
 │   ├── schemas.py       # Pydantic models
 │   └── ai_service.py    # Vision AI wrapper
+├── env/
+│   ├── .env.example
+│   └── curlec.env.example
 ├── frontend/
 │   ├── index.html       # Customer flow
 │   ├── admin.html
-│   └── cashier.html
+│   ├── cashier.html
+│   ├── pay.html
+│   └── success.html
+├── install.sh           # One-command interactive setup & launcher
 ├── requirements.txt
-├── .env.example
 └── README.md
 ```
 

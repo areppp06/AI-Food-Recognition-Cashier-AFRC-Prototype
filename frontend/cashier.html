@@ -15,9 +15,22 @@ input, button { padding: 10px; margin: 5px; font-size: 1rem; }
 <input id="session" placeholder="Session ID from customer screen">
 <button onclick="loadSession()">Load</button>
 <div id="corrections"></div>
+<div id="verify-turnstile" style="margin: 1rem 0;"></div>
 <button onclick="verify()">Confirm & Recalculate</button>
 <div id="final"></div>
 <script>
+let verifyWidgetId;
+window.onVerifyTurnstileLoad = () => {
+  verifyWidgetId = window.turnstile.render("#verify-turnstile", {
+    sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
+    action: "verify",
+  });
+};
+function resetVerifyTurnstile() {
+  if (verifyWidgetId !== undefined && window.turnstile) {
+    window.turnstile.reset(verifyWidgetId);
+  }
+}
 async function loadSession() {
   // In full version, fetch session. For proto, show editable common items
   document.getElementById("corrections").innerHTML = `
@@ -38,15 +51,25 @@ async function verify() {
     {name: "Ikan bawal (per piece)", quantity: parseFloat(document.getElementById("q-ikan").value)}
   ].filter(c => c.quantity > 0);
   
-  const res = await fetch("/api/verify", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({ session_id: session, pin, corrections })
-  });
-  const data = await res.json();
-  if (data.detail) { alert(data.detail); return; }
-  document.getElementById("final").innerHTML = `<h2>Verified Total: RM ${data.total.toFixed(2)}</h2>`;
+  try {
+    const res = await fetch("/api/verify", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        session_id: session,
+        pin,
+        corrections,
+        "cf-turnstile-response": (window.turnstile && window.turnstile.getResponse(verifyWidgetId)) || ""
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || data.detail) { alert(data.detail || "Verification failed."); return; }
+    document.getElementById("final").innerHTML = `<h2>Verified Total: RM ${data.total.toFixed(2)}</h2>`;
+  } finally {
+    resetVerifyTurnstile();
+  }
 }
 </script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onVerifyTurnstileLoad&render=explicit" async defer></script>
 </body>
 </html>

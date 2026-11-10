@@ -1,13 +1,17 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from typing import List
+from typing import Annotated, List
 import math
+import os
 import uuid
 import json
+import httpx
+import razorpay
 from datetime import datetime
+from urllib.parse import quote
 
 from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill
 from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
@@ -61,6 +65,43 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client and request.client.host:
+        return request.client.host
+    return ""
+
+def _require_turnstile(token: str, expected_action: str, request: Request) -> None:
+    hostnames = {
+        hostname.strip()
+        for hostname in os.getenv("TURNSTILE_HOSTNAMES", "").split(",")
+        if hostname.strip()
+    }
+    secret = os.getenv("TURNSTILE_SECRET", "")
+    if not isinstance(token, str) or not token or len(token) > 2048 or not hostnames or not secret:
+        raise HTTPException(status_code=403, detail="forbidden")
+    try:
+        response = httpx.post(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data={"secret": secret, "response": token, "remoteip": _client_ip(request)},
+            timeout=10.0,
+        )
+        if response.status_code < 200 or response.status_code >= 300:
+            raise HTTPException(status_code=403, detail="forbidden")
+        result = response.json()
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=403, detail="forbidden")
+    if (
+        result.get("success") is not True
+        or result.get("action") != expected_action
+        or result.get("hostname") not in hostnames
+    ):
+        raise HTTPException(status_code=403, detail="forbidden")
 
 @app.on_event("startup")
 def startup():
@@ -143,7 +184,13 @@ def delete_menu_item(dish_id: int, db: Session = Depends(get_db)):
     return {"status": "deleted", "id": dish_id}
 
 @app.post("/api/recognize")
-async def recognize(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def recognize(
+    request: Request,
+    file: UploadFile = File(...),
+    cf_turnstile_response: Annotated[str, Form(alias="cf-turnstile-response")] = "",
+    db: Session = Depends(get_db),
+):
+    _require_turnstile(cf_turnstile_response, "recognize", request)
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail=ErrorResponse(
             error_code="INVALID_IMAGE",
@@ -258,25 +305,165 @@ def need_cashier(session_id: str, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "needs_cashier"}
 
+def _curlec_client():
+    key_id = os.getenv("CURLEC_KEY_ID", "").strip()
+    key_secret = os.getenv("CURLEC_KEY_SECRET", "").strip()
+    if not key_id or not key_secret:
+        raise HTTPException(status_code=503, detail="Payment gateway is not configured")
+    return razorpay.Client(auth=(key_id, key_secret)), key_id
+
+def _amount_sen(bill: SessionBill) -> int:
+    return int(round(float(_bill_payload(bill)["total"]) * 100))
+
+def _checkout_payload(bill: SessionBill, key_id: str) -> dict:
+    return {
+        "key_id": key_id,
+        "order_id": bill.curlec_order_id,
+        "amount": _amount_sen(bill),
+        "currency": "MYR",
+        "session_id": bill.id,
+    }
+
+def _create_curlec_order(bill: SessionBill, db: Session) -> dict:
+    client, key_id = _curlec_client()
+    amount = _amount_sen(bill)
+    if amount < 1:
+        raise HTTPException(status_code=400, detail="This bill has nothing to pay")
+    if bill.curlec_order_id and bill.status == "pending":
+        try:
+            existing = client.order.fetch(bill.curlec_order_id)
+        except Exception:
+            existing = None
+        if (
+            existing
+            and int(existing.get("amount") or 0) == amount
+            and existing.get("currency") == "MYR"
+            and existing.get("status") in ("created", "attempted")
+        ):
+            return _checkout_payload(bill, key_id)
+    try:
+        order = client.order.create({
+            "amount": amount,
+            "currency": "MYR",
+            "receipt": bill.id[:40],
+            "notes": {"session_id": bill.id},
+        })
+    except Exception:
+        raise HTTPException(status_code=502, detail="Could not start the payment. Please try again.")
+    bill.curlec_order_id = order["id"]
+    bill.status = "pending"
+    db.commit()
+    return _checkout_payload(bill, key_id)
+
+def _record_captured_payment(bill: SessionBill, payment: dict, db: Session) -> bool:
+    if (
+        str(payment.get("status")) != "captured"
+        or str(payment.get("currency")) != "MYR"
+        or int(payment.get("amount") or 0) != _amount_sen(bill)
+        or str(payment.get("order_id") or "") != (bill.curlec_order_id or "")
+    ):
+        return False
+    bill.curlec_payment_id = str(payment.get("id") or "")
+    bill.status = "paid"
+    db.commit()
+    return True
+
+def _verify_and_capture(order_id: str, payment_id: str, signature: str, db: Session):
+    order_id = str(order_id or "").strip()
+    payment_id = str(payment_id or "").strip()
+    signature = str(signature or "").strip()
+    bill = db.query(SessionBill).filter(SessionBill.curlec_order_id == order_id).first()
+    if not bill or order_id != (bill.curlec_order_id or ""):
+        return None, "unpaid"
+    if bill.status == "paid":
+        return bill, "paid"
+    client, _key_id = _curlec_client()
+    try:
+        client.utility.verify_payment_signature({
+            "razorpay_order_id": bill.curlec_order_id,
+            "razorpay_payment_id": payment_id,
+            "razorpay_signature": signature,
+        })
+        payment = client.payment.fetch(payment_id)
+    except Exception:
+        return bill, "unpaid"
+    if _record_captured_payment(bill, payment, db):
+        return bill, "paid"
+    return bill, "unpaid"
+
 @app.post("/api/pay")
-def pay(payload: dict, db: Session = Depends(get_db)):
+def pay(payload: dict, request: Request, db: Session = Depends(get_db)):
+    _require_turnstile(str(payload.get("cf-turnstile-response") or ""), "pay", request)
     session_id = str(payload.get("session_id") or "").strip()
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
     if bill.status == "needs_cashier":
         raise HTTPException(status_code=409, detail="A cashier is checking this bill")
+    if bill.status == "paid":
+        return {"status": "paid", "session_id": bill.id}
     email = str(payload.get("email") or "").strip()
     if email and ("@" not in email or "." not in email.split("@")[-1]):
         raise HTTPException(status_code=400, detail="Enter a valid email or leave it blank")
-    if bill.status != "paid":
-        bill.status = "paid"
-        bill.receipt_email = email
-        db.commit()
+    bill.receipt_email = email
+    db.commit()
+    checkout = _create_curlec_order(bill, db)
+    checkout["status"] = "pending"
+    return checkout
+
+@app.post("/api/pay/confirm")
+def pay_confirm(payload: dict, db: Session = Depends(get_db)):
+    bill, state = _verify_and_capture(
+        payload.get("razorpay_order_id"),
+        payload.get("razorpay_payment_id"),
+        payload.get("razorpay_signature"),
+        db,
+    )
+    if state != "paid" or not bill:
+        raise HTTPException(status_code=402, detail="Payment was not completed")
     return {"status": "paid", "session_id": bill.id}
 
+@app.post("/api/pay/callback")
+async def pay_callback(request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    bill, state = _verify_and_capture(
+        form.get("razorpay_order_id"),
+        form.get("razorpay_payment_id"),
+        form.get("razorpay_signature"),
+        db,
+    )
+    session_id = bill.id if bill else ""
+    if state == "paid" and session_id:
+        return RedirectResponse(f"/payment/success?session={quote(session_id)}", status_code=303)
+    target = "/pay?payment=failed"
+    if session_id:
+        target = f"/pay?session={quote(session_id)}&payment=failed"
+    return RedirectResponse(target, status_code=303)
+
+@app.post("/api/curlec/webhook")
+async def curlec_webhook(request: Request, db: Session = Depends(get_db)):
+    body = await request.body()
+    signature = request.headers.get("x-razorpay-signature", "")
+    webhook_secret = os.getenv("CURLEC_WEBHOOK_SECRET", "").strip()
+    if not webhook_secret:
+        raise HTTPException(status_code=503, detail="Payment webhook is not configured")
+    client, _key_id = _curlec_client()
+    try:
+        client.utility.verify_webhook_signature(body.decode("utf-8"), signature, webhook_secret)
+        event = json.loads(body)
+    except Exception:
+        raise HTTPException(status_code=400, detail="invalid signature")
+    if event.get("event") in ("payment.captured", "order.paid"):
+        payment = ((event.get("payload") or {}).get("payment") or {}).get("entity") or {}
+        order_id = str(payment.get("order_id") or "")
+        bill = db.query(SessionBill).filter(SessionBill.curlec_order_id == order_id).first()
+        if bill and bill.status != "paid" and str(payment.get("status")) == "captured":
+            _record_captured_payment(bill, payment, db)
+    return {"status": "ok"}
+
 @app.post("/api/verify")
-def verify(req: VerifyRequest, db: Session = Depends(get_db)):
+def verify(req: VerifyRequest, request: Request, db: Session = Depends(get_db)):
+    _require_turnstile(req.cf_turnstile_response, "verify", request)
     cashier = db.query(Cashier).filter(Cashier.pin == req.pin, Cashier.active == True).first()
     if not cashier:
         raise HTTPException(401, "Invalid PIN")

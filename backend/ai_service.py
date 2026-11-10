@@ -5,11 +5,15 @@ import logging
 import re
 from pathlib import Path
 from typing import List, Optional, Union
+from dotenv import load_dotenv
 from openai import OpenAI
 from google import genai
 from google.genai import types
 from .schemas import AIItem, AIResponse
 import httpx
+
+ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(ROOT / "env" / ".env")
 
 AI_PROVIDER = os.getenv("AI_PROVIDER", "grok").strip().lower()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -279,7 +283,7 @@ async def recognize_food(image_bytes: bytes, available_menu: List[dict]) -> List
             if not openrouter_client:
                 raise RecognitionError(
                     "AI_SERVICE_ERROR",
-                    "OpenRouter is selected but OPENROUTER_API_KEY is missing. Add it to .env.",
+                    "OpenRouter is selected but OPENROUTER_API_KEY is missing. Add it to env/.env.",
                 )
             return _recognize_with_openai_compatible(
                 openrouter_client,
@@ -294,7 +298,7 @@ async def recognize_food(image_bytes: bytes, available_menu: List[dict]) -> List
             if not xai_client:
                 raise RecognitionError(
                     "AI_SERVICE_ERROR",
-                    "Grok is selected but XAI_API_KEY is missing. Add it to .env.",
+                    "Grok is selected but XAI_API_KEY is missing. Add it to env/.env.",
                 )
             return _recognize_with_openai_compatible(
                 xai_client,

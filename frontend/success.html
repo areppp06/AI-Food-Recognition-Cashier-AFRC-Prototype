@@ -16,8 +16,8 @@ a { color: #ff6b35; }
 </head>
 <body>
 <div class="card">
-  <h1>Payment successful</h1>
-  <p>Thank you.</p>
+  <h1 id="heading">Checking payment</h1>
+  <p id="message"></p>
   <p id="total" class="total"></p>
   <p id="emailNote" class="note"></p>
   <p><a href="/">Start another plate</a></p>
@@ -29,6 +29,13 @@ async function load() {
   const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId));
   if (!res.ok) return;
   const data = await res.json();
+  if (data.status !== "paid") {
+    document.getElementById("heading").textContent = "Payment not complete";
+    document.getElementById("message").textContent = "This bill is not paid yet. Return to the payment page to try again.";
+    return;
+  }
+  document.getElementById("heading").textContent = "Payment successful";
+  document.getElementById("message").textContent = "Thank you.";
   document.getElementById("total").textContent = "RM " + Number(data.total).toFixed(2);
   if (data.receipt_email) {
     document.getElementById("emailNote").textContent = "Receipt address saved: " + data.receipt_email + ". Email sending will be connected later.";
