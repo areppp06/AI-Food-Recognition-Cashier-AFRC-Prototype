@@ -51,8 +51,16 @@ class SessionBill(Base):
     curlec_order_id = Column(String, default="")
     curlec_payment_id = Column(String, default="")
     image_key = Column(String, default="")
+    retake_count = Column(Integer, default=0)
+    client_token = Column(String, default="", index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
     paid_at = Column(DateTime, nullable=True)
+
+class ClientCooldown(Base):
+    __tablename__ = "client_cooldowns"
+    client_key = Column(String, primary_key=True)
+    cooldown_until = Column(DateTime)
 
 def format_bill_number(seq: int) -> str:
     seq = max(1, int(seq))
@@ -103,6 +111,12 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN curlec_payment_id TEXT DEFAULT ''")
         if session_columns and "image_key" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN image_key TEXT DEFAULT ''")
+        if session_columns and "retake_count" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN retake_count INTEGER DEFAULT 0")
+        if session_columns and "client_token" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN client_token TEXT DEFAULT ''")
+        if session_columns and "updated_at" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN updated_at DATETIME")
         if session_columns and "paid_at" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN paid_at DATETIME")
     db = SessionLocal()

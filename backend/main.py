@@ -10,15 +10,18 @@ import uuid
 import json
 import httpx
 import razorpay
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
 
-from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, next_bill_number
+from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, next_bill_number
 from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
+MAX_RETAKES = 4
+COOLDOWN_MINUTES = 25
+BILL_EXPIRY_MINUTES = int(os.getenv("BILL_EXPIRY_MINUTES", "15"))
 app = FastAPI(title="AFRC Prototype", version="1.0")
 
 def _r2_config():
@@ -126,6 +129,67 @@ def _client_ip(request: Request) -> str:
     if request.client and request.client.host:
         return request.client.host
     return ""
+
+def _get_client_token(request: Request, explicit: str = "") -> str:
+    token = (
+        explicit.strip()
+        or request.cookies.get("afrc_client_id", "").strip()
+        or request.headers.get("x-afrc-client", "").strip()
+    )
+    if token and len(token) <= 128:
+        return token
+    return ""
+
+def _expire_stale_bills(db: Session) -> None:
+    cutoff = datetime.utcnow() - timedelta(minutes=BILL_EXPIRY_MINUTES)
+    stale = (
+        db.query(SessionBill)
+        .filter(SessionBill.status.in_(("open", "pending")))
+        .all()
+    )
+    changed = False
+    for bill in stale:
+        last_touch = bill.updated_at or bill.created_at
+        if last_touch and last_touch < cutoff:
+            bill.status = "void"
+            changed = True
+    if changed:
+        db.commit()
+
+def _check_cooldown(request: Request, client_token: str, db: Session) -> int:
+    now = datetime.utcnow()
+    keys = []
+    if client_token:
+        keys.append(f"token:{client_token}")
+    ip = _client_ip(request)
+    if ip:
+        keys.append(f"ip:{ip}")
+    if not keys:
+        return 0
+    rows = db.query(ClientCooldown).filter(ClientCooldown.client_key.in_(keys)).all()
+    max_remaining = 0
+    for r in rows:
+        if r.cooldown_until and r.cooldown_until > now:
+            rem = math.ceil((r.cooldown_until - now).total_seconds() / 60.0)
+            if rem > max_remaining:
+                max_remaining = rem
+    return max_remaining
+
+def _set_cooldown(request: Request, client_token: str, db: Session) -> None:
+    until = datetime.utcnow() + timedelta(minutes=COOLDOWN_MINUTES)
+    keys = []
+    if client_token:
+        keys.append(f"token:{client_token}")
+    ip = _client_ip(request)
+    if ip:
+        keys.append(f"ip:{ip}")
+    for k in keys:
+        row = db.query(ClientCooldown).filter(ClientCooldown.client_key == k).first()
+        if row:
+            row.cooldown_until = until
+        else:
+            db.add(ClientCooldown(client_key=k, cooldown_until=until))
+    db.commit()
 
 def _require_turnstile(token: str, expected_action: str, request: Request) -> None:
     hostnames = {
@@ -256,14 +320,97 @@ def delete_menu_item(dish_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "deleted", "id": dish_id}
 
+@app.get("/api/client-state")
+def get_client_state(
+    request: Request,
+    session_id: str = "",
+    client_token: str = "",
+    db: Session = Depends(get_db),
+):
+    _expire_stale_bills(db)
+    c_token = _get_client_token(request, client_token) or str(uuid.uuid4())
+    rem_mins = _check_cooldown(request, c_token, db)
+
+    active_bill = None
+    candidate_sid = (
+        session_id.strip()
+        or request.cookies.get("afrc_active_session", "").strip()
+    )
+    if candidate_sid:
+        b = db.query(SessionBill).filter(SessionBill.id == candidate_sid).first()
+        if b and b.status in ("open", "pending", "needs_cashier"):
+            active_bill = b
+    if not active_bill and c_token:
+        active_bill = (
+            db.query(SessionBill)
+            .filter(
+                SessionBill.client_token == c_token,
+                SessionBill.status.in_(("open", "pending", "needs_cashier")),
+            )
+            .order_by(SessionBill.created_at.desc())
+            .first()
+        )
+
+    return {
+        "client_token": c_token,
+        "cooldown_active": rem_mins > 0,
+        "cooldown_minutes": rem_mins,
+        "active_bill": _bill_payload(active_bill) if active_bill else None,
+    }
+
 @app.post("/api/recognize")
 async def recognize(
     request: Request,
     file: UploadFile = File(...),
     cf_turnstile_response: Annotated[str, Form(alias="cf-turnstile-response")] = "",
+    retake_session_id: Annotated[str, Form()] = "",
+    client_token: Annotated[str, Form()] = "",
     db: Session = Depends(get_db),
 ):
     _require_turnstile(cf_turnstile_response, "recognize", request)
+    _expire_stale_bills(db)
+
+    c_token = _get_client_token(request, client_token)
+    rem_mins = _check_cooldown(request, c_token, db)
+    if rem_mins > 0:
+        raise HTTPException(status_code=429, detail=ErrorResponse(
+            error_code="RATE_LIMIT",
+            message=f"Your rate limit hit, try again after {rem_mins}min."
+        ).dict())
+
+    retake_sid = retake_session_id.strip()
+    target_bill = None
+    if retake_sid:
+        target_bill = db.query(SessionBill).filter(SessionBill.id == retake_sid).first()
+        if target_bill and target_bill.status in ("paid", "void", "cancelled"):
+            target_bill = None
+
+    if not target_bill and c_token:
+        existing_open = (
+            db.query(SessionBill)
+            .filter(
+                SessionBill.client_token == c_token,
+                SessionBill.status.in_(("open", "pending", "needs_cashier")),
+            )
+            .order_by(SessionBill.created_at.desc())
+            .first()
+        )
+        if existing_open:
+            raise HTTPException(status_code=409, detail=ErrorResponse(
+                error_code="PENDING_BILL",
+                message=f"You have a pending bill (#{existing_open.bill_number}). Please pay your pending bill first."
+            ).dict())
+
+    if target_bill and (target_bill.retake_count or 0) >= MAX_RETAKES:
+        target_bill.status = "void"
+        target_bill.updated_at = datetime.utcnow()
+        db.commit()
+        _set_cooldown(request, c_token or target_bill.client_token or "", db)
+        raise HTTPException(status_code=429, detail=ErrorResponse(
+            error_code="RATE_LIMIT",
+            message=f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min."
+        ).dict())
+
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail=ErrorResponse(
             error_code="INVALID_IMAGE",
@@ -284,7 +431,7 @@ async def recognize(
         ).dict())
 
     available = [_dish_json(d) for d in db.query(Dish).filter(Dish.available == True).all()]
-    # The menu is now a plain list. End the read so SQLite is free while Grok runs.
+    # The menu is now a plain list. End the read so Grok runs without holding a transaction.
     db.rollback()
 
     try:
@@ -337,26 +484,59 @@ async def recognize(
             message="Recognized items are not on today's menu. Please retake or ask staff."
         ).dict())
 
-    session_id = str(uuid.uuid4())
-    bill_number = next_bill_number(db)
-    r2_key = f"plates/{bill_number}_{session_id}.jpg"
-    uploaded_to_r2 = await _upload_plate_to_r2(r2_key, image_bytes)
-    if not uploaded_to_r2:
-        r2_key = ""
+    # Re-fetch target_bill after rollback if this is a retake (Option B: reuse same bill)
+    if retake_sid:
+        target_bill = db.query(SessionBill).filter(SessionBill.id == retake_sid).first()
+        if target_bill and target_bill.status in ("paid", "void", "cancelled"):
+            target_bill = None
+
+    if target_bill:
+        session_id = target_bill.id
+        bill_number = target_bill.bill_number or next_bill_number(db)
+        r2_key = f"plates/{bill_number}_{session_id}.jpg"
+        uploaded_to_r2 = await _upload_plate_to_r2(r2_key, image_bytes)
+        if not uploaded_to_r2:
+            r2_key = ""
         try:
             UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
             (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
         except OSError:
             pass
-    session = SessionBill(
-        id=session_id,
-        bill_number=bill_number,
-        image_key=r2_key,
-        raw_ai=json.dumps([i.dict() for i in ai_items]),
-        final_bill=json.dumps([b.dict() for b in bill_items]),
-    )
-    db.add(session)
-    db.commit()
+        target_bill.bill_number = bill_number
+        target_bill.image_key = r2_key or target_bill.image_key
+        target_bill.raw_ai = json.dumps([i.dict() for i in ai_items])
+        target_bill.final_bill = json.dumps([b.dict() for b in bill_items])
+        target_bill.retake_count = (target_bill.retake_count or 0) + 1
+        target_bill.status = "open"
+        target_bill.curlec_order_id = ""
+        target_bill.updated_at = datetime.utcnow()
+        if c_token:
+            target_bill.client_token = c_token
+        db.commit()
+    else:
+        session_id = str(uuid.uuid4())
+        bill_number = next_bill_number(db)
+        r2_key = f"plates/{bill_number}_{session_id}.jpg"
+        uploaded_to_r2 = await _upload_plate_to_r2(r2_key, image_bytes)
+        if not uploaded_to_r2:
+            r2_key = ""
+            try:
+                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
+            except OSError:
+                pass
+        session = SessionBill(
+            id=session_id,
+            bill_number=bill_number,
+            image_key=r2_key,
+            raw_ai=json.dumps([i.dict() for i in ai_items]),
+            final_bill=json.dumps([b.dict() for b in bill_items]),
+            retake_count=0,
+            client_token=c_token,
+            updated_at=datetime.utcnow(),
+        )
+        db.add(session)
+        db.commit()
 
     return BillResponse(
         items=bill_items,
@@ -369,22 +549,28 @@ def _bill_payload(session: SessionBill) -> dict:
     items = json.loads(session.final_bill or "[]")
     total = round(sum(float(item.get("subtotal") or 0) for item in items), 2)
     img_path = UPLOAD_DIR / f"{session.id}.jpg"
+    retakes_used = int(session.retake_count or 0)
     return {
         "session_id": session.id,
         "bill_number": session.bill_number or f"AAA-0001",
         "items": items,
         "total": total,
         "status": session.status or "open",
+        "retake_count": retakes_used,
+        "retakes_left": max(0, MAX_RETAKES - retakes_used),
+        "max_retakes": MAX_RETAKES,
         "receipt_email": session.receipt_email or "",
         "curlec_order_id": session.curlec_order_id or "",
         "curlec_payment_id": session.curlec_payment_id or "",
         "created_at": (session.created_at.isoformat() + "Z") if session.created_at else "",
+        "updated_at": (session.updated_at.isoformat() + "Z") if session.updated_at else "",
         "paid_at": (session.paid_at.isoformat() + "Z") if session.paid_at else "",
         "has_image": bool(session.image_key) or img_path.is_file(),
     }
 
 @app.get("/api/sessions/{session_id}")
 def get_session(session_id: str, db: Session = Depends(get_db)):
+    _expire_stale_bills(db)
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
@@ -401,12 +587,12 @@ async def get_session_image(session_id: str, db: Session = Depends(get_db)):
             return Response(
                 content=r2_bytes,
                 media_type="image/jpeg",
-                headers={"Cache-Control": "public, max-age=86400"},
+                headers={"Cache-Control": "no-cache"},
             )
     img_path = UPLOAD_DIR / f"{bill.id}.jpg"
     if not img_path.is_file():
         raise HTTPException(status_code=404, detail="Image not found")
-    return FileResponse(img_path, media_type="image/jpeg")
+    return FileResponse(img_path, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
 
 @app.post("/api/sessions/{session_id}/need-cashier")
 def need_cashier(session_id: str, db: Session = Depends(get_db)):
@@ -415,9 +601,30 @@ def need_cashier(session_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Bill not found")
     if bill.status == "paid":
         raise HTTPException(status_code=409, detail="This bill is already paid")
+    if bill.status == "void":
+        raise HTTPException(status_code=409, detail="This bill has been voided. Please pay at the counter.")
     bill.status = "needs_cashier"
+    bill.updated_at = datetime.utcnow()
     db.commit()
     return {"status": "needs_cashier"}
+
+@app.post("/api/sessions/{session_id}/void-retake")
+def void_retake(session_id: str, request: Request, payload: dict = None, db: Session = Depends(get_db)):
+    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    if bill.status == "paid":
+        raise HTTPException(status_code=409, detail="This bill is already paid")
+    c_token = _get_client_token(request, (payload or {}).get("client_token", "")) or bill.client_token or ""
+    bill.status = "void"
+    bill.updated_at = datetime.utcnow()
+    db.commit()
+    _set_cooldown(request, c_token, db)
+    return {
+        "status": "void",
+        "cooldown_minutes": COOLDOWN_MINUTES,
+        "message": f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min.",
+    }
 
 def _curlec_client():
     key_id = os.getenv("CURLEC_KEY_ID", "").strip()
@@ -509,10 +716,13 @@ def _verify_and_capture(order_id: str, payment_id: str, signature: str, db: Sess
 @app.post("/api/pay")
 def pay(payload: dict, request: Request, db: Session = Depends(get_db)):
     _require_turnstile(str(payload.get("cf-turnstile-response") or ""), "pay", request)
+    _expire_stale_bills(db)
     session_id = str(payload.get("session_id") or "").strip()
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
+    if bill.status in ("void", "cancelled"):
+        raise HTTPException(status_code=409, detail="This bill has been voided. Please pay at the counter.")
     if bill.status == "needs_cashier":
         raise HTTPException(status_code=409, detail="A cashier is checking this bill")
     if bill.status == "paid":
@@ -521,6 +731,7 @@ def pay(payload: dict, request: Request, db: Session = Depends(get_db)):
     if email and ("@" not in email or "." not in email.split("@")[-1]):
         raise HTTPException(status_code=400, detail="Enter a valid email or leave it blank")
     bill.receipt_email = email
+    bill.updated_at = datetime.utcnow()
     db.commit()
     checkout = _create_curlec_order(bill, db)
     checkout["status"] = "pending"
@@ -639,6 +850,7 @@ def list_cashiers(db: Session = Depends(get_db)):
 
 @app.get("/api/admin/bills")
 def list_admin_bills(db: Session = Depends(get_db)):
+    _expire_stale_bills(db)
     sessions = db.query(SessionBill).order_by(SessionBill.created_at.desc()).all()
     bills = [_bill_payload(s) for s in sessions]
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
@@ -659,6 +871,7 @@ def list_admin_bills(db: Session = Depends(get_db)):
             "paid_count": sum(1 for b in bills if b["status"] == "paid"),
             "pending_count": sum(1 for b in bills if b["status"] in ("open", "pending")),
             "needs_cashier_count": sum(1 for b in bills if b["status"] == "needs_cashier"),
+            "void_count": sum(1 for b in bills if b["status"] in ("void", "cancelled")),
         },
         "bills": bills,
     }
@@ -669,9 +882,10 @@ def update_admin_bill_status(session_id: str, payload: dict, db: Session = Depen
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
     new_status = str(payload.get("status") or "").strip().lower()
-    if new_status not in ("open", "pending", "paid", "needs_cashier", "cancelled"):
+    if new_status not in ("open", "pending", "paid", "needs_cashier", "void", "cancelled"):
         raise HTTPException(status_code=400, detail="Invalid status")
     bill.status = new_status
+    bill.updated_at = datetime.utcnow()
     if new_status == "paid" and not bill.paid_at:
         bill.paid_at = datetime.utcnow()
     db.commit()

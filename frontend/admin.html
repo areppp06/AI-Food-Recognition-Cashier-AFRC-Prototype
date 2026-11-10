@@ -581,6 +581,7 @@
             <button class="pill-filter" data-status="paid" onclick="setStatusFilter('paid', this)">Paid</button>
             <button class="pill-filter" data-status="needs_cashier" onclick="setStatusFilter('needs_cashier', this)">Needs Cashier</button>
             <button class="pill-filter" data-status="open" onclick="setStatusFilter('open', this)">Open / Pending</button>
+            <button class="pill-filter" data-status="void" onclick="setStatusFilter('void', this)">Void</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -723,6 +724,7 @@ function statusBadge(status) {
   if (s === "paid") return '<span class="badge badge-paid">Paid</span>';
   if (s === "needs_cashier") return '<span class="badge badge-cashier">Needs Cashier</span>';
   if (s === "pending") return '<span class="badge badge-pending">Pending</span>';
+  if (s === "void") return '<span class="badge badge-cancelled">Void</span>';
   if (s === "cancelled") return '<span class="badge badge-cancelled">Cancelled</span>';
   return '<span class="badge badge-open">Open</span>';
 }
@@ -799,6 +801,7 @@ function renderBillsTable() {
     if (statusFilter === "paid" && b.status !== "paid") return false;
     if (statusFilter === "needs_cashier" && b.status !== "needs_cashier") return false;
     if (statusFilter === "open" && !["open", "pending"].includes(b.status)) return false;
+    if (statusFilter === "void" && !["void", "cancelled"].includes(b.status)) return false;
     if (!q) return true;
     const itemStr = (b.items || []).map(i => i.name).join(" ").toLowerCase();
     return (

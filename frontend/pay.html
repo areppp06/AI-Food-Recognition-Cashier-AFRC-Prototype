@@ -428,6 +428,58 @@ input[type="email"]:focus {
   margin-top: 0.75rem;
   text-align: center;
 }
+.retry-note {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+}
+.retry-note.warn {
+  color: #dc2626;
+  font-weight: 600;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 10000;
+}
+.modal-backdrop.open {
+  display: flex;
+}
+.modal-box {
+  background: #ffffff;
+  max-width: 400px;
+  width: 100%;
+  border-radius: 20px;
+  padding: 1.6rem 1.4rem;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #991b1b;
+  margin-bottom: 0.5rem;
+}
+.modal-desc {
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+.modal-actions {
+  display: flex;
+  gap: 0.65rem;
+}
+.modal-actions .btn {
+  margin-top: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
 </style>
 </head>
 <body style="max-width: 100%; margin: 0px auto; padding: 1.5rem 1rem 2.5rem; background: rgb(233, 238, 245); color: rgb(15, 23, 42);">
@@ -470,6 +522,16 @@ input[type="email"]:focus {
 <div class="photo-lightbox" id="photoLightbox" onclick="closePhotoLightbox()">
 <button aria-label="Close" class="photo-lightbox-close" onclick="closePhotoLightbox()" type="button">&times;</button>
 <img alt="Full size plate photo" id="photoLightboxImg" src="">
+</div>
+<div class="modal-backdrop" id="voidPromptModal">
+  <div class="modal-box">
+    <div class="modal-title">No Retries Remaining</div>
+    <p class="modal-desc">This will void the bill and you need to pay at the counter.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" type="button" onclick="closeVoidPrompt()">Cancel</button>
+      <button class="btn" id="confirmVoidBtn" type="button" style="background:#dc2626;" onclick="confirmVoidBill()">Void Bill</button>
+    </div>
+  </div>
 </div>
 <script>
 const params = new URLSearchParams(location.search);
@@ -634,22 +696,94 @@ function messageOf(data) {
   return "";
 }
 
+function setCookie(name, value, maxAgeSec) {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSec}; SameSite=Lax`;
+}
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : "";
+}
+function getClientToken() {
+  let token = "";
+  try { token = localStorage.getItem("afrc_client_id") || ""; } catch (e) {}
+  if (!token) token = getCookie("afrc_client_id");
+  return token;
+}
+function saveActiveSession(sid) {
+  if (!sid) return;
+  try { localStorage.setItem("afrc_active_session", sid); } catch (e) {}
+  setCookie("afrc_active_session", sid, 3600);
+}
+function clearActiveSession() {
+  try { localStorage.removeItem("afrc_active_session"); } catch (e) {}
+  setCookie("afrc_active_session", "", 0);
+}
+
+let currentRetakesLeft = 4;
+
+function closeVoidPrompt() {
+  document.getElementById("voidPromptModal").classList.remove("open");
+}
+
+function handleRetakeClick() {
+  if (currentRetakesLeft > 0) {
+    location.href = "/?retake=" + encodeURIComponent(sessionId);
+    return;
+  }
+  document.getElementById("voidPromptModal").classList.add("open");
+}
+
+async function confirmVoidBill() {
+  const btn = document.getElementById("confirmVoidBtn");
+  btn.disabled = true;
+  btn.textContent = "Voiding...";
+  try {
+    await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/void-retake", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ client_token: getClientToken() })
+    });
+  } catch (e) {}
+  clearActiveSession();
+  location.replace("/");
+}
+
 async function load() {
   if (!sessionId) {
     billBox.innerHTML = '<p class="note">This payment link is missing a bill.</p>';
     return;
   }
   try {
-    const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId));
+    const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId), { cache: "no-store" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       billBox.innerHTML = '<p class="note">' + esc(messageOf(data) || "Bill not found.") + '</p>';
       return;
     }
     if (data.status === "paid") {
+      clearActiveSession();
       location.replace("/payment/success?session=" + encodeURIComponent(sessionId));
       return;
     }
+    if (data.status === "void" || data.status === "cancelled") {
+      clearActiveSession();
+      if (data.bill_number) {
+        const badge = document.getElementById("billNoBadge");
+        badge.textContent = "Bill #" + data.bill_number + " (VOID)";
+        badge.hidden = false;
+      }
+      billBox.innerHTML = `
+        <div class="wait-alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b; flex-direction:column; align-items:flex-start; gap:0.5rem;">
+          <div><strong>This bill has been voided.</strong></div>
+          <div>Please proceed to the counter to pay with our cashier.</div>
+          <button class="btn btn-secondary" type="button" style="margin-top:0.5rem;" onclick="location.href='/'">Back to Main Page</button>
+        </div>`;
+      form.hidden = true;
+      return;
+    }
+
+    saveActiveSession(sessionId);
+
     if (params.get("payment") === "failed") {
       errorBox.textContent = "Payment was not completed. You can try again.";
     }
@@ -659,6 +793,13 @@ async function load() {
       badge.textContent = "Bill #" + data.bill_number;
       badge.hidden = false;
     }
+
+    currentRetakesLeft = data.retakes_left !== undefined ? Number(data.retakes_left) : 4;
+    const retakeVer = data.retake_count || 0;
+    const retryLabel = currentRetakesLeft === 1 ? "1 retry left" : `${currentRetakesLeft} retries left`;
+    const retryNoteText = currentRetakesLeft > 0
+      ? `You can retake up to ${currentRetakesLeft} more ${currentRetakesLeft === 1 ? 'time' : 'times'} for this bill.`
+      : `0 retries left — clicking Retake Photo again will void this bill and require payment at the counter.`;
 
     let html = '<div class="item-list">';
     data.items.forEach(item => {
@@ -672,8 +813,9 @@ async function load() {
     html += '</div>';
     html += `
       <div class="plate-preview-row" id="platePreviewRow">
-        <img class="plate-preview-img" src="/api/sessions/${encodeURIComponent(sessionId)}/image" alt="Captured plate" title="Tap to view full photo" onclick="openPhotoLightbox(this.src)" onerror="this.style.display='none'">
-        <a class="btn-retake" href="/">Retake Photo</a>
+        <img class="plate-preview-img" src="/api/sessions/${encodeURIComponent(sessionId)}/image?v=${encodeURIComponent(retakeVer)}" alt="Captured plate" title="Tap to view full photo" onclick="openPhotoLightbox(this.src)" onerror="this.style.display='none'">
+        <button class="btn-retake" type="button" onclick="handleRetakeClick()">Retake Photo (${esc(retryLabel)})</button>
+        <div class="retry-note ${currentRetakesLeft <= 0 ? 'warn' : ''}">${esc(retryNoteText)}</div>
       </div>`;
     html += '<div class="total-divider"></div>';
     html += `

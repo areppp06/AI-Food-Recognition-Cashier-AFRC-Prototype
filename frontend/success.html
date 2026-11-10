@@ -265,6 +265,9 @@
     const sessionId = new URLSearchParams(location.search).get("session") || "";
     let billData = null;
 
+    try { localStorage.removeItem("afrc_active_session"); } catch (e) {}
+    document.cookie = "afrc_active_session=; path=/; max-age=0; SameSite=Lax";
+
     async function load() {
       if (!sessionId) return;
       try {

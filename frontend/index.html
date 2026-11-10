@@ -347,10 +347,70 @@ video, canvas {
   opacity: 1;
   overflow: visible;
 }
+.retake-banner {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+.retake-banner a {
+  color: #ea580c;
+  text-decoration: underline;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.lock-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2rem 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.06);
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.lock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+.lock-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+.lock-desc {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
 </style>
 </head>
 <body style="max-width: 100%; width: 100%; margin: 0 auto; padding: 1rem 1rem 5rem; box-sizing: border-box;">
-<div class="camera-card">
+<div id="stateLockBox"></div>
+<div class="camera-card" id="cameraCard">
+<div class="retake-banner" id="retakeBanner">
+  <span id="retakeBannerText">Retaking photo for Bill</span>
+  <a href="/pay" id="retakeBackLink">Back to Bill</a>
+</div>
 <div class="video-container" id="videoBox">
 <div class="camera-placeholder" id="camPlaceholder">
 <svg viewbox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
@@ -385,6 +445,143 @@ const result = document.getElementById('result');
 const status = document.getElementById('status');
 const videoBox = document.getElementById('videoBox');
 const camPlaceholder = document.getElementById('camPlaceholder');
+const cameraCard = document.getElementById('cameraCard');
+const stateLockBox = document.getElementById('stateLockBox');
+const retakeBanner = document.getElementById('retakeBanner');
+const retakeBannerText = document.getElementById('retakeBannerText');
+const retakeBackLink = document.getElementById('retakeBackLink');
+
+const urlParams = new URLSearchParams(location.search);
+let retakeSessionId = (urlParams.get("retake") || "").trim();
+
+function getCookie(name) {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : "";
+}
+function setCookie(name, value, maxAgeSec) {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSec}; SameSite=Lax`;
+}
+function getOrCreateClientToken() {
+  let token = "";
+  try { token = localStorage.getItem("afrc_client_id") || ""; } catch (e) {}
+  if (!token) token = getCookie("afrc_client_id");
+  if (!token) {
+    token = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("cid-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+  }
+  try { localStorage.setItem("afrc_client_id", token); } catch (e) {}
+  setCookie("afrc_client_id", token, 86400 * 30);
+  return token;
+}
+function getSavedActiveSession() {
+  let sid = "";
+  try { sid = localStorage.getItem("afrc_active_session") || ""; } catch (e) {}
+  if (!sid) sid = getCookie("afrc_active_session");
+  return sid;
+}
+function setSavedActiveSession(sid) {
+  if (!sid) return;
+  try { localStorage.setItem("afrc_active_session", sid); } catch (e) {}
+  setCookie("afrc_active_session", sid, 3600);
+}
+function clearSavedActiveSession() {
+  try { localStorage.removeItem("afrc_active_session"); } catch (e) {}
+  setCookie("afrc_active_session", "", 0);
+}
+
+function stopCameraStream() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+}
+
+function showRateLimitLock(mins) {
+  stopCameraStream();
+  cameraCard.style.display = "none";
+  result.innerHTML = "";
+  const waitMins = mins || 25;
+  stateLockBox.innerHTML = `
+    <div class="error-card" style="padding: 2rem 1.5rem;">
+      <div class="error-title" style="font-size: 1.2rem;">Rate Limit Reached</div>
+      <p class="error-text" style="font-size: 0.98rem; font-weight: 600; margin-top: 0.5rem;">
+        Your rate limit hit, try again after ${esc(waitMins)}min.
+      </p>
+      <p style="font-size: 0.85rem; color: #7f1d1d; margin-bottom: 1rem;">
+        Your previous bill has been voided. Please proceed to the counter to pay with our cashier.
+      </p>
+      <div class="error-badge">CODE: RATE_LIMIT</div>
+    </div>
+  `;
+}
+
+function showPendingBillLock(bill) {
+  stopCameraStream();
+  cameraCard.style.display = "none";
+  result.innerHTML = "";
+  const retriesLeft = bill.retakes_left !== undefined ? bill.retakes_left : 4;
+  stateLockBox.innerHTML = `
+    <div class="lock-card">
+      <div class="lock-badge">⏳ Pending Bill #${esc(bill.bill_number)}</div>
+      <div class="lock-title">You have an unpaid bill</div>
+      <p class="lock-desc">
+        You cannot scan a new plate while <strong>Bill #${esc(bill.bill_number)}</strong> (RM ${Number(bill.total || 0).toFixed(2)}) is still pending.<br>
+        Please open your pending bill to complete payment, request a cashier, or retake your photo (${esc(retriesLeft)} ${retriesLeft === 1 ? 'retry' : 'retries'} left).
+      </p>
+      <button class="btn" type="button" onclick="location.href='/pay?session=${encodeURIComponent(bill.session_id)}'" style="width:100%;">
+        Pay Pending Bill (#${esc(bill.bill_number)})
+      </button>
+    </div>
+  `;
+}
+
+async function checkClientState() {
+  const cToken = getOrCreateClientToken();
+  const savedSid = retakeSessionId || getSavedActiveSession();
+  try {
+    const q = new URLSearchParams({ client_token: cToken, session_id: savedSid });
+    const res = await fetch("/api/client-state?" + q.toString(), { cache: "no-store" });
+    if (!res.ok) return;
+    const state = await res.json();
+    if (state.client_token) {
+      try { localStorage.setItem("afrc_client_id", state.client_token); } catch (e) {}
+      setCookie("afrc_client_id", state.client_token, 86400 * 30);
+    }
+    if (state.cooldown_active) {
+      clearSavedActiveSession();
+      showRateLimitLock(state.cooldown_minutes || 25);
+      return;
+    }
+    if (state.active_bill) {
+      const bill = state.active_bill;
+      setSavedActiveSession(bill.session_id);
+      if (retakeSessionId && retakeSessionId === bill.session_id) {
+        if ((bill.retakes_left ?? 4) <= 0) {
+          location.replace("/pay?session=" + encodeURIComponent(bill.session_id));
+          return;
+        }
+        stateLockBox.innerHTML = "";
+        cameraCard.style.display = "block";
+        retakeBanner.style.display = "flex";
+        const left = bill.retakes_left ?? 4;
+        retakeBannerText.textContent = `Retaking photo for Bill #${bill.bill_number} · ${left} ${left === 1 ? 'retry' : 'retries'} left`;
+        retakeBackLink.href = "/pay?session=" + encodeURIComponent(bill.session_id);
+      } else {
+        showPendingBillLock(bill);
+      }
+    } else {
+      clearSavedActiveSession();
+      retakeSessionId = "";
+      stateLockBox.innerHTML = "";
+      cameraCard.style.display = "block";
+      retakeBanner.style.display = "none";
+    }
+  } catch (e) {}
+}
+
+window.addEventListener("pageshow", () => {
+  checkClientState();
+});
+checkClientState();
 
 let stream;
 let recognizeWidgetId;
@@ -539,6 +736,10 @@ capBtn.onclick = async () => {
     const form = new FormData();
     form.append("file", blob, "plate.jpg");
     form.append("cf-turnstile-response", token);
+    form.append("client_token", getOrCreateClientToken());
+    if (retakeSessionId) {
+      form.append("retake_session_id", retakeSessionId);
+    }
 
     try {
       const res = await fetch("/api/recognize", { method: "POST", body: form });
@@ -546,6 +747,15 @@ capBtn.onclick = async () => {
 
       if (!res.ok) {
         const detail = data.detail || data;
+        if (res.status === 429) {
+          clearSavedActiveSession();
+          await checkClientState();
+          return;
+        }
+        if (res.status === 409) {
+          await checkClientState();
+          return;
+        }
         if (res.status === 403 || detail === "forbidden") {
           showError("CAPTCHA_FAILED", "Captcha verification failed. Please try again.");
         } else {
@@ -555,6 +765,7 @@ capBtn.onclick = async () => {
         return;
       }
 
+      setSavedActiveSession(data.session_id);
       location.href = "/pay?session=" + encodeURIComponent(data.session_id);
       return;
     } catch (e) {
