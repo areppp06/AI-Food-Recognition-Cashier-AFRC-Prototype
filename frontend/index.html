@@ -368,44 +368,362 @@ video, canvas {
   font-weight: 700;
   white-space: nowrap;
 }
-.lock-card {
+
+/* Pending Bill Template Styles */
+@keyframes sandDrop {
+  0% {
+    transform: translateY(-8px) scaleY(0.6);
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(14px) scaleY(1.1);
+    opacity: 0.2;
+  }
+}
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 10px 25px -5px rgba(255, 72, 21, 0.35);
+  }
+  50% {
+    box-shadow: 0 14px 32px -4px rgba(255, 72, 21, 0.55);
+  }
+}
+@keyframes floatSoft {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+.sand-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: #d97706;
+  animation: sandDrop 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.cta-pulse {
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
+.card-float {
+  animation: floatSoft 5s ease-in-out infinite;
+}
+.pb-wrap {
+  width: 100%;
+  max-width: 28rem;
+  margin: 0.5rem auto 0;
+  display: flex;
+  flex-direction: column;
+}
+.pb-card {
+  width: 100%;
   background: #ffffff;
   border-radius: 24px;
-  padding: 2rem 1.5rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.08), 0 4px 16px -4px rgba(15, 23, 42, 0.04);
+  padding: 1.65rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+.pb-glow {
+  position: absolute;
+  top: -5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12rem;
+  height: 12rem;
+  background: radial-gradient(circle, rgba(253, 230, 138, 0.45) 0%, rgba(254, 215, 170, 0.2) 55%, transparent 75%);
+  border-radius: 9999px;
+  filter: blur(24px);
+  pointer-events: none;
+}
+.pb-badge-row {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+.pb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #fffbeb, #fff7ed);
+  border: 1px solid rgba(253, 230, 138, 0.85);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  color: #78350f;
+}
+.pb-hourglass {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d97706;
+}
+.pb-hourglass svg {
+  width: 20px;
+  height: 20px;
+}
+.pb-badge-text {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #92400e;
+}
+.pb-badge-text strong {
+  font-weight: 800;
+  color: #451a03;
+}
+.pb-copy {
   text-align: center;
   margin-bottom: 1.5rem;
 }
-.lock-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 9999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  background: #fff7ed;
-  color: #c2410c;
-  border: 1px solid #fed7aa;
-}
-.lock-title {
-  font-size: 1.3rem;
+.pb-title {
+  font-size: 1.55rem;
   font-weight: 800;
   color: #0f172a;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  margin-bottom: 0.75rem;
+}
+.pb-desc {
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 0.65rem;
+}
+.pb-bill-pill {
+  font-weight: 700;
+  color: #0f172a;
+  background: #f1f5f9;
+  padding: 0.125rem 0.4rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  display: inline-block;
+  margin: 0.1rem 0;
+}
+.pb-price-highlight {
+  font-weight: 700;
+  color: #ff4815;
+}
+.pb-subdesc {
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.pb-summary {
+  background: rgba(248, 250, 252, 0.92);
+  border-radius: 16px;
+  padding: 0.875rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #f1f5f9;
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.pb-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #64748b;
+}
+.pb-summary-row.divider {
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.65);
+}
+.pb-summary-val {
+  font-weight: 600;
+  color: #334155;
+}
+.pb-summary-total {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+.pb-retries-pill {
+  font-weight: 600;
+  color: #d97706;
+  background: #fffbeb;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(253, 230, 138, 0.65);
+}
+.pb-retries-pill.zero {
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+.pb-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.pb-btn-primary {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(90deg, #ff6230, #ff4815);
+  color: #ffffff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.pb-btn-primary:hover {
+  background: linear-gradient(90deg, #ff4815, #ea3807);
+}
+.pb-btn-primary:active {
+  transform: scale(0.985);
+}
+.pb-btn-secondary {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #334155;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.pb-btn-secondary:hover {
+  background: #f8fafc;
+}
+.pb-btn-secondary:active {
+  background: #f1f5f9;
+}
+.pb-left-tag {
+  font-size: 0.75rem;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  margin-left: 0.25rem;
+}
+.pb-left-tag.zero {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.pb-btn-tertiary {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+}
+.pb-btn-tertiary:hover:not(:disabled) {
+  color: #1e293b;
+  background: #f8fafc;
+}
+.pb-btn-tertiary:disabled {
+  color: #d97706;
+  cursor: default;
+}
+.pb-footer {
+  margin-top: 1.35rem;
+  text-align: center;
+}
+.pb-footer-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 10000;
+}
+.modal-backdrop.open {
+  display: flex;
+}
+.modal-box {
+  background: #ffffff;
+  max-width: 400px;
+  width: 100%;
+  border-radius: 20px;
+  padding: 1.6rem 1.4rem;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+.modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #991b1b;
   margin-bottom: 0.5rem;
 }
-.lock-desc {
+.modal-desc {
   font-size: 0.9rem;
-  color: #64748b;
+  color: #334155;
   line-height: 1.5;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.modal-actions {
+  display: flex;
+  gap: 0.65rem;
+}
+.modal-actions .btn {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
 }
 </style>
 </head>
 <body style="max-width: 100%; width: 100%; margin: 0 auto; padding: 1rem 1rem 5rem; box-sizing: border-box;">
 <div id="stateLockBox"></div>
+<div class="modal-backdrop" id="voidPromptModal">
+  <div class="modal-box">
+    <div class="modal-title">No Retries Remaining</div>
+    <p class="modal-desc">This will void the bill and you need to pay at the counter.</p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" type="button" onclick="closeIndexVoidPrompt()">Cancel</button>
+      <button class="btn" id="confirmIndexVoidBtn" type="button" style="background:#dc2626;" onclick="confirmIndexVoidBill()">Void Bill</button>
+    </div>
+  </div>
+</div>
 <div class="camera-card" id="cameraCard" style="display:none;">
 <div class="retake-banner" id="retakeBanner">
   <span id="retakeBannerText">Retaking photo for Bill</span>
@@ -514,22 +832,187 @@ function showRateLimitLock(mins) {
   `;
 }
 
+let pendingBillSessionId = "";
+
+function closeIndexVoidPrompt() {
+  document.getElementById("voidPromptModal").classList.remove("open");
+}
+
+async function confirmIndexVoidBill() {
+  if (!pendingBillSessionId) return;
+  const btn = document.getElementById("confirmIndexVoidBtn");
+  btn.disabled = true;
+  btn.textContent = "Voiding...";
+  try {
+    await fetch("/api/sessions/" + encodeURIComponent(pendingBillSessionId) + "/void-retake", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ client_token: getOrCreateClientToken() })
+    });
+  } catch (e) {}
+  closeIndexVoidPrompt();
+  clearSavedActiveSession();
+  await checkClientState();
+}
+
+async function handlePendingRetake(sessionId, retriesLeft) {
+  pendingBillSessionId = sessionId;
+  if (Number(retriesLeft) <= 0) {
+    document.getElementById("voidPromptModal").classList.add("open");
+    return;
+  }
+  try {
+    const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/start-retake", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ client_token: getOrCreateClientToken() })
+    });
+    if (res.status === 409) {
+      document.getElementById("voidPromptModal").classList.add("open");
+      return;
+    }
+  } catch (e) {}
+  location.href = "/?retake=" + encodeURIComponent(sessionId);
+}
+
+async function handlePendingCashier(sessionId) {
+  const btn = document.getElementById("pbCashierBtn");
+  const alertBox = document.getElementById("pbCashierAlert");
+  if (!btn) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span>Notifying cashier...</span>';
+  try {
+    const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/need-cashier", { method: "POST" });
+    if (!res.ok) {
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg style="width:16px;height:16px;color:#94a3b8;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Request Cashier Assistance</span>`;
+      if (alertBox) {
+        alertBox.innerHTML = '<p style="color:#ef4444; font-size:0.8rem; margin-top:0.5rem;">Could not notify cashier. Please approach the counter directly.</p>';
+      }
+      return;
+    }
+    btn.innerHTML = `
+      <svg style="width:16px;height:16px;color:#d97706;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span>Cashier Assistance Requested</span>`;
+    if (alertBox) {
+      alertBox.innerHTML = `
+        <div class="wait-alert" style="margin-top:0.75rem; text-align:left;">
+          <span style="font-size:1.15rem;">🙋</span>
+          <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
+        </div>`;
+    }
+  } catch (e) {
+    btn.disabled = false;
+  }
+}
+
 function showPendingBillLock(bill) {
   stopCameraStream();
   cameraCard.style.display = "none";
   result.innerHTML = "";
-  const retriesLeft = bill.retakes_left !== undefined ? bill.retakes_left : 4;
+  pendingBillSessionId = bill.session_id;
+  const retriesLeft = bill.retakes_left !== undefined ? Number(bill.retakes_left) : 4;
+  const photoNumber = Number(bill.retake_count || 0) + 1;
+  const totalFormatted = Number(bill.total || 0).toFixed(2);
+  const isCashierRequested = bill.status === "needs_cashier";
+
   stateLockBox.innerHTML = `
-    <div class="lock-card">
-      <div class="lock-badge">⏳ Pending Bill #${esc(bill.bill_number)}</div>
-      <div class="lock-title">You have an unpaid bill</div>
-      <p class="lock-desc">
-        You cannot scan a new plate while <strong>Bill #${esc(bill.bill_number)}</strong> (RM ${Number(bill.total || 0).toFixed(2)}) is still pending.<br>
-        Please open your pending bill to complete payment, request a cashier, or retake your photo (${esc(retriesLeft)} ${retriesLeft === 1 ? 'retry' : 'retries'} left).
-      </p>
-      <button class="btn" type="button" onclick="location.href='/pay?session=${encodeURIComponent(bill.session_id)}'" style="width:100%;">
-        Pay Pending Bill (#${esc(bill.bill_number)})
-      </button>
+    <div class="pb-wrap" data-purpose="main-alert-container">
+      <section class="pb-card card-float" data-purpose="pending-bill-card">
+        <div aria-hidden="true" class="pb-glow"></div>
+
+        <div class="pb-badge-row" data-purpose="status-badge-container">
+          <div class="pb-badge">
+            <div aria-label="Hourglass timer graphic" class="pb-hourglass">
+              <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path d="M6 3h12M6 21h12" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M7 3v3.2c0 2.2 1.3 4.2 3.3 5.1L12 12l-1.7.7C8.3 13.6 7 15.6 7 17.8V21" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M17 3v3.2c0 2.2-1.3 4.2-3.3 5.1L12 12l1.7.7c2 1 3.3 2.9 3.3 5.1V21" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M8.5 7h7c-.4 1.6-1.8 2.6-3.5 2.6s-3.1-1-3.5-2.6z" fill="#f59e0b" fill-opacity="0.45" stroke="none"></path>
+                <path d="M8.5 19.5h7c-.4-1.8-1.8-3-3.5-3s-3.1 1.2-3.5 3z" fill="#f59e0b" fill-opacity="0.8" stroke="none"></path>
+              </svg>
+              <span class="sand-particle"></span>
+            </div>
+            <span class="pb-badge-text">
+              Pending Bill <strong>#${esc(bill.bill_number)}</strong>
+            </span>
+          </div>
+        </div>
+
+        <div class="pb-copy" data-purpose="modal-copy">
+          <h1 class="pb-title">You have an unpaid bill</h1>
+          <p class="pb-desc">
+            You cannot scan a new plate while
+            <span class="pb-bill-pill">Bill #${esc(bill.bill_number)}</span>
+            (<strong class="pb-price-highlight">RM ${esc(totalFormatted)}</strong>) is still pending.
+          </p>
+          <p class="pb-subdesc">
+            Please complete payment for your active order, ask for assistance from the cashier, or retake your plate photo.
+          </p>
+        </div>
+
+        <div class="pb-summary" data-purpose="bill-mini-breakdown">
+          <div class="pb-summary-row divider">
+            <span style="font-weight:500;">Active Plate Session</span>
+            <span class="pb-summary-val">Plate Photo #${esc(photoNumber)} (Confirmed)</span>
+          </div>
+          <div class="pb-summary-row" style="color:#475569;">
+            <span style="font-weight:500;">Total Amount Due</span>
+            <span class="pb-summary-total">RM ${esc(totalFormatted)}</span>
+          </div>
+          <div class="pb-summary-row" style="font-size:0.7rem; color:#94a3b8;">
+            <span>Camera Retries Left</span>
+            <span class="pb-retries-pill ${retriesLeft <= 0 ? 'zero' : ''}">${esc(retriesLeft)} ${retriesLeft === 1 ? 'attempt' : 'attempts'} remaining</span>
+          </div>
+        </div>
+
+        <div class="pb-actions" data-purpose="action-buttons-group">
+          <button class="pb-btn-primary cta-pulse" data-purpose="pay-bill-cta" type="button" onclick="location.href='/pay?session=${encodeURIComponent(bill.session_id)}'">
+            <span>Pay Pending Bill</span>
+            <svg style="width:20px;height:20px;color:rgba(255,255,255,0.92);" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+              <path d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </button>
+
+          <button class="pb-btn-secondary" data-purpose="retake-photo-button" type="button" onclick="handlePendingRetake('${esc(bill.session_id)}', ${retriesLeft})">
+            <svg style="width:16px;height:16px;color:#64748b;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Retake Plate Photo</span>
+            <span class="pb-left-tag ${retriesLeft <= 0 ? 'zero' : ''}">${esc(retriesLeft)} left</span>
+          </button>
+
+          <button class="pb-btn-tertiary" id="pbCashierBtn" data-purpose="request-cashier-link" type="button" ${isCashierRequested ? 'disabled' : ''} onclick="handlePendingCashier('${esc(bill.session_id)}')">
+            <svg style="width:16px;height:16px;color:${isCashierRequested ? '#d97706' : '#94a3b8'};" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>${isCashierRequested ? 'Cashier Assistance Requested' : 'Request Cashier Assistance'}</span>
+          </button>
+        </div>
+        <div id="pbCashierAlert">
+          ${isCashierRequested ? `
+            <div class="wait-alert" style="margin-top:0.75rem; text-align:left;">
+              <span style="font-size:1.15rem;">🙋</span>
+              <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
+            </div>` : ''}
+        </div>
+      </section>
+
+      <footer class="pb-footer" data-purpose="page-footer-notes">
+        <div class="pb-footer-note">
+          <svg style="width:14px;height:14px;color:#94a3b8;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+          <span>Automatic scanner unlocked once payment is confirmed</span>
+        </div>
+      </footer>
     </div>
   `;
 }
