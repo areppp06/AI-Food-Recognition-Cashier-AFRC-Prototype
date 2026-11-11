@@ -468,6 +468,69 @@
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   }
 
+  /* Pagination */
+  .pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+  .pagination-info {
+    font-size: 0.82rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .page-btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 0.6rem;
+    border-radius: 8px;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #334155;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s ease;
+  }
+  .page-btn:hover:not(:disabled) {
+    border-color: #94a3b8;
+    background: #f1f5f9;
+  }
+  .page-btn.active {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+  }
+  .page-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .page-select {
+    padding: 0.3rem 0.55rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #334155;
+    background: #ffffff;
+  }
+
   @media (max-width: 960px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
@@ -581,7 +644,7 @@
         <div class="panel-header">
           <div class="panel-title">All Logged Bills</div>
           <div class="filter-bar">
-            <input class="search-input" id="billSearch" oninput="renderBillsTable()" placeholder="Search Bill #AAA-0001, dish, void cause..." type="text">
+            <input class="search-input" id="billSearch" oninput="onBillSearchInput()" placeholder="Search Bill #AAA-0001, dish, void cause..." type="text">
             <button class="pill-filter active" data-status="all" onclick="setStatusFilter('all', this)">All</button>
             <button class="pill-filter" data-status="paid" onclick="setStatusFilter('paid', this)">Paid</button>
             <button class="pill-filter" data-status="open" onclick="setStatusFilter('open', this)">Open / Pending</button>
@@ -604,6 +667,10 @@
             </thead>
             <tbody id="allBillsBody"></tbody>
           </table>
+        </div>
+        <div class="pagination-bar" id="billsPaginationBar">
+          <div class="pagination-info" id="billsPaginationInfo">Showing 0 bills</div>
+          <div class="pagination-controls" id="billsPaginationControls"></div>
         </div>
       </div>
     </section>
@@ -696,8 +763,14 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-let allBills = [];
+let pageBills = [];
+let recentBills = [];
 let statusFilter = "all";
+let currentPage = 1;
+let pageSize = 20;
+let totalPages = 1;
+let totalItems = 0;
+let searchDebounceTimer = null;
 
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
@@ -727,8 +800,8 @@ function statusBadge(status, voidReason) {
   const s = (status || "open").toLowerCase();
   if (s === "paid") return '<span class="badge badge-paid">Paid</span>';
   if (s === "pending") return '<span class="badge badge-pending">Pending</span>';
-  if (s === "void" || s === "cancelled" || s === "needs_cashier") {
-    const cause = voidReason || (s === "needs_cashier" ? "Needed Cashier Assistance" : "Voided");
+  if (s === "void" || s === "cancelled") {
+    const cause = voidReason || "Voided";
     return `
       <div style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem;">
         <span class="badge badge-cancelled">Void</span>
@@ -768,80 +841,152 @@ function formatItemsSummary(items) {
   }).join(", ");
 }
 
-async function loadBills() {
-  const res = await fetch("/api/admin/bills");
+async function loadBills(options = {}) {
+  const includeSummary = options.includeSummary !== undefined ? options.includeSummary : true;
+  const includeRecent = options.includeRecent !== undefined ? options.includeRecent : true;
+  const q = (document.getElementById("billSearch").value || "").trim();
+  const params = new URLSearchParams({
+    page: String(currentPage),
+    page_size: String(pageSize),
+    status: statusFilter,
+    q,
+    include_summary: includeSummary ? "true" : "false",
+    include_recent: includeRecent ? "true" : "false",
+  });
+  const res = await fetch("/api/admin/bills?" + params.toString());
   if (!res.ok) return;
   const data = await res.json();
-  allBills = data.bills || [];
-  const sum = data.summary || {};
+  pageBills = data.bills || [];
 
-  document.getElementById("statTodayRev").textContent = "RM " + Number(sum.today_revenue || 0).toFixed(2);
-  document.getElementById("statTotalRev").textContent = "RM " + Number(sum.total_revenue || 0).toFixed(2);
-  document.getElementById("statPaidCount").textContent = `${sum.paid_count || 0} paid bills`;
-  document.getElementById("statTotalBills").textContent = String(sum.total_bills || 0);
-  const voidCount = sum.void_count || 0;
-  const pendingCount = sum.pending_count || 0;
-  document.getElementById("statAttention").textContent = String(voidCount);
-  document.getElementById("statAttentionSub").textContent = `${voidCount} voided · ${pendingCount} open/pending`;
-  document.getElementById("navBillsCount").textContent = String(sum.total_bills || 0);
+  const pag = data.pagination || {};
+  currentPage = pag.page || 1;
+  pageSize = pag.page_size || pageSize;
+  totalPages = pag.total_pages || 1;
+  totalItems = pag.total_items || 0;
 
-  // Recent bills (top 8)
-  const recentBody = document.getElementById("recentBillsBody");
-  if (!allBills.length) {
-    recentBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:2rem;">No bills logged yet.</td></tr>';
-  } else {
-    recentBody.innerHTML = allBills.slice(0, 8).map(b => `
-      <tr>
-        <td><span class="bill-code">#${esc(b.bill_number)}</span></td>
-        <td>${esc(formatDateTime(b.created_at))}</td>
-        <td>${formatItemsSummary(b.items)}</td>
-        <td style="font-weight:700;">RM ${Number(b.total).toFixed(2)}</td>
-        <td>${statusBadge(b.status, b.void_reason)}</td>
-        <td>${renderPhotoCell(b)}</td>
-        <td>
-          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-            <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">Receipt PDF</button>
-            <a class="btn btn-outline btn-sm" href="/pay?session=${encodeURIComponent(b.session_id)}" target="_blank" style="text-decoration:none;">Open</a>
-          </div>
-        </td>
-      </tr>
-    `).join("");
+  if (data.summary) {
+    const sum = data.summary;
+    document.getElementById("statTodayRev").textContent = "RM " + Number(sum.today_revenue || 0).toFixed(2);
+    document.getElementById("statTotalRev").textContent = "RM " + Number(sum.total_revenue || 0).toFixed(2);
+    document.getElementById("statPaidCount").textContent = `${sum.paid_count || 0} paid bills`;
+    document.getElementById("statTotalBills").textContent = String(sum.total_bills || 0);
+    const voidCount = sum.void_count || 0;
+    const pendingCount = sum.pending_count || 0;
+    document.getElementById("statAttention").textContent = String(voidCount);
+    document.getElementById("statAttentionSub").textContent = `${voidCount} voided · ${pendingCount} open/pending`;
+    document.getElementById("navBillsCount").textContent = String(sum.total_bills || 0);
+  }
+
+  if (data.recent_bills) {
+    recentBills = data.recent_bills;
+    renderRecentBills();
   }
 
   renderBillsTable();
+  renderPagination();
+}
+
+function renderRecentBills() {
+  const recentBody = document.getElementById("recentBillsBody");
+  if (!recentBills.length) {
+    recentBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:2rem;">No bills logged yet.</td></tr>';
+    return;
+  }
+  recentBody.innerHTML = recentBills.slice(0, 8).map(b => `
+    <tr>
+      <td><span class="bill-code">#${esc(b.bill_number)}</span></td>
+      <td>${esc(formatDateTime(b.created_at))}</td>
+      <td>${formatItemsSummary(b.items)}</td>
+      <td style="font-weight:700;">RM ${Number(b.total).toFixed(2)}</td>
+      <td>${statusBadge(b.status, b.void_reason)}</td>
+      <td>${renderPhotoCell(b)}</td>
+      <td>
+        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">Receipt PDF</button>
+          <a class="btn btn-outline btn-sm" href="/pay?session=${encodeURIComponent(b.session_id)}" target="_blank" style="text-decoration:none;">Open</a>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function onBillSearchInput() {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    currentPage = 1;
+    loadBills({ includeSummary: false, includeRecent: false });
+  }, 250);
 }
 
 function setStatusFilter(status, btn) {
   statusFilter = status;
+  currentPage = 1;
   document.querySelectorAll(".pill-filter").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  renderBillsTable();
+  loadBills({ includeSummary: false, includeRecent: false });
+}
+
+function goToBillsPage(page) {
+  const next = Math.max(1, Math.min(totalPages, Number(page) || 1));
+  if (next === currentPage) return;
+  currentPage = next;
+  loadBills({ includeSummary: false, includeRecent: false });
+}
+
+function changePageSize(newSize) {
+  pageSize = Math.max(1, Math.min(100, Number(newSize) || 20));
+  currentPage = 1;
+  loadBills({ includeSummary: false, includeRecent: false });
+}
+
+function renderPagination() {
+  const infoEl = document.getElementById("billsPaginationInfo");
+  const ctrlEl = document.getElementById("billsPaginationControls");
+  if (!infoEl || !ctrlEl) return;
+
+  if (totalItems === 0) {
+    infoEl.textContent = "Showing 0 bills";
+    ctrlEl.innerHTML = "";
+    return;
+  }
+
+  const start = (currentPage - 1) * pageSize + 1;
+  const end = Math.min(totalItems, currentPage * pageSize);
+  infoEl.textContent = `Showing ${start}–${end} of ${totalItems} bills (Page ${currentPage} of ${totalPages})`;
+
+  const windowStart = Math.max(1, currentPage - 2);
+  const windowEnd = Math.min(totalPages, currentPage + 2);
+  let pageBtns = "";
+  if (windowStart > 1) {
+    pageBtns += `<button class="page-btn" onclick="goToBillsPage(1)">1</button>`;
+    if (windowStart > 2) pageBtns += `<span style="color:#94a3b8; padding:0 0.2rem;">…</span>`;
+  }
+  for (let p = windowStart; p <= windowEnd; p++) {
+    pageBtns += `<button class="page-btn ${p === currentPage ? "active" : ""}" onclick="goToBillsPage(${p})">${p}</button>`;
+  }
+  if (windowEnd < totalPages) {
+    if (windowEnd < totalPages - 1) pageBtns += `<span style="color:#94a3b8; padding:0 0.2rem;">…</span>`;
+    pageBtns += `<button class="page-btn" onclick="goToBillsPage(${totalPages})">${totalPages}</button>`;
+  }
+
+  ctrlEl.innerHTML = `
+    <select class="page-select" aria-label="Rows per page" onchange="changePageSize(this.value)">
+      ${[10, 20, 50, 100].map(sz => `<option value="${sz}" ${sz === pageSize ? "selected" : ""}>${sz} / page</option>`).join("")}
+    </select>
+    <button class="page-btn" ${currentPage <= 1 ? "disabled" : ""} onclick="goToBillsPage(${currentPage - 1})">← Prev</button>
+    ${pageBtns}
+    <button class="page-btn" ${currentPage >= totalPages ? "disabled" : ""} onclick="goToBillsPage(${currentPage + 1})">Next →</button>
+  `;
 }
 
 function renderBillsTable() {
-  const q = (document.getElementById("billSearch").value || "").trim().toLowerCase();
-  const filtered = allBills.filter(b => {
-    if (statusFilter === "paid" && b.status !== "paid") return false;
-    if (statusFilter === "open" && !["open", "pending"].includes(b.status)) return false;
-    if (statusFilter === "void" && !["void", "cancelled", "needs_cashier"].includes(b.status)) return false;
-    if (!q) return true;
-    const itemStr = (b.items || []).map(i => i.name).join(" ").toLowerCase();
-    return (
-      (b.bill_number || "").toLowerCase().includes(q) ||
-      (b.session_id || "").toLowerCase().includes(q) ||
-      (b.receipt_email || "").toLowerCase().includes(q) ||
-      (b.void_reason || "").toLowerCase().includes(q) ||
-      itemStr.includes(q)
-    );
-  });
-
   const tbody = document.getElementById("allBillsBody");
-  if (!filtered.length) {
+  if (!pageBills.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#94a3b8; padding:2rem;">No matching bills found.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = filtered.map(b => {
+  tbody.innerHTML = pageBills.map(b => {
     const markPaidBtn = b.status !== "paid"
       ? `<button class="btn btn-sm" onclick="setBillStatus('${esc(b.session_id)}', 'paid')">Mark Paid</button>`
       : "";
@@ -879,19 +1024,19 @@ async function setBillStatus(sessionId, status) {
   });
   if (res.ok) {
     showToast(`Bill updated to ${status.toUpperCase()}`);
-    await loadBills();
+    await loadBills({ includeSummary: true, includeRecent: true });
   }
 }
 
 function downloadBillPdf(sessionId) {
-  const billData = allBills.find(b => b.session_id === sessionId);
+  const billData = pageBills.find(b => b.session_id === sessionId) || recentBills.find(b => b.session_id === sessionId);
   if (!billData || !window.jspdf) return;
   const { jsPDF } = window.jspdf;
   const items = billData.items || [];
   const billNo = billData.bill_number || "AAA-0001";
   const total = Number(billData.total || 0).toFixed(2);
   const statusUpper = String(billData.status || "open").toUpperCase();
-  const isVoid = ["VOID", "CANCELLED", "NEEDS_CASHIER"].includes(statusUpper);
+  const isVoid = ["VOID", "CANCELLED"].includes(statusUpper);
   const voidCause = billData.void_reason || (isVoid ? "Voided" : "");
   const dt = new Date(billData.paid_at || billData.updated_at || billData.created_at || Date.now());
   const dateStr = dt.toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" });

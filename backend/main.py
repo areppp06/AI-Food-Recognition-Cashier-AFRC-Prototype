@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 import asyncio
@@ -1403,33 +1403,118 @@ def verify(req: VerifyRequest, request: Request, db: Session = Depends(get_db)):
 def list_cashiers(db: Session = Depends(get_db)):
     return [{"id": c.id, "name": c.name, "active": c.active} for c in db.query(Cashier).all()]
 
-@app.get("/api/admin/bills")
-def list_admin_bills(db: Session = Depends(get_db)):
-    _expire_stale_bills(db)
-    sessions = db.query(SessionBill).order_by(SessionBill.created_at.desc()).all()
-    bills = [_bill_payload(s) for s in sessions]
+def _bill_summary(db: Session) -> dict:
     today_str = datetime.utcnow().strftime("%Y-%m-%d")
-    total_revenue = round(sum(b["total"] for b in bills if b["status"] == "paid"), 2)
-    today_revenue = round(
-        sum(
-            b["total"]
-            for b in bills
-            if b["status"] == "paid" and (b["paid_at"] or b["created_at"]).startswith(today_str)
-        ),
-        2,
-    )
+    rows = db.query(
+        SessionBill.status,
+        SessionBill.final_bill,
+        SessionBill.paid_at,
+        SessionBill.created_at,
+    ).all()
+    total_revenue = 0.0
+    today_revenue = 0.0
+    paid_count = 0
+    pending_count = 0
+    void_count = 0
+    for status, final_bill, paid_at, created_at in rows:
+        st = (status or "open").lower()
+        if st == "paid":
+            paid_count += 1
+            try:
+                items = json.loads(final_bill or "[]")
+                bill_total = sum(float(i.get("subtotal") or 0) for i in items)
+            except Exception:
+                bill_total = 0.0
+            total_revenue += bill_total
+            ts_ref = paid_at or created_at
+            if ts_ref and ts_ref.strftime("%Y-%m-%d") == today_str:
+                today_revenue += bill_total
+        elif st in ("open", "pending", "retaking"):
+            pending_count += 1
+        elif st in ("void", "cancelled"):
+            void_count += 1
     return {
-        "summary": {
-            "total_revenue": total_revenue,
-            "today_revenue": today_revenue,
-            "total_bills": len(bills),
-            "paid_count": sum(1 for b in bills if b["status"] == "paid"),
-            "pending_count": sum(1 for b in bills if b["status"] in ("open", "pending")),
-            "needs_cashier_count": sum(1 for b in bills if b["status"] == "needs_cashier"),
-            "void_count": sum(1 for b in bills if b["status"] in ("void", "cancelled")),
-        },
-        "bills": bills,
+        "total_revenue": round(total_revenue, 2),
+        "today_revenue": round(today_revenue, 2),
+        "total_bills": len(rows),
+        "paid_count": paid_count,
+        "pending_count": pending_count,
+        "void_count": void_count,
     }
+
+@app.get("/api/admin/bills")
+def list_admin_bills(
+    page: int = 1,
+    page_size: int = 20,
+    status: str = "all",
+    q: str = "",
+    include_summary: bool = True,
+    include_recent: bool = False,
+    db: Session = Depends(get_db),
+):
+    _expire_stale_bills(db)
+
+    page = max(1, int(page or 1))
+    page_size = max(1, min(100, int(page_size or 20)))
+    st_filter = (status or "all").strip().lower()
+    search_q = (q or "").strip()
+
+    query = db.query(SessionBill)
+    if st_filter == "paid":
+        query = query.filter(SessionBill.status == "paid")
+    elif st_filter == "open":
+        query = query.filter(SessionBill.status.in_(("open", "pending", "retaking")))
+    elif st_filter == "void":
+        query = query.filter(SessionBill.status.in_(("void", "cancelled")))
+
+    if search_q:
+        pat = f"%{search_q}%"
+        query = query.filter(
+            or_(
+                SessionBill.bill_number.ilike(pat),
+                SessionBill.id.ilike(pat),
+                SessionBill.receipt_email.ilike(pat),
+                SessionBill.void_reason.ilike(pat),
+                SessionBill.final_bill.ilike(pat),
+            )
+        )
+
+    total_items = query.count()
+    total_pages = max(1, math.ceil(total_items / page_size))
+    if page > total_pages:
+        page = total_pages
+
+    offset = (page - 1) * page_size
+    page_rows = (
+        query.order_by(SessionBill.created_at.desc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+    bills = [_bill_payload(s) for s in page_rows]
+
+    payload = {
+        "bills": bills,
+        "pagination": {
+            "page": page,
+            "page_size": page_size,
+            "total_items": total_items,
+            "total_pages": total_pages,
+            "has_prev": page > 1,
+            "has_next": page < total_pages,
+        },
+    }
+    if include_summary:
+        payload["summary"] = _bill_summary(db)
+    if include_recent:
+        recent_rows = (
+            db.query(SessionBill)
+            .order_by(SessionBill.created_at.desc())
+            .limit(8)
+            .all()
+        )
+        payload["recent_bills"] = [_bill_payload(s) for s in recent_rows]
+    return payload
 
 @app.post("/api/admin/bills/{session_id}/status")
 def update_admin_bill_status(session_id: str, payload: dict, db: Session = Depends(get_db)):
