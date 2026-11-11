@@ -15,18 +15,63 @@ import razorpay
 from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
+from dotenv import dotenv_values
 
-from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, next_bill_number
+from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, next_bill_number
 from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
-MAX_RETAKES = 4
+MAX_RETAKES = int(os.getenv("MAX_RETAKES", "4"))
 COOLDOWN_MINUTES = int(os.getenv("COOLDOWN_MINUTES", "25"))
 MAX_SCANS_PER_WINDOW = int(os.getenv("MAX_SCANS_PER_WINDOW", "5"))
+MAX_SCANS_PER_SESSION = int(os.getenv("MAX_SCANS_PER_SESSION", str(MAX_SCANS_PER_WINDOW)))
+MAX_SCANS_PER_DEVICE = int(os.getenv("MAX_SCANS_PER_DEVICE", str(MAX_SCANS_PER_WINDOW)))
 MAX_SCANS_PER_IP = int(os.getenv("MAX_SCANS_PER_IP", "6"))
 SCAN_WINDOW_MINUTES = int(os.getenv("SCAN_WINDOW_MINUTES", "15"))
 BILL_EXPIRY_MINUTES = int(os.getenv("BILL_EXPIRY_MINUTES", "15"))
+
+_RL_FILE_CACHE: dict[str, tuple[tuple[int, int] | None, dict]] = {}
+
+def _read_env_file_cached(path: Path) -> dict:
+    key = str(path)
+    try:
+        st = path.stat()
+        sig = (st.st_mtime_ns, st.st_size)
+    except OSError:
+        _RL_FILE_CACHE.pop(key, None)
+        return {}
+    cached = _RL_FILE_CACHE.get(key)
+    if cached and cached[0] == sig:
+        return cached[1]
+    data = {k: v for k, v in dotenv_values(path).items() if v is not None and str(v).strip() != ""}
+    _RL_FILE_CACHE[key] = (sig, data)
+    return data
+
+def _rl_int(merged_file: dict, key: str, default: int, minimum: int = 1) -> int:
+    raw = merged_file.get(key)
+    if raw is None:
+        raw = os.getenv(key)
+    if raw is None or str(raw).strip() == "":
+        return max(minimum, int(default))
+    try:
+        return max(minimum, int(str(raw).strip()))
+    except (TypeError, ValueError):
+        return max(minimum, int(default))
+
+def _rate_limit_config() -> dict:
+    merged: dict = {}
+    merged.update(_read_env_file_cached(ENV_DIR / "rate-limit.env"))
+    merged.update(_read_env_file_cached(ROOT / "rate-limit.env"))
+    fallback_window_max = _rl_int(merged, "MAX_SCANS_PER_WINDOW", MAX_SCANS_PER_WINDOW)
+    return {
+        "max_scans_per_session": _rl_int(merged, "MAX_SCANS_PER_SESSION", fallback_window_max),
+        "max_scans_per_device": _rl_int(merged, "MAX_SCANS_PER_DEVICE", fallback_window_max),
+        "max_scans_per_ip": _rl_int(merged, "MAX_SCANS_PER_IP", MAX_SCANS_PER_IP),
+        "scan_window_minutes": _rl_int(merged, "SCAN_WINDOW_MINUTES", SCAN_WINDOW_MINUTES),
+        "cooldown_minutes": _rl_int(merged, "COOLDOWN_MINUTES", COOLDOWN_MINUTES),
+        "max_retakes": _rl_int(merged, "MAX_RETAKES", MAX_RETAKES),
+    }
 app = FastAPI(title="AFRC Prototype", version="1.0")
 
 _R2_SESSION_KEYS: dict[str, str] = {}
@@ -307,7 +352,8 @@ def _scan_usage_status(
     session_id: str = "",
     device_id: str = "",
 ) -> dict:
-    window_start = datetime.utcnow() - timedelta(minutes=SCAN_WINDOW_MINUTES)
+    cfg = _rate_limit_config()
+    window_start = datetime.utcnow() - timedelta(minutes=cfg["scan_window_minutes"])
     dev_ids = _all_client_tokens(request, client_token, device_id)
     sids = _all_session_ids(request, session_id)
     ip = _client_ip(request)
@@ -343,16 +389,21 @@ def _scan_usage_status(
         else 0
     )
 
+    sess_limit = cfg["max_scans_per_session"]
+    dev_limit = cfg["max_scans_per_device"]
+    ip_limit = cfg["max_scans_per_ip"]
     used = max(device_scans, session_scans)
-    remaining = max(0, MAX_SCANS_PER_WINDOW - used)
-    if ip_scans >= MAX_SCANS_PER_IP:
-        remaining = 0
+    remaining = min(
+        max(0, sess_limit - session_scans),
+        max(0, dev_limit - device_scans),
+        max(0, ip_limit - ip_scans),
+    )
     return {
         "device_scans": device_scans,
         "session_scans": session_scans,
         "ip_scans": ip_scans,
         "scans_used": used,
-        "scans_limit": MAX_SCANS_PER_WINDOW,
+        "scans_limit": min(sess_limit, dev_limit),
         "scans_remaining": remaining,
     }
 
@@ -391,7 +442,8 @@ def _set_cooldown(
     device_id: str = "",
     reason: str = "",
 ) -> None:
-    until = datetime.utcnow() + timedelta(minutes=COOLDOWN_MINUTES)
+    cfg = _rate_limit_config()
+    until = datetime.utcnow() + timedelta(minutes=cfg["cooldown_minutes"])
     keys = _rate_limit_keys(
         request,
         client_token=client_token,
@@ -415,6 +467,7 @@ def _record_and_enforce_scan_limit(
     session_id: str = "",
     device_id: str = "",
 ) -> dict:
+    cfg = _rate_limit_config()
     usage = _scan_usage_status(
         request,
         client_token=client_token,
@@ -423,12 +476,12 @@ def _record_and_enforce_scan_limit(
         device_id=device_id,
     )
     reason = ""
-    if usage["session_scans"] >= MAX_SCANS_PER_WINDOW:
-        reason = f"Too many photo scan attempts in this session (max {MAX_SCANS_PER_WINDOW} per {SCAN_WINDOW_MINUTES} min)."
-    elif usage["device_scans"] >= MAX_SCANS_PER_WINDOW:
-        reason = f"Too many photo scan attempts from this device (max {MAX_SCANS_PER_WINDOW} per {SCAN_WINDOW_MINUTES} min)."
-    elif usage["ip_scans"] >= MAX_SCANS_PER_IP:
-        reason = f"Too many photo scan attempts from your network IP (max {MAX_SCANS_PER_IP} per {SCAN_WINDOW_MINUTES} min)."
+    if usage["session_scans"] >= cfg["max_scans_per_session"]:
+        reason = f"Too many photo scan attempts in this session (max {cfg['max_scans_per_session']} per {cfg['scan_window_minutes']} min)."
+    elif usage["device_scans"] >= cfg["max_scans_per_device"]:
+        reason = f"Too many photo scan attempts from this device (max {cfg['max_scans_per_device']} per {cfg['scan_window_minutes']} min)."
+    elif usage["ip_scans"] >= cfg["max_scans_per_ip"]:
+        reason = f"Too many photo scan attempts from your network IP (max {cfg['max_scans_per_ip']} per {cfg['scan_window_minutes']} min)."
 
     if reason:
         _set_cooldown(
@@ -443,7 +496,7 @@ def _record_and_enforce_scan_limit(
             status_code=429,
             detail=ErrorResponse(
                 error_code="RATE_LIMIT",
-                message=f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min.",
+                message=f"Your rate limit hit, try again after {cfg['cooldown_minutes']}min.",
             ).dict(),
         )
 
@@ -739,9 +792,10 @@ async def recognize(
                 "bill_number": existing_open.bill_number,
             })
 
-    if target_bill and (target_bill.retake_count or 0) >= MAX_RETAKES:
+    cfg = _rate_limit_config()
+    if target_bill and (target_bill.retake_count or 0) >= cfg["max_retakes"]:
         target_bill.status = "void"
-        target_bill.void_reason = "Exceeded 4 Retries Limit"
+        target_bill.void_reason = f"Exceeded {cfg['max_retakes']} Retries Limit"
         target_bill.updated_at = datetime.utcnow()
         db.commit()
         _set_cooldown(
@@ -750,11 +804,11 @@ async def recognize(
             db,
             session_id=target_bill.id,
             device_id=d_id,
-            reason="Exceeded 4 photo retries limit.",
+            reason=f"Exceeded {cfg['max_retakes']} photo retries limit.",
         )
         raise HTTPException(status_code=429, detail=ErrorResponse(
             error_code="RATE_LIMIT",
-            message=f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min."
+            message=f"Your rate limit hit, try again after {cfg['cooldown_minutes']}min."
         ).dict())
 
     if not file.content_type or not file.content_type.startswith("image/"):
@@ -923,10 +977,11 @@ def _bill_payload(session: SessionBill) -> dict:
     )
     status = session.status or "open"
     void_reason = session.void_reason or ""
+    max_retakes = _rate_limit_config()["max_retakes"]
     if status in ("void", "cancelled") and not void_reason:
         void_reason = (
-            "Exceeded 4 Retries Limit"
-            if retakes_used >= MAX_RETAKES
+            f"Exceeded {max_retakes} Retries Limit"
+            if retakes_used >= max_retakes
             else f"Ghosted / Stale Bill ({BILL_EXPIRY_MINUTES}m Timeout)"
         )
     return {
@@ -937,8 +992,8 @@ def _bill_payload(session: SessionBill) -> dict:
         "status": status,
         "void_reason": void_reason,
         "retake_count": retakes_used,
-        "retakes_left": max(0, MAX_RETAKES - retakes_used),
-        "max_retakes": MAX_RETAKES,
+        "retakes_left": max(0, max_retakes - retakes_used),
+        "max_retakes": max_retakes,
         "receipt_email": session.receipt_email or "",
         "curlec_order_id": session.curlec_order_id or "",
         "curlec_payment_id": session.curlec_payment_id or "",
@@ -982,7 +1037,8 @@ def start_retake(session_id: str, request: Request, payload: dict = None, db: Se
         raise HTTPException(status_code=409, detail="This bill is already paid")
     if bill.status in ("void", "cancelled"):
         raise HTTPException(status_code=409, detail="This bill has been voided. Please pay at the counter.")
-    if (bill.retake_count or 0) >= MAX_RETAKES:
+    max_retakes = _rate_limit_config()["max_retakes"]
+    if (bill.retake_count or 0) >= max_retakes:
         raise HTTPException(status_code=409, detail="No retries remaining")
     c_token = _get_client_token(request, (payload or {}).get("client_token", ""))
     bill.status = "retaking"
@@ -995,7 +1051,7 @@ def start_retake(session_id: str, request: Request, payload: dict = None, db: Se
             "status": "retaking",
             "session_id": bill.id,
             "bill_number": bill.bill_number,
-            "retakes_left": max(0, MAX_RETAKES - (bill.retake_count or 0)),
+            "retakes_left": max(0, max_retakes - (bill.retake_count or 0)),
         },
         headers=NO_CACHE_HEADERS,
     )
@@ -1097,11 +1153,12 @@ def void_retake(session_id: str, request: Request, payload: dict = None, db: Ses
         raise HTTPException(status_code=404, detail="Bill not found")
     if bill.status == "paid":
         raise HTTPException(status_code=409, detail="This bill is already paid")
+    cfg = _rate_limit_config()
     body = payload or {}
     c_token = _get_client_token(request, body.get("client_token", "")) or bill.client_token or ""
     d_id = _get_device_id(request, explicit_device=body.get("device_id", ""), explicit_client=c_token)
     bill.status = "void"
-    bill.void_reason = "Exceeded 4 Retries Limit"
+    bill.void_reason = f"Exceeded {cfg['max_retakes']} Retries Limit"
     bill.updated_at = datetime.utcnow()
     db.commit()
     _set_cooldown(
@@ -1110,14 +1167,14 @@ def void_retake(session_id: str, request: Request, payload: dict = None, db: Ses
         db,
         session_id=session_id,
         device_id=d_id,
-        reason="Exceeded 4 photo retries limit.",
+        reason=f"Exceeded {cfg['max_retakes']} photo retries limit.",
     )
     resp = JSONResponse(
         content={
             "status": "void",
             "void_reason": bill.void_reason,
-            "cooldown_minutes": COOLDOWN_MINUTES,
-            "message": f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min.",
+            "cooldown_minutes": cfg["cooldown_minutes"],
+            "message": f"Your rate limit hit, try again after {cfg['cooldown_minutes']}min.",
         },
         headers=NO_CACHE_HEADERS,
     )

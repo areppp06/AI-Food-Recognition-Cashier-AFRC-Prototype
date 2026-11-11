@@ -3,8 +3,10 @@ __pycache__/
 *.pyc
 .env
 curlec.env
+rate-limit.env
 env/.env
 env/curlec.env
+env/rate-limit.env
 *.db
 .DS_Store
 uploads/

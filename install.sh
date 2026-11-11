@@ -9,6 +9,8 @@ MAIN_ENV="$ENV_DIR/.env"
 MAIN_EXAMPLE="$ENV_DIR/.env.example"
 CURLEC_ENV="$ENV_DIR/curlec.env"
 CURLEC_EXAMPLE="$ENV_DIR/curlec.env.example"
+RATELIMIT_ENV="$ENV_DIR/rate-limit.env"
+RATELIMIT_EXAMPLE="$ENV_DIR/rate-limit.env.example"
 
 FORCE_CONFIGURE=false
 START_SERVER=true
@@ -125,6 +127,7 @@ configure_env_file() {
 
 configure_env_file "$MAIN_ENV" "$MAIN_EXAMPLE" "App & AI Environment (env/.env)"
 configure_env_file "$CURLEC_ENV" "$CURLEC_EXAMPLE" "Curlec Payment Environment (env/curlec.env)"
+configure_env_file "$RATELIMIT_ENV" "$RATELIMIT_EXAMPLE" "Rate Limit Environment (env/rate-limit.env)"
 
 PYTHON_BIN=""
 if command -v python3 >/dev/null 2>&1; then
