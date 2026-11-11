@@ -1168,14 +1168,132 @@ function getRecognizeToken() {
   });
 }
 
+let preferredMainDeviceId = "";
+
+function pickBestMainRearCamera(devices) {
+  const videoDevices = (devices || []).filter(d => d && d.kind === "videoinput" && d.deviceId);
+  if (!videoDevices.length) return null;
+
+  const frontRe = /\b(front|user|selfie|facetime|depan)\b|前置|전면|前面/i;
+  const backRe = /\b(back|rear|environment|world|belakang)\b|后置|後置|후면|背面/i;
+  const ultraRe = /ultra|0\.5\s*x|super\s*wide|wide[\s-]*angle|fisheye|超广角|超廣角/i;
+  const teleRe = /tele|periscope|zoom|\b(2x|3x|5x|10x)\b|长焦|長焦/i;
+  const auxRe = /macro|depth|tof|bokeh|mono|infrared|\bir\b|微距/i;
+  const multiVirtualRe = /\b(dual|triple|quad|virtual|logical)\b/i;
+  const androidMainRe = /\bcamera2?\s*0\b.*facing\s*back|\bfacing\s*back.*\bcamera2?\s*0\b/i;
+
+  const nonFront = videoDevices.filter(d => !frontRe.test(d.label || ""));
+  const explicitBack = nonFront.filter(d => backRe.test(d.label || ""));
+  const candidates = explicitBack.length ? explicitBack : (nonFront.length ? nonFront : videoDevices);
+
+  let best = null;
+  let bestScore = -999999;
+
+  candidates.forEach((dev, idx) => {
+    const label = (dev.label || "").trim();
+    let score = 100 - idx * 30; // Primary 1x rear sensor is enumerated first
+
+    if (androidMainRe.test(label)) score += 500;
+    if (/^back\s*camera$/i.test(label) || /^rear\s*camera$/i.test(label)) score += 450;
+    if (backRe.test(label)) score += 100;
+    if (idx === 0) score += 150;
+
+    if (ultraRe.test(label)) score -= 600;
+    if (teleRe.test(label)) score -= 600;
+    if (auxRe.test(label)) score -= 700;
+    if (multiVirtualRe.test(label)) score -= 250;
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = dev;
+    }
+  });
+
+  return best;
+}
+
+async function lockTrackTo1xMain(mediaStream) {
+  if (!mediaStream) return;
+  const [track] = mediaStream.getVideoTracks();
+  if (!track || typeof track.getCapabilities !== "function") return;
+  try {
+    const caps = track.getCapabilities() || {};
+    const adv = {};
+    if (caps.zoom && typeof caps.zoom.min === "number" && typeof caps.zoom.max === "number") {
+      if (1.0 >= caps.zoom.min && 1.0 <= caps.zoom.max) {
+        adv.zoom = 1.0;
+      }
+    }
+    if (Array.isArray(caps.focusMode) && caps.focusMode.includes("continuous")) {
+      adv.focusMode = "continuous";
+    }
+    if (Object.keys(adv).length > 0 && typeof track.applyConstraints === "function") {
+      await track.applyConstraints({ advanced: [adv] }).catch(() => {});
+    }
+  } catch (e) {}
+}
+
+async function openMainRearCamera() {
+  const baseVideoConstraints = {
+    width: { ideal: 1920 },
+    height: { ideal: 1440 },
+    aspectRatio: { ideal: 4 / 3 }
+  };
+
+  // If we already discovered the exact 1x main rear camera ID, open it directly
+  if (preferredMainDeviceId) {
+    try {
+      const directStream = await navigator.mediaDevices.getUserMedia({
+        video: { ...baseVideoConstraints, deviceId: { exact: preferredMainDeviceId } },
+        audio: false
+      });
+      await lockTrackTo1xMain(directStream);
+      return directStream;
+    } catch (e) {
+      preferredMainDeviceId = "";
+    }
+  }
+
+  // Step 1: Request initial back camera stream so browser reveals device labels
+  const initialStream = await navigator.mediaDevices.getUserMedia({
+    video: { ...baseVideoConstraints, facingMode: { ideal: "environment" } },
+    audio: false
+  });
+
+  try {
+    if (navigator.mediaDevices.enumerateDevices) {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const bestCam = pickBestMainRearCamera(devices);
+      if (bestCam && bestCam.deviceId) {
+        preferredMainDeviceId = bestCam.deviceId;
+        const [activeTrack] = initialStream.getVideoTracks();
+        const activeSettings = (activeTrack && typeof activeTrack.getSettings === "function")
+          ? activeTrack.getSettings()
+          : {};
+        // Step 2: If browser picked telephoto / ultra-wide instead of 1x main camera, switch to the 1x main camera
+        if (activeSettings.deviceId && activeSettings.deviceId !== bestCam.deviceId) {
+          initialStream.getTracks().forEach(t => t.stop());
+          const mainStream = await navigator.mediaDevices.getUserMedia({
+            video: { ...baseVideoConstraints, deviceId: { exact: bestCam.deviceId } },
+            audio: false
+          });
+          await lockTrackTo1xMain(mainStream);
+          return mainStream;
+        }
+      }
+    }
+  } catch (e) {}
+
+  await lockTrackTo1xMain(initialStream);
+  return initialStream;
+}
+
 startBtn.onclick = async () => {
   const allowed = await checkClientState();
   if (!allowed) return;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
+    stopCameraStream();
+    stream = await openMainRearCamera();
     video.srcObject = stream;
     camPlaceholder.style.display = "none";
     video.style.display = "block";
