@@ -328,25 +328,30 @@ def _expire_stale_bills(db: Session) -> None:
     cutoff = datetime.utcnow() - timedelta(minutes=BILL_EXPIRY_MINUTES)
     stale = (
         db.query(SessionBill)
-        .filter(SessionBill.status.in_(("open", "pending", "retaking", "needs_cashier")))
+        .filter(
+            or_(
+                SessionBill.status == "needs_cashier",
+                (
+                    SessionBill.status.in_(("open", "pending", "retaking"))
+                    & (func.coalesce(SessionBill.updated_at, SessionBill.created_at) < cutoff)
+                ),
+            )
+        )
         .all()
     )
-    changed = False
+    if not stale:
+        return
+    now = datetime.utcnow()
     for bill in stale:
         if bill.status == "needs_cashier":
             bill.status = "void"
             bill.void_reason = bill.void_reason or "Needed Cashier Assistance"
-            bill.updated_at = datetime.utcnow()
-            changed = True
-            continue
-        last_touch = bill.updated_at or bill.created_at
-        if last_touch and last_touch < cutoff:
+            bill.updated_at = now
+        else:
             bill.status = "void"
             bill.void_reason = "Bill timed out"
-            bill.updated_at = datetime.utcnow()
-            changed = True
-    if changed:
-        db.commit()
+            bill.updated_at = now
+    db.commit()
 
 def _scan_usage_status(
     request: Request,
@@ -552,71 +557,108 @@ def _require_turnstile(token: str, expected_action: str, request: Request) -> No
     ):
         raise HTTPException(status_code=403, detail="forbidden")
 
-def _sync_r2_objects() -> None:
+_R2_SYNC_LOCK: asyncio.Lock | None = None
+_R2_LAST_SYNC_AT: float = 0.0
+_R2_SYNC_COOLDOWN_SEC: float = 60.0
+_BACKGROUND_TASKS: set[asyncio.Task] = set()
+
+def _backfill_r2_keys_sync() -> None:
+    if not _R2_SESSION_KEYS and not _R2_BILL_KEYS:
+        return
+    db = SessionLocal()
+    try:
+        rows = db.query(SessionBill).filter((SessionBill.image_key == None) | (SessionBill.image_key == "")).all()
+        changed = False
+        for s in rows:
+            matched = _R2_SESSION_KEYS.get(s.id) or _R2_BILL_KEYS.get((s.bill_number or "").upper())
+            if matched:
+                s.image_key = matched
+                changed = True
+        if changed:
+            db.commit()
+    finally:
+        db.close()
+
+async def _sync_r2_objects_async(force: bool = False) -> None:
+    global _R2_SYNC_LOCK, _R2_LAST_SYNC_AT
     cfg = _r2_config()
     if not cfg:
         return
-    account_id, api_token, bucket = cfg
-    headers = {"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"}
-    base = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets"
-    try:
-        check = httpx.get(f"{base}/{quote(bucket, safe='')}", headers=headers, timeout=10.0)
-        if check.status_code == 404:
-            httpx.post(
-                base,
-                headers=headers,
-                json={"name": bucket, "locationHint": "apac"},
-                timeout=10.0,
-            )
-        objs_resp = httpx.get(
-            f"{base}/{quote(bucket, safe='')}/objects",
-            headers=headers,
-            timeout=10.0,
-        )
-        if 200 <= objs_resp.status_code < 300:
-            data = objs_resp.json()
-            for obj in (data.get("result") or []):
-                key = str(obj.get("key") or "").strip()
-                if key:
-                    _register_r2_key(key)
-            if _R2_SESSION_KEYS or _R2_BILL_KEYS:
-                db = SessionLocal()
-                try:
-                    rows = db.query(SessionBill).filter((SessionBill.image_key == None) | (SessionBill.image_key == "")).all()
-                    changed = False
-                    for s in rows:
-                        matched = _R2_SESSION_KEYS.get(s.id) or _R2_BILL_KEYS.get((s.bill_number or "").upper())
-                        if matched:
-                            s.image_key = matched
-                            changed = True
-                    if changed:
-                        db.commit()
-                finally:
-                    db.close()
-    except Exception:
-        pass
-
-async def _stale_bills_watcher():
-    while True:
-        await asyncio.sleep(60)
-        db = SessionLocal()
+    if _R2_SYNC_LOCK is None:
+        _R2_SYNC_LOCK = asyncio.Lock()
+    async with _R2_SYNC_LOCK:
+        now_mono = asyncio.get_running_loop().time()
+        if not force and _R2_LAST_SYNC_AT and (now_mono - _R2_LAST_SYNC_AT) < _R2_SYNC_COOLDOWN_SEC:
+            return
+        _R2_LAST_SYNC_AT = now_mono
+        account_id, api_token, bucket = cfg
+        headers = {"Authorization": f"Bearer {api_token}", "Content-Type": "application/json"}
+        base = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets"
         try:
-            _expire_stale_bills(db)
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                check = await client.get(f"{base}/{quote(bucket, safe='')}", headers=headers)
+                if check.status_code == 404:
+                    await client.post(
+                        base,
+                        headers=headers,
+                        json={"name": bucket, "locationHint": "apac"},
+                    )
+                objs_resp = await client.get(
+                    f"{base}/{quote(bucket, safe='')}/objects",
+                    headers=headers,
+                )
+            if 200 <= objs_resp.status_code < 300:
+                data = objs_resp.json()
+                for obj in (data.get("result") or []):
+                    key = str(obj.get("key") or "").strip()
+                    if key:
+                        _register_r2_key(key)
+                await asyncio.to_thread(_backfill_r2_keys_sync)
+        except asyncio.CancelledError:
+            raise
         except Exception:
             pass
-        finally:
-            db.close()
+
+def _run_stale_bills_cleanup_sync() -> None:
+    db = SessionLocal()
+    try:
+        _expire_stale_bills(db)
+    except Exception:
+        pass
+    finally:
+        db.close()
+
+async def _stale_bills_watcher():
+    try:
+        while True:
+            await asyncio.sleep(60)
+            await asyncio.to_thread(_run_stale_bills_cleanup_sync)
+    except asyncio.CancelledError:
+        return
+
+def _track_task(coro) -> asyncio.Task:
+    task = asyncio.create_task(coro)
+    _BACKGROUND_TASKS.add(task)
+    task.add_done_callback(_BACKGROUND_TASKS.discard)
+    return task
 
 @app.on_event("startup")
 async def startup():
     init_db()
-    _sync_r2_objects()
-    db = SessionLocal()
-    try:
-        _expire_stale_bills(db)
-    finally:
-        db.close()
-    asyncio.create_task(_stale_bills_watcher())
+    await asyncio.to_thread(_run_stale_bills_cleanup_sync)
+    _track_task(_sync_r2_objects_async(force=True))
+    _track_task(_stale_bills_watcher())
+
+@app.on_event("shutdown")
+async def shutdown():
+    tasks = list(_BACKGROUND_TASKS)
+    for task in tasks:
+        task.cancel()
+    if tasks:
+        try:
+            await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=2.0)
+        except (asyncio.TimeoutError, Exception):
+            pass
 
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -763,7 +805,7 @@ async def recognize(
     browser_session_id: Annotated[str, Form()] = "",
     db: Session = Depends(get_db),
 ):
-    _require_turnstile(cf_turnstile_response, "recognize", request)
+    await asyncio.to_thread(_require_turnstile, cf_turnstile_response, "recognize", request)
     _expire_stale_bills(db)
 
     c_token = _get_client_token(request, client_token)
@@ -1072,8 +1114,8 @@ async def get_session_image(session_id: str, db: Session = Depends(get_db)):
         return FileResponse(img_path, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
 
     bill_no_upper = (bill.bill_number or "").upper()
-    if bill.id not in _R2_SESSION_KEYS and bill_no_upper not in _R2_BILL_KEYS:
-        _sync_r2_objects()
+    if bill.id not in _R2_SESSION_KEYS and bill_no_upper not in _R2_BILL_KEYS and not bill.image_key:
+        await _sync_r2_objects_async(force=False)
 
     candidate_keys = []
     for k in (

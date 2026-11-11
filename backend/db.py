@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, Text
+from sqlalchemy import create_engine, event, Column, Integer, String, Float, Boolean, DateTime, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import os
@@ -15,7 +15,21 @@ load_dotenv(ROOT / ".env")
 load_dotenv(ROOT / "curlec.env")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./afrc.db")
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+_is_sqlite = DATABASE_URL.startswith("sqlite")
+_connect_args = {"check_same_thread": False, "timeout": 30} if _is_sqlite else {}
+engine = create_engine(DATABASE_URL, connect_args=_connect_args)
+
+if _is_sqlite:
+    @event.listens_for(engine, "connect")
+    def _configure_sqlite_connection(dbapi_connection, _connection_record):
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA busy_timeout=15000")
+        finally:
+            cursor.close()
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
