@@ -31,43 +31,21 @@
     z-index: 100;
     transition: transform 0.25s ease;
   }
-  .brand {
-    padding: 1.5rem 1.35rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-  .brand-logo {
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
-    background: #ff5e36;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 1.05rem;
-    color: #ffffff;
-    box-shadow: 0 6px 16px rgba(255, 94, 54, 0.35);
-  }
-  .brand-text h2 {
-    font-size: 1.05rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-  .brand-text span {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    display: block;
-  }
-
   .nav-group {
-    padding: 1.25rem 0.85rem;
+    padding: 1.5rem 0.85rem 1.25rem;
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
+  }
+  .nav-icon, .btn-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+  .btn-icon {
+    width: 16px;
+    height: 16px;
   }
   .nav-label {
     font-size: 0.7rem;
@@ -545,46 +523,84 @@
 <body>
 
 <aside class="sidebar" id="sidebar">
-  <div class="brand">
-    <div class="brand-logo">AF</div>
-    <div class="brand-text">
-      <h2>AFRC Admin</h2>
-      <span>Cashier &amp; Stall Portal</span>
-    </div>
-  </div>
-
   <div class="nav-group">
     <div class="nav-label">Management</div>
     <button class="nav-btn active" data-tab="dashboard" onclick="switchTab('dashboard', 'Dashboard Overview')">
-      <span class="nav-btn-left">📊 Dashboard</span>
+      <span class="nav-btn-left">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="9" rx="1.5"></rect>
+          <rect x="14" y="3" width="7" height="5" rx="1.5"></rect>
+          <rect x="14" y="12" width="7" height="9" rx="1.5"></rect>
+          <rect x="3" y="16" width="7" height="5" rx="1.5"></rect>
+        </svg>
+        <span>Dashboard</span>
+      </span>
     </button>
     <button class="nav-btn" data-tab="bills" onclick="switchTab('bills', 'Bills & Transactions Log')">
-      <span class="nav-btn-left">🧾 Bills &amp; Receipts</span>
+      <span class="nav-btn-left">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 3h14v18l-3-2-2.5 2-1.5-2-1.5 2L8 19l-3 2V3z" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M9 8h6M9 12h6M9 16h4" stroke-linecap="round"></path>
+        </svg>
+        <span>Bills &amp; Receipts</span>
+      </span>
       <span class="nav-badge" id="navBillsCount">0</span>
     </button>
     <button class="nav-btn" data-tab="menu" onclick="switchTab('menu', 'Daily Menu Configuration')">
-      <span class="nav-btn-left">🍛 Daily Menu</span>
+      <span class="nav-btn-left">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 3v7a3 3 0 003 3v8M7 3v6M10 3v7a3 3 0 01-3 3M16 3v18M16 3c2.5 0 4 2 4 5.5S18.5 14 16 14" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Daily Menu</span>
+      </span>
     </button>
     <button class="nav-btn" data-tab="audit" onclick="switchTab('audit', 'Cashiers & Verification Logs')">
-      <span class="nav-btn-left">🔐 Cashier &amp; Audit</span>
+      <span class="nav-btn-left">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 3l7 3v5c0 5-3.5 9.2-7 10.5C8.5 20.2 5 16 5 11V6l7-3z" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M9.5 12l1.8 1.8L15 10" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Cashier &amp; Audit</span>
+      </span>
     </button>
   </div>
 
   <div class="sidebar-footer">
     <div class="nav-label">Quick Links</div>
-    <a class="ext-link" href="/" target="_blank">📷 Customer Camera View</a>
-    <a class="ext-link" href="/cashier" target="_blank">⌨️ Cashier PIN Screen</a>
+    <a class="ext-link" href="/" target="_blank">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 8a2 2 0 012-2h2l1.5-2h5L16 6h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8z" stroke-linecap="round" stroke-linejoin="round"></path>
+        <circle cx="12" cy="12.5" r="3.2"></circle>
+      </svg>
+      <span>Customer Camera View</span>
+    </a>
+    <a class="ext-link" href="/cashier" target="_blank">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="3" width="16" height="18" rx="2.5"></rect>
+        <path d="M8 7h8M8 12h1.5M11.25 12h1.5M14.5 12H16M8 15.5h1.5M11.25 15.5h1.5M14.5 15.5H16" stroke-linecap="round"></path>
+      </svg>
+      <span>Cashier PIN Screen</span>
+    </a>
   </div>
 </aside>
 
 <div class="main-wrapper">
   <header class="topbar">
     <div class="topbar-left">
-      <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+      <button class="menu-toggle" aria-label="Toggle navigation" onclick="document.getElementById('sidebar').classList.toggle('open')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"></path>
+        </svg>
+      </button>
       <h1 class="page-title" id="pageTitle">Dashboard Overview</h1>
     </div>
     <div class="topbar-actions">
-      <button class="btn btn-outline" onclick="refreshAll()">↻ Refresh Data</button>
+      <button class="btn btn-outline" onclick="refreshAll()">
+        <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 12a9 9 0 11-2.64-6.36M21 4v5h-5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Refresh Data</span>
+      </button>
     </div>
   </header>
 
@@ -711,7 +727,13 @@
       <div class="panel-card">
         <div class="panel-header">
           <div class="panel-title">Current Menu Items</div>
-          <button class="btn btn-dark" onclick="saveMenu()">💾 Save Menu Changes</button>
+          <button class="btn btn-dark" onclick="saveMenu()">
+            <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 4h11l3 3v13H5V4z" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M8 4v5h7V4M8 20v-6h8v6" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Save Menu Changes</span>
+          </button>
         </div>
         <div class="table-wrap">
           <table id="menuTable">
