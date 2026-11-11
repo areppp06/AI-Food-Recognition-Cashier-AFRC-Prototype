@@ -336,6 +336,7 @@
   .badge {
     display: inline-flex;
     align-items: center;
+    white-space: nowrap;
     padding: 0.22rem 0.65rem;
     border-radius: 9999px;
     font-size: 0.74rem;
@@ -350,12 +351,15 @@
   .badge-cancelled { background: #fee2e2; color: #b91c1c; }
 
   .bill-code {
+    display: inline-block;
+    white-space: nowrap;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-weight: 700;
     font-size: 0.86rem;
     color: #0f172a;
     background: #f1f5f9;
-    padding: 0.25rem 0.55rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.25rem 0.6rem;
     border-radius: 8px;
   }
 
