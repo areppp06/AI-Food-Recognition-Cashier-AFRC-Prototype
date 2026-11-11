@@ -10,19 +10,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body {
+html {
   overflow-x: hidden;
   width: 100%;
-  max-width: 100%;
-  position: relative;
+  background: #e2e8f0;
 }
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  max-width: 640px;
-  margin: 1.75rem auto;
-  padding: 0 1.25rem 3rem;
+  max-width: 440px;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1rem 1rem 5rem;
   background: #f8fafc;
   color: #0f172a;
+  position: relative;
+  overflow-x: hidden;
+  box-shadow: 0 0 36px rgba(15, 23, 42, 0.08);
 }
 .camera-card {
   background: #ffffff;
@@ -711,7 +715,7 @@ video, canvas {
 }
 </style>
 </head>
-<body style="max-width: 100%; width: 100%; margin: 0 auto; padding: 1rem 1rem 5rem; box-sizing: border-box;">
+<body style="max-width: 440px; width: 100%; margin: 0 auto; padding: 1rem 1rem 5rem; box-sizing: border-box;">
 <div id="stateLockBox"></div>
 <div class="modal-backdrop" id="voidPromptModal">
   <div class="modal-box">
@@ -874,41 +878,53 @@ async function handlePendingRetake(sessionId, retriesLeft) {
   location.href = "/?retake=" + encodeURIComponent(sessionId);
 }
 
-async function handlePendingCashier(sessionId) {
+async function handlePendingCashier(sessionId, billNumber) {
   const btn = document.getElementById("pbCashierBtn");
-  const alertBox = document.getElementById("pbCashierAlert");
-  if (!btn) return;
-  btn.disabled = true;
-  btn.innerHTML = '<span>Notifying cashier...</span>';
-  try {
-    const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/need-cashier", { method: "POST" });
-    if (!res.ok) {
-      btn.disabled = false;
-      btn.innerHTML = `
-        <svg style="width:16px;height:16px;color:#94a3b8;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke-linecap="round" stroke-linejoin="round"></path>
-        </svg>
-        <span>Request Cashier Assistance</span>`;
-      if (alertBox) {
-        alertBox.innerHTML = '<p style="color:#ef4444; font-size:0.8rem; margin-top:0.5rem;">Could not notify cashier. Please approach the counter directly.</p>';
-      }
-      return;
-    }
-    btn.innerHTML = `
-      <svg style="width:16px;height:16px;color:#d97706;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke-linecap="round" stroke-linejoin="round"></path>
-      </svg>
-      <span>Cashier Assistance Requested</span>`;
-    if (alertBox) {
-      alertBox.innerHTML = `
-        <div class="wait-alert" style="margin-top:0.75rem; text-align:left;">
-          <span style="font-size:1.15rem;">🙋</span>
-          <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
-        </div>`;
-    }
-  } catch (e) {
-    btn.disabled = false;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>Voiding bill &amp; notifying cashier...</span>';
   }
+  try {
+    await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/need-cashier", { method: "POST" });
+  } catch (e) {}
+  clearSavedActiveSession();
+  const bNo = billNumber || "Pending";
+  stateLockBox.innerHTML = `
+    <div class="pb-wrap" data-purpose="main-alert-container">
+      <section class="pb-card" style="text-align:center;">
+        <div style="width:64px;height:64px;margin:0 auto 1rem;border-radius:9999px;background:#fef2f2;border:1.5px solid #fecaca;display:flex;align-items:center;justify-content:center;color:#dc2626;">
+          <svg style="width:32px;height:32px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>
+        <h1 class="pb-title" style="color:#991b1b;margin-bottom:0.5rem;">Bill #${esc(bNo)} is Voided</h1>
+        <p class="pb-desc" style="color:#334155;margin-bottom:0.65rem;">
+          Your bill has been automatically voided (<strong style="color:#b91c1c;">Needed Cashier Assistance</strong>).
+        </p>
+        <div class="wait-alert" style="margin:0.85rem 0 1.25rem; text-align:left; background:#fffbeb; border-color:#fde68a; color:#92400e;">
+          <span style="font-size:1.25rem;">🙋</span>
+          <div><strong>Please head to the cashier counter for assistance.</strong> Our staff will assist you with your order at the counter.</div>
+        </div>
+        <button class="pb-btn-secondary" type="button" onclick="checkClientState().then(allowed => { if (allowed) autoTriggerCameraIfAllowed(); })">
+          <span>Back to Scanner</span>
+        </button>
+      </section>
+    </div>
+  `;
+}
+
+async function handlePendingCancel(sessionId) {
+  const btn = document.getElementById("pbCancelBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>Cancelling bill...</span>';
+  }
+  try {
+    await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/cancel", { method: "POST" });
+  } catch (e) {}
+  clearSavedActiveSession();
+  const allowed = await checkClientState();
+  if (allowed) autoTriggerCameraIfAllowed();
 }
 
 function showPendingBillLock(bill) {
@@ -917,9 +933,7 @@ function showPendingBillLock(bill) {
   result.innerHTML = "";
   pendingBillSessionId = bill.session_id;
   const retriesLeft = bill.retakes_left !== undefined ? Number(bill.retakes_left) : 4;
-  const photoNumber = Number(bill.retake_count || 0) + 1;
   const totalFormatted = Number(bill.total || 0).toFixed(2);
-  const isCashierRequested = bill.status === "needs_cashier";
 
   stateLockBox.innerHTML = `
     <div class="pb-wrap" data-purpose="main-alert-container">
@@ -945,7 +959,7 @@ function showPendingBillLock(bill) {
             (<strong class="pb-price-highlight">RM ${esc(totalFormatted)}</strong>) is still pending.
           </p>
           <p class="pb-subdesc">
-            Please complete payment for your active order, ask for assistance from the cashier, or retake your plate photo.
+            Please complete payment for your active order, retake your plate photo, ask for cashier assistance, or cancel this bill.
           </p>
         </div>
 
@@ -977,20 +991,21 @@ function showPendingBillLock(bill) {
             <span class="pb-left-tag ${retriesLeft <= 0 ? 'zero' : ''}">${esc(retriesLeft)} left</span>
           </button>
 
-          <button class="pb-btn-tertiary" id="pbCashierBtn" data-purpose="request-cashier-link" type="button" ${isCashierRequested ? 'disabled' : ''} onclick="handlePendingCashier('${esc(bill.session_id)}')">
-            <svg style="width:16px;height:16px;color:${isCashierRequested ? '#d97706' : '#94a3b8'};" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <button class="pb-btn-tertiary" id="pbCashierBtn" data-purpose="request-cashier-link" type="button" onclick="handlePendingCashier('${esc(bill.session_id)}', '${esc(bill.bill_number)}')">
+            <svg style="width:16px;height:16px;color:#94a3b8;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" stroke-linecap="round" stroke-linejoin="round"></path>
             </svg>
-            <span>${isCashierRequested ? 'Cashier Assistance Requested' : 'Request Cashier Assistance'}</span>
+            <span>Need Cashier Assistance</span>
+          </button>
+
+          <button class="pb-btn-tertiary" id="pbCancelBtn" data-purpose="cancel-bill-button" type="button" style="color:#dc2626;border:1px solid #fecaca;background:#fef2f2;" onclick="handlePendingCancel('${esc(bill.session_id)}')">
+            <svg style="width:16px;height:16px;color:#dc2626;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Cancel Bill</span>
           </button>
         </div>
-        <div id="pbCashierAlert">
-          ${isCashierRequested ? `
-            <div class="wait-alert" style="margin-top:0.75rem; text-align:left;">
-              <span style="font-size:1.15rem;">🙋</span>
-              <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
-            </div>` : ''}
-        </div>
+        <div id="pbCashierAlert"></div>
       </section>
 
       <footer class="pb-footer" data-purpose="page-footer-notes">

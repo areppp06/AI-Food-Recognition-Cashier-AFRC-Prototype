@@ -515,6 +515,9 @@ input[type="email"]:focus {
 <span class="btn-text">Confirm &amp; Pay</span>
 </button>
 </div>
+<button class="btn btn-secondary" id="cancelBillBtn" type="button" style="margin-top:0.65rem; color:#dc2626; border-color:#fecaca; background:#fef2f2; padding:0.78rem 1rem; font-size:0.9rem;">
+  Cancel Bill
+</button>
 <div id="cashierWait"></div>
 <p class="error-msg" id="error"></p>
 </form>
@@ -533,6 +536,7 @@ input[type="email"]:focus {
     </div>
   </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const params = new URLSearchParams(location.search);
 const sessionId = params.get("session") || "";
@@ -542,41 +546,49 @@ const errorBox = document.getElementById("error");
 const confirmBox = document.getElementById("confirmItems");
 const payBtn = document.getElementById("payBtn");
 const cashierBtn = document.getElementById("needCashier");
+const cancelBillBtn = document.getElementById("cancelBillBtn");
 const cashierWait = document.getElementById("cashierWait");
+let currentBillData = null;
 
 function syncButtons() {
   const confirmed = confirmBox.checked;
   payBtn.disabled = !confirmed;
-  cashierBtn.disabled = confirmed;
 }
 confirmBox.addEventListener("change", syncButtons);
 
 cashierBtn.onclick = async () => {
-  if (confirmBox.checked) return;
   errorBox.textContent = "";
   cashierBtn.disabled = true;
-  cashierBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-color:rgba(0,0,0,0.1);border-top-color:#333;"></span> Calling...';
+  if (cancelBillBtn) cancelBillBtn.disabled = true;
+  cashierBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-color:rgba(0,0,0,0.1);border-top-color:#333;"></span> Voiding...';
   try {
     const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/need-cashier", { method: "POST" });
-    if (!res.ok) {
-      cashierBtn.disabled = false;
-      cashierBtn.textContent = "Need Cashier";
-      cashierWait.innerHTML = '<p style="color:#ef4444; font-size:0.85rem; margin-top:0.75rem;">Failed to notify cashier. Please approach the counter directly.</p>';
-      return;
+    const respData = await res.json().catch(() => ({}));
+    clearActiveSession();
+    if (currentBillData) {
+      currentBillData.status = "void";
+      currentBillData.void_reason = respData.void_reason || "Needed Cashier Assistance";
+      renderVoidedBillView(currentBillData);
+    } else {
+      await load();
     }
-    confirmBox.disabled = true;
-    payBtn.disabled = true;
-    cashierBtn.textContent = "Help Requested";
-    cashierWait.innerHTML = `
-      <div class="wait-alert">
-        <span style="font-size:1.2rem;">🙋</span>
-        <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
-      </div>`;
   } catch (e) {
-    cashierBtn.disabled = false;
-    cashierBtn.textContent = "Need Cashier";
-    cashierWait.innerHTML = '<p style="color:#ef4444; font-size:0.85rem; margin-top:0.75rem;">Failed to notify cashier. Please approach the counter directly.</p>';
+    clearActiveSession();
+    await load();
   }
+};
+
+cancelBillBtn.onclick = async () => {
+  errorBox.textContent = "";
+  cancelBillBtn.disabled = true;
+  cashierBtn.disabled = true;
+  payBtn.disabled = true;
+  cancelBillBtn.textContent = "Cancelling...";
+  try {
+    await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/cancel", { method: "POST" });
+  } catch (e) {}
+  clearActiveSession();
+  location.replace("/");
 };
 
 function openPhotoLightbox(src) {
@@ -759,6 +771,143 @@ async function confirmVoidBill() {
   location.replace("/");
 }
 
+function downloadPayVoidReceiptPdf() {
+  if (!currentBillData || !window.jspdf) return;
+  const { jsPDF } = window.jspdf;
+  const items = currentBillData.items || [];
+  const billNo = currentBillData.bill_number || "AAA-0001";
+  const total = Number(currentBillData.total || 0).toFixed(2);
+  const voidCause = currentBillData.void_reason || "Voided";
+  const dt = new Date(currentBillData.updated_at || currentBillData.created_at || Date.now());
+  const dateStr = dt.toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" });
+  const timeStr = dt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  const pageHeight = Math.max(122, 100 + items.length * 9);
+  const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
+
+  doc.setFillColor(185, 28, 28);
+  doc.rect(0, 0, 80, 3, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text("AFRC SELF-SERVICE", 40, 10, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text("AI Food Recognition Cashier", 40, 14, { align: "center" });
+  doc.text("VOIDED BILL RECEIPT", 40, 18, { align: "center" });
+
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineDashPattern([1, 1], 0);
+  doc.line(6, 21.5, 74, 21.5);
+
+  doc.setFontSize(8);
+  doc.setTextColor(71, 85, 105);
+  doc.text("BILL NO:", 6, 26.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(15, 23, 42);
+  doc.text("#" + billNo, 74, 26.5, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("DATE:", 6, 31);
+  doc.setTextColor(15, 23, 42);
+  doc.text(dateStr + " " + timeStr, 74, 31, { align: "right" });
+
+  doc.setTextColor(71, 85, 105);
+  doc.text("STATUS:", 6, 35.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(185, 28, 28);
+  doc.text("VOID", 74, 35.5, { align: "right" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("VOID CAUSE:", 6, 40);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(185, 28, 28);
+  doc.text(String(voidCause).slice(0, 30), 74, 40, { align: "right" });
+
+  doc.line(6, 43.5, 74, 43.5);
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text("ITEM / QTY", 6, 48);
+  doc.text("AMOUNT (RM)", 74, 48, { align: "right" });
+  doc.line(6, 50, 74, 50);
+
+  let y = 55;
+  doc.setFontSize(8);
+  items.forEach((item) => {
+    const pcs = item.piece_count ? ` (${item.piece_count} pcs)` : "";
+    const label = `${item.name} x${item.quantity}${pcs}`;
+    const sub = Number(item.subtotal || 0).toFixed(2);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(label.slice(0, 32), 6, y);
+    doc.text(sub, 74, y, { align: "right" });
+    y += 5;
+  });
+
+  doc.line(6, y - 1.5, 74, y - 1.5);
+  y += 4;
+  doc.setFillColor(254, 242, 242);
+  doc.setLineDashPattern([], 0);
+  doc.roundedRect(6, y - 4, 68, 10, 2, 2, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(153, 27, 27);
+  doc.text("TOTAL (VOID)", 9, y + 2.2);
+  doc.text("RM " + total, 71, y + 2.2, { align: "right" });
+
+  doc.save(`AFRC-Void-Receipt-${billNo}.pdf`);
+}
+
+function renderVoidedBillView(data) {
+  clearActiveSession();
+  if (data.bill_number) {
+    const badge = document.getElementById("billNoBadge");
+    badge.textContent = "Bill #" + data.bill_number + " (VOID)";
+    badge.style.background = "#fee2e2";
+    badge.style.color = "#b91c1c";
+    badge.style.borderColor = "#fecaca";
+    badge.hidden = false;
+  }
+  const voidCause = data.void_reason || "Voided";
+  let itemsHtml = "";
+  if (data.items && data.items.length) {
+    itemsHtml = '<div class="item-list" style="margin-bottom:0.75rem; opacity:0.8;">';
+    data.items.forEach(item => {
+      const pieces = item.piece_count ? `<span class="item-pieces">(${esc(item.piece_count)} pcs)</span>` : "";
+      itemsHtml += `
+        <div class="item">
+          <span class="item-name">${esc(item.name)} <span style="color:#94a3b8; font-weight:400;">× ${esc(item.quantity)}</span>${pieces}</span>
+          <span class="item-price">RM ${Number(item.subtotal).toFixed(2)}</span>
+        </div>`;
+    });
+    itemsHtml += `
+      <div class="total-row" style="padding-top:0.75rem;">
+        <span class="total-label" style="font-size:0.95rem;">Bill Amount (Voided)</span>
+        <span class="total-amount" style="font-size:1.35rem; color:#64748b; text-decoration:line-through;">RM ${Number(data.total || 0).toFixed(2)}</span>
+      </div>
+    </div>`;
+  }
+  billBox.innerHTML = `
+    ${itemsHtml}
+    <div class="wait-alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b; flex-direction:column; align-items:flex-start; gap:0.55rem;">
+      <div style="font-size:0.98rem;"><strong>This bill (#${esc(data.bill_number || "")}) has been voided.</strong></div>
+      <div style="font-size:0.84rem; background:#fee2e2; color:#7f1d1d; padding:0.35rem 0.65rem; border-radius:8px; font-weight:600;">
+        Void Cause: ${esc(voidCause)}
+      </div>
+      <div style="font-size:0.88rem; color:#7f1d1d;">
+        Please head to the cashier counter for assistance.
+      </div>
+      <div style="display:flex; gap:0.55rem; width:100%; margin-top:0.45rem; flex-wrap:wrap;">
+        <button class="btn btn-secondary" type="button" style="flex:1; margin-top:0; padding:0.7rem 0.9rem; font-size:0.85rem;" onclick="downloadPayVoidReceiptPdf()">Save Void Receipt (PDF)</button>
+        <button class="btn" type="button" style="flex:1; margin-top:0; padding:0.7rem 0.9rem; font-size:0.85rem; background:#0f172a; box-shadow:none;" onclick="location.href='/'">Back to Scanner</button>
+      </div>
+    </div>`;
+  form.hidden = true;
+}
+
 async function load() {
   if (!sessionId) {
     billBox.innerHTML = '<p class="note">This payment link is missing a bill.</p>';
@@ -771,25 +920,14 @@ async function load() {
       billBox.innerHTML = '<p class="note">' + esc(messageOf(data) || "Bill not found.") + '</p>';
       return;
     }
+    currentBillData = data;
     if (data.status === "paid") {
       clearActiveSession();
       location.replace("/payment/success?session=" + encodeURIComponent(sessionId));
       return;
     }
-    if (data.status === "void" || data.status === "cancelled") {
-      clearActiveSession();
-      if (data.bill_number) {
-        const badge = document.getElementById("billNoBadge");
-        badge.textContent = "Bill #" + data.bill_number + " (VOID)";
-        badge.hidden = false;
-      }
-      billBox.innerHTML = `
-        <div class="wait-alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b; flex-direction:column; align-items:flex-start; gap:0.5rem;">
-          <div><strong>This bill has been voided.</strong></div>
-          <div>Please proceed to the counter to pay with our cashier.</div>
-          <button class="btn btn-secondary" type="button" style="margin-top:0.5rem;" onclick="location.href='/'">Back to Main Page</button>
-        </div>`;
-      form.hidden = true;
+    if (data.status === "void" || data.status === "cancelled" || data.status === "needs_cashier") {
+      renderVoidedBillView(data);
       return;
     }
 
@@ -838,20 +976,6 @@ async function load() {
     billBox.innerHTML = html;
     form.hidden = false;
     syncButtons();
-
-    if (data.status === "needs_cashier") {
-      confirmBox.disabled = true;
-      payBtn.disabled = true;
-      cashierBtn.disabled = true;
-      cashierBtn.textContent = "Help Requested";
-      cashierWait.innerHTML = `
-        <div class="wait-alert">
-          <span style="font-size:1.2rem;">🙋</span>
-          <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
-        </div>`;
-      return;
-    }
-
     renderPayTurnstile();
   } catch (e) {
     billBox.innerHTML = '<p class="note">Could not load this bill. Please try again.</p>';

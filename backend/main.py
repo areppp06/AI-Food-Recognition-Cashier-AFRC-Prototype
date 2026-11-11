@@ -4,6 +4,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Annotated, List
+import asyncio
 import math
 import os
 import uuid
@@ -25,6 +26,9 @@ COOLDOWN_MINUTES = 25
 BILL_EXPIRY_MINUTES = int(os.getenv("BILL_EXPIRY_MINUTES", "15"))
 app = FastAPI(title="AFRC Prototype", version="1.0")
 
+_R2_SESSION_KEYS: dict[str, str] = {}
+_R2_BILL_KEYS: dict[str, str] = {}
+
 def _r2_config():
     account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
     api_token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
@@ -38,40 +42,57 @@ def _r2_config():
         return None
     return account_id, api_token, bucket
 
+def _register_r2_key(key: str) -> None:
+    if not key:
+        return
+    name = key.rsplit("/", 1)[-1]
+    if name.lower().endswith(".jpg"):
+        stem = name[:-4]
+    else:
+        stem = name
+    if "_" in stem:
+        bill_no, sid = stem.split("_", 1)
+        if bill_no:
+            _R2_BILL_KEYS[bill_no.upper()] = key
+        if sid:
+            _R2_SESSION_KEYS[sid] = key
+    else:
+        _R2_SESSION_KEYS[stem] = key
+
 async def _upload_plate_to_r2(key: str, image_bytes: bytes) -> bool:
     cfg = _r2_config()
     if not cfg:
         return False
     account_id, api_token, bucket = cfg
-    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{quote(key, safe='/')}"
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "image/jpeg",
+    }
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.put(
-                url,
-                content=image_bytes,
-                headers={
-                    "Authorization": f"Bearer {api_token}",
-                    "Content-Type": "image/jpeg",
-                },
-            )
-            return 200 <= resp.status_code < 300
+            for safe_chars in ("/", ""):
+                url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{quote(key, safe=safe_chars)}"
+                resp = await client.put(url, content=image_bytes, headers=headers)
+                if 200 <= resp.status_code < 300:
+                    _register_r2_key(key)
+                    return True
     except Exception:
         return False
+    return False
 
 async def _fetch_plate_from_r2(key: str):
     cfg = _r2_config()
     if not cfg or not key:
         return None
     account_id, api_token, bucket = cfg
-    url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{quote(key, safe='/')}"
+    headers = {"Authorization": f"Bearer {api_token}"}
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(
-                url,
-                headers={"Authorization": f"Bearer {api_token}"},
-            )
-            if 200 <= resp.status_code < 300 and resp.content:
-                return resp.content
+            for safe_chars in ("/", ""):
+                url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{quote(key, safe=safe_chars)}"
+                resp = await client.get(url, headers=headers)
+                if 200 <= resp.status_code < 300 and resp.content:
+                    return resp.content
     except Exception:
         pass
     return None
@@ -168,7 +189,7 @@ def _find_active_bill(
     session_id: str = "",
     explicit_token: str = "",
 ):
-    active_statuses = ("open", "pending", "needs_cashier", "retaking")
+    active_statuses = ("open", "pending", "retaking")
     for sid in (
         (session_id or "").strip(),
         request.cookies.get("afrc_active_session", "").strip(),
@@ -196,14 +217,22 @@ def _expire_stale_bills(db: Session) -> None:
     cutoff = datetime.utcnow() - timedelta(minutes=BILL_EXPIRY_MINUTES)
     stale = (
         db.query(SessionBill)
-        .filter(SessionBill.status.in_(("open", "pending", "retaking")))
+        .filter(SessionBill.status.in_(("open", "pending", "retaking", "needs_cashier")))
         .all()
     )
     changed = False
     for bill in stale:
+        if bill.status == "needs_cashier":
+            bill.status = "void"
+            bill.void_reason = bill.void_reason or "Needed Cashier Assistance"
+            bill.updated_at = datetime.utcnow()
+            changed = True
+            continue
         last_touch = bill.updated_at or bill.created_at
         if last_touch and last_touch < cutoff:
             bill.status = "void"
+            bill.void_reason = f"Ghosted / Stale Bill ({BILL_EXPIRY_MINUTES}m Timeout)"
+            bill.updated_at = datetime.utcnow()
             changed = True
     if changed:
         db.commit()
@@ -272,7 +301,7 @@ def _require_turnstile(token: str, expected_action: str, request: Request) -> No
     ):
         raise HTTPException(status_code=403, detail="forbidden")
 
-def _ensure_r2_bucket():
+def _sync_r2_objects() -> None:
     cfg = _r2_config()
     if not cfg:
         return
@@ -288,13 +317,55 @@ def _ensure_r2_bucket():
                 json={"name": bucket, "locationHint": "apac"},
                 timeout=10.0,
             )
+        objs_resp = httpx.get(
+            f"{base}/{quote(bucket, safe='')}/objects",
+            headers=headers,
+            timeout=10.0,
+        )
+        if 200 <= objs_resp.status_code < 300:
+            data = objs_resp.json()
+            for obj in (data.get("result") or []):
+                key = str(obj.get("key") or "").strip()
+                if key:
+                    _register_r2_key(key)
+            if _R2_SESSION_KEYS or _R2_BILL_KEYS:
+                db = SessionLocal()
+                try:
+                    rows = db.query(SessionBill).filter((SessionBill.image_key == None) | (SessionBill.image_key == "")).all()
+                    changed = False
+                    for s in rows:
+                        matched = _R2_SESSION_KEYS.get(s.id) or _R2_BILL_KEYS.get((s.bill_number or "").upper())
+                        if matched:
+                            s.image_key = matched
+                            changed = True
+                    if changed:
+                        db.commit()
+                finally:
+                    db.close()
     except Exception:
         pass
 
+async def _stale_bills_watcher():
+    while True:
+        await asyncio.sleep(60)
+        db = SessionLocal()
+        try:
+            _expire_stale_bills(db)
+        except Exception:
+            pass
+        finally:
+            db.close()
+
 @app.on_event("startup")
-def startup():
+async def startup():
     init_db()
-    _ensure_r2_bucket()
+    _sync_r2_objects()
+    db = SessionLocal()
+    try:
+        _expire_stale_bills(db)
+    finally:
+        db.close()
+    asyncio.create_task(_stale_bills_watcher())
 
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -449,6 +520,7 @@ async def recognize(
 
     if target_bill and (target_bill.retake_count or 0) >= MAX_RETAKES:
         target_bill.status = "void"
+        target_bill.void_reason = "Exceeded 4 Retries Limit"
         target_bill.updated_at = datetime.utcnow()
         db.commit()
         _set_cooldown(request, c_token or target_bill.client_token or "", db)
@@ -542,16 +614,16 @@ async def recognize(
         session_id = target_bill.id
         bill_number = target_bill.bill_number or next_bill_number(db)
         r2_key = f"plates/{bill_number}_{session_id}.jpg"
-        uploaded_to_r2 = await _upload_plate_to_r2(r2_key, image_bytes)
-        if not uploaded_to_r2:
-            r2_key = ""
         try:
             UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
             (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
         except OSError:
             pass
+        uploaded_to_r2 = await _upload_plate_to_r2(r2_key, image_bytes)
+        if not uploaded_to_r2:
+            r2_key = target_bill.image_key or f"plates/{bill_number}_{session_id}.jpg"
         target_bill.bill_number = bill_number
-        target_bill.image_key = r2_key or target_bill.image_key
+        target_bill.image_key = r2_key
         target_bill.raw_ai = json.dumps([i.dict() for i in ai_items])
         target_bill.final_bill = json.dumps([b.dict() for b in bill_items])
         target_bill.retake_count = (target_bill.retake_count or 0) + 1
@@ -565,14 +637,14 @@ async def recognize(
         session_id = str(uuid.uuid4())
         bill_number = next_bill_number(db)
         r2_key = f"plates/{bill_number}_{session_id}.jpg"
+        try:
+            UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+            (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
+        except OSError:
+            pass
         uploaded_to_r2 = await _upload_plate_to_r2(r2_key, image_bytes)
         if not uploaded_to_r2:
-            r2_key = ""
-            try:
-                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-                (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
-            except OSError:
-                pass
+            r2_key = f"plates/{bill_number}_{session_id}.jpg"
         session = SessionBill(
             id=session_id,
             bill_number=bill_number,
@@ -602,12 +674,27 @@ def _bill_payload(session: SessionBill) -> dict:
     total = round(sum(float(item.get("subtotal") or 0) for item in items), 2)
     img_path = UPLOAD_DIR / f"{session.id}.jpg"
     retakes_used = int(session.retake_count or 0)
+    bill_no_upper = (session.bill_number or "").upper()
+    has_r2 = (
+        bool(session.image_key)
+        or (session.id in _R2_SESSION_KEYS)
+        or (bill_no_upper in _R2_BILL_KEYS)
+    )
+    status = session.status or "open"
+    void_reason = session.void_reason or ""
+    if status in ("void", "cancelled") and not void_reason:
+        void_reason = (
+            "Exceeded 4 Retries Limit"
+            if retakes_used >= MAX_RETAKES
+            else f"Ghosted / Stale Bill ({BILL_EXPIRY_MINUTES}m Timeout)"
+        )
     return {
         "session_id": session.id,
-        "bill_number": session.bill_number or f"AAA-0001",
+        "bill_number": session.bill_number or "AAA-0001",
         "items": items,
         "total": total,
-        "status": session.status or "open",
+        "status": status,
+        "void_reason": void_reason,
         "retake_count": retakes_used,
         "retakes_left": max(0, MAX_RETAKES - retakes_used),
         "max_retakes": MAX_RETAKES,
@@ -617,7 +704,7 @@ def _bill_payload(session: SessionBill) -> dict:
         "created_at": (session.created_at.isoformat() + "Z") if session.created_at else "",
         "updated_at": (session.updated_at.isoformat() + "Z") if session.updated_at else "",
         "paid_at": (session.paid_at.isoformat() + "Z") if session.paid_at else "",
-        "has_image": bool(session.image_key) or img_path.is_file(),
+        "has_image": has_r2 or img_path.is_file(),
     }
 
 @app.get("/api/sessions/{session_id}")
@@ -631,14 +718,14 @@ def get_session(session_id: str, request: Request, db: Session = Depends(get_db)
     if bill.status == "retaking":
         bill.status = "open"
         changed = True
-    if bill.status in ("open", "pending", "needs_cashier") and not bill.client_token and c_token:
+    if bill.status in ("open", "pending") and not bill.client_token and c_token:
         bill.client_token = c_token
         changed = True
     if changed:
         db.commit()
     resp = JSONResponse(content=_bill_payload(bill), headers=NO_CACHE_HEADERS)
     resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
-    if bill.status in ("open", "pending", "needs_cashier"):
+    if bill.status in ("open", "pending"):
         resp.set_cookie("afrc_active_session", bill.id, max_age=3600, path="/", samesite="lax")
     elif bill.status in ("paid", "void", "cancelled"):
         resp.delete_cookie("afrc_active_session", path="/")
@@ -680,18 +767,41 @@ async def get_session_image(session_id: str, db: Session = Depends(get_db)):
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
-    if bill.image_key:
-        r2_bytes = await _fetch_plate_from_r2(bill.image_key)
+    img_path = UPLOAD_DIR / f"{bill.id}.jpg"
+    if img_path.is_file() and img_path.stat().st_size > 0:
+        return FileResponse(img_path, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
+
+    bill_no_upper = (bill.bill_number or "").upper()
+    if bill.id not in _R2_SESSION_KEYS and bill_no_upper not in _R2_BILL_KEYS:
+        _sync_r2_objects()
+
+    candidate_keys = []
+    for k in (
+        bill.image_key,
+        _R2_SESSION_KEYS.get(bill.id),
+        f"plates/{bill.bill_number}_{bill.id}.jpg" if bill.bill_number else "",
+        _R2_BILL_KEYS.get(bill_no_upper),
+    ):
+        if k and k not in candidate_keys:
+            candidate_keys.append(k)
+
+    for key in candidate_keys:
+        r2_bytes = await _fetch_plate_from_r2(key)
         if r2_bytes:
+            try:
+                UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+                img_path.write_bytes(r2_bytes)
+            except OSError:
+                pass
+            if not bill.image_key:
+                bill.image_key = key
+                db.commit()
             return Response(
                 content=r2_bytes,
                 media_type="image/jpeg",
                 headers={"Cache-Control": "no-cache"},
             )
-    img_path = UPLOAD_DIR / f"{bill.id}.jpg"
-    if not img_path.is_file():
-        raise HTTPException(status_code=404, detail="Image not found")
-    return FileResponse(img_path, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
+    raise HTTPException(status_code=404, detail="Image not found")
 
 @app.post("/api/sessions/{session_id}/need-cashier")
 def need_cashier(session_id: str, db: Session = Depends(get_db)):
@@ -700,12 +810,44 @@ def need_cashier(session_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Bill not found")
     if bill.status == "paid":
         raise HTTPException(status_code=409, detail="This bill is already paid")
-    if bill.status == "void":
-        raise HTTPException(status_code=409, detail="This bill has been voided. Please pay at the counter.")
-    bill.status = "needs_cashier"
+    bill.status = "void"
+    bill.void_reason = "Needed Cashier Assistance"
     bill.updated_at = datetime.utcnow()
     db.commit()
-    return {"status": "needs_cashier"}
+    resp = JSONResponse(
+        content={
+            "status": "void",
+            "void_reason": bill.void_reason,
+            "bill_number": bill.bill_number,
+            "message": f"Bill #{bill.bill_number} has been voided. Please head to the cashier counter for assistance.",
+        },
+        headers=NO_CACHE_HEADERS,
+    )
+    resp.delete_cookie("afrc_active_session", path="/")
+    return resp
+
+@app.post("/api/sessions/{session_id}/cancel")
+def cancel_bill(session_id: str, db: Session = Depends(get_db)):
+    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    if bill.status == "paid":
+        raise HTTPException(status_code=409, detail="This bill is already paid")
+    bill.status = "void"
+    bill.void_reason = "Customer Cancelled"
+    bill.updated_at = datetime.utcnow()
+    db.commit()
+    resp = JSONResponse(
+        content={
+            "status": "void",
+            "void_reason": bill.void_reason,
+            "bill_number": bill.bill_number,
+            "message": f"Bill #{bill.bill_number} has been cancelled and voided.",
+        },
+        headers=NO_CACHE_HEADERS,
+    )
+    resp.delete_cookie("afrc_active_session", path="/")
+    return resp
 
 @app.post("/api/sessions/{session_id}/void-retake")
 def void_retake(session_id: str, request: Request, payload: dict = None, db: Session = Depends(get_db)):
@@ -716,12 +858,14 @@ def void_retake(session_id: str, request: Request, payload: dict = None, db: Ses
         raise HTTPException(status_code=409, detail="This bill is already paid")
     c_token = _get_client_token(request, (payload or {}).get("client_token", "")) or bill.client_token or ""
     bill.status = "void"
+    bill.void_reason = "Exceeded 4 Retries Limit"
     bill.updated_at = datetime.utcnow()
     db.commit()
     _set_cooldown(request, c_token, db)
     resp = JSONResponse(
         content={
             "status": "void",
+            "void_reason": bill.void_reason,
             "cooldown_minutes": COOLDOWN_MINUTES,
             "message": f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min.",
         },
@@ -988,9 +1132,17 @@ def update_admin_bill_status(session_id: str, payload: dict, db: Session = Depen
     new_status = str(payload.get("status") or "").strip().lower()
     if new_status not in ("open", "pending", "paid", "needs_cashier", "void", "cancelled"):
         raise HTTPException(status_code=400, detail="Invalid status")
-    bill.status = new_status
+    if new_status in ("needs_cashier", "cancelled"):
+        bill.status = "void"
+        bill.void_reason = (
+            "Needed Cashier Assistance" if new_status == "needs_cashier" else "Customer Cancelled"
+        )
+    else:
+        bill.status = new_status
+        if new_status == "void":
+            bill.void_reason = str(payload.get("void_reason") or "").strip() or bill.void_reason or "Voided by Admin"
     bill.updated_at = datetime.utcnow()
-    if new_status == "paid" and not bill.paid_at:
+    if bill.status == "paid" and not bill.paid_at:
         bill.paid_at = datetime.utcnow()
     db.commit()
     return _bill_payload(bill)

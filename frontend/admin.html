@@ -541,9 +541,9 @@
           <div class="stat-sub">Sequential from #AAA-0001</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Needs Cashier / Pending</div>
+          <div class="stat-label">Voided / Open Bills</div>
           <div class="stat-value amber" id="statAttention">0</div>
-          <div class="stat-sub" id="statAttentionSub">0 waiting for staff</div>
+          <div class="stat-sub" id="statAttentionSub">0 open/pending · 0 voided</div>
         </div>
       </div>
 
@@ -560,7 +560,8 @@
                 <th>Date / Time</th>
                 <th>Ordered Items</th>
                 <th>Total</th>
-                <th>Status</th>
+                <th>Status / Void Cause</th>
+                <th>Photo</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -576,10 +577,9 @@
         <div class="panel-header">
           <div class="panel-title">All Logged Bills</div>
           <div class="filter-bar">
-            <input class="search-input" id="billSearch" oninput="renderBillsTable()" placeholder="Search Bill #AAA-0001, dish, email..." type="text">
+            <input class="search-input" id="billSearch" oninput="renderBillsTable()" placeholder="Search Bill #AAA-0001, dish, void cause..." type="text">
             <button class="pill-filter active" data-status="all" onclick="setStatusFilter('all', this)">All</button>
             <button class="pill-filter" data-status="paid" onclick="setStatusFilter('paid', this)">Paid</button>
-            <button class="pill-filter" data-status="needs_cashier" onclick="setStatusFilter('needs_cashier', this)">Needs Cashier</button>
             <button class="pill-filter" data-status="open" onclick="setStatusFilter('open', this)">Open / Pending</button>
             <button class="pill-filter" data-status="void" onclick="setStatusFilter('void', this)">Void</button>
           </div>
@@ -593,7 +593,7 @@
                 <th>Items Ordered</th>
                 <th>Customer Email</th>
                 <th>Total (RM)</th>
-                <th>Status</th>
+                <th>Status / Void Cause</th>
                 <th>Photo</th>
                 <th>Actions</th>
               </tr>
@@ -719,14 +719,31 @@ function switchTab(tabId, title) {
   document.getElementById("sidebar").classList.remove("open");
 }
 
-function statusBadge(status) {
+function statusBadge(status, voidReason) {
   const s = (status || "open").toLowerCase();
   if (s === "paid") return '<span class="badge badge-paid">Paid</span>';
-  if (s === "needs_cashier") return '<span class="badge badge-cashier">Needs Cashier</span>';
   if (s === "pending") return '<span class="badge badge-pending">Pending</span>';
-  if (s === "void") return '<span class="badge badge-cancelled">Void</span>';
-  if (s === "cancelled") return '<span class="badge badge-cancelled">Cancelled</span>';
+  if (s === "void" || s === "cancelled" || s === "needs_cashier") {
+    const cause = voidReason || (s === "needs_cashier" ? "Needed Cashier Assistance" : "Voided");
+    return `
+      <div style="display:flex; flex-direction:column; align-items:flex-start; gap:0.25rem;">
+        <span class="badge badge-cancelled">Void</span>
+        <span style="font-size:0.72rem; font-weight:600; color:#b91c1c; line-height:1.25;">${esc(cause)}</span>
+      </div>`;
+  }
   return '<span class="badge badge-open">Open</span>';
+}
+
+function renderPhotoCell(b) {
+  if (!b.has_image) {
+    return `<span style="color:#94a3b8; font-size:0.78rem;">No photo</span>`;
+  }
+  const imgUrl = `/api/sessions/${encodeURIComponent(b.session_id)}/image?v=${encodeURIComponent(b.retake_count || 0)}`;
+  return `
+    <div style="display:inline-flex; align-items:center; gap:0.45rem;">
+      <img src="${imgUrl}" alt="Plate" style="width:42px; height:32px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1; cursor:zoom-in; background:#0f172a;" onclick="viewPhoto('${imgUrl}')" onerror="this.style.display='none';">
+      <button class="btn btn-outline btn-sm" onclick="viewPhoto('${imgUrl}')">View Photo</button>
+    </div>`;
 }
 
 function formatDateTime(iso) {
@@ -758,15 +775,16 @@ async function loadBills() {
   document.getElementById("statTotalRev").textContent = "RM " + Number(sum.total_revenue || 0).toFixed(2);
   document.getElementById("statPaidCount").textContent = `${sum.paid_count || 0} paid bills`;
   document.getElementById("statTotalBills").textContent = String(sum.total_bills || 0);
-  const attn = (sum.needs_cashier_count || 0) + (sum.pending_count || 0);
-  document.getElementById("statAttention").textContent = String(attn);
-  document.getElementById("statAttentionSub").textContent = `${sum.needs_cashier_count || 0} needs cashier · ${sum.pending_count || 0} open/pending`;
+  const voidCount = sum.void_count || 0;
+  const pendingCount = sum.pending_count || 0;
+  document.getElementById("statAttention").textContent = String(voidCount);
+  document.getElementById("statAttentionSub").textContent = `${voidCount} voided · ${pendingCount} open/pending`;
   document.getElementById("navBillsCount").textContent = String(sum.total_bills || 0);
 
   // Recent bills (top 8)
   const recentBody = document.getElementById("recentBillsBody");
   if (!allBills.length) {
-    recentBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#94a3b8; padding:2rem;">No bills logged yet.</td></tr>';
+    recentBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:2rem;">No bills logged yet.</td></tr>';
   } else {
     recentBody.innerHTML = allBills.slice(0, 8).map(b => `
       <tr>
@@ -774,7 +792,8 @@ async function loadBills() {
         <td>${esc(formatDateTime(b.created_at))}</td>
         <td>${formatItemsSummary(b.items)}</td>
         <td style="font-weight:700;">RM ${Number(b.total).toFixed(2)}</td>
-        <td>${statusBadge(b.status)}</td>
+        <td>${statusBadge(b.status, b.void_reason)}</td>
+        <td>${renderPhotoCell(b)}</td>
         <td>
           <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
             <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">Receipt PDF</button>
@@ -799,15 +818,15 @@ function renderBillsTable() {
   const q = (document.getElementById("billSearch").value || "").trim().toLowerCase();
   const filtered = allBills.filter(b => {
     if (statusFilter === "paid" && b.status !== "paid") return false;
-    if (statusFilter === "needs_cashier" && b.status !== "needs_cashier") return false;
     if (statusFilter === "open" && !["open", "pending"].includes(b.status)) return false;
-    if (statusFilter === "void" && !["void", "cancelled"].includes(b.status)) return false;
+    if (statusFilter === "void" && !["void", "cancelled", "needs_cashier"].includes(b.status)) return false;
     if (!q) return true;
     const itemStr = (b.items || []).map(i => i.name).join(" ").toLowerCase();
     return (
       (b.bill_number || "").toLowerCase().includes(q) ||
       (b.session_id || "").toLowerCase().includes(q) ||
       (b.receipt_email || "").toLowerCase().includes(q) ||
+      (b.void_reason || "").toLowerCase().includes(q) ||
       itemStr.includes(q)
     );
   });
@@ -819,9 +838,6 @@ function renderBillsTable() {
   }
 
   tbody.innerHTML = filtered.map(b => {
-    const photoBtn = b.has_image
-      ? `<button class="btn btn-outline btn-sm" onclick="viewPhoto('/api/sessions/${encodeURIComponent(b.session_id)}/image')">View Photo</button>`
-      : `<span style="color:#94a3b8; font-size:0.78rem;">No photo</span>`;
     const markPaidBtn = b.status !== "paid"
       ? `<button class="btn btn-sm" onclick="setBillStatus('${esc(b.session_id)}', 'paid')">Mark Paid</button>`
       : "";
@@ -832,8 +848,8 @@ function renderBillsTable() {
         <td>${formatItemsSummary(b.items)}</td>
         <td>${esc(b.receipt_email || "-")}</td>
         <td style="font-weight:700;">RM ${Number(b.total).toFixed(2)}</td>
-        <td>${statusBadge(b.status)}</td>
-        <td>${photoBtn}</td>
+        <td>${statusBadge(b.status, b.void_reason)}</td>
+        <td>${renderPhotoCell(b)}</td>
         <td>
           <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
             <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">PDF</button>
@@ -870,14 +886,18 @@ function downloadBillPdf(sessionId) {
   const items = billData.items || [];
   const billNo = billData.bill_number || "AAA-0001";
   const total = Number(billData.total || 0).toFixed(2);
-  const dt = new Date(billData.paid_at || billData.created_at || Date.now());
+  const statusUpper = String(billData.status || "open").toUpperCase();
+  const isVoid = ["VOID", "CANCELLED", "NEEDS_CASHIER"].includes(statusUpper);
+  const voidCause = billData.void_reason || (isVoid ? "Voided" : "");
+  const dt = new Date(billData.paid_at || billData.updated_at || billData.created_at || Date.now());
   const dateStr = dt.toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" });
   const timeStr = dt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-  const pageHeight = Math.max(115, 92 + items.length * 9);
+  const extraVoidHeight = isVoid ? 7 : 0;
+  const pageHeight = Math.max(118, 94 + extraVoidHeight + items.length * 9);
   const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
-  doc.setFillColor(15, 23, 42);
+  doc.setFillColor(isVoid ? 185 : 15, isVoid ? 28 : 23, isVoid ? 28 : 42);
   doc.rect(0, 0, 80, 3, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
@@ -887,7 +907,7 @@ function downloadBillPdf(sessionId) {
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
   doc.text("AI Food Recognition Cashier", 40, 14, { align: "center" });
-  doc.text("OFFICIAL PAYMENT RECEIPT", 40, 18, { align: "center" });
+  doc.text(isVoid ? "VOIDED BILL RECEIPT" : "OFFICIAL PAYMENT RECEIPT", 40, 18, { align: "center" });
 
   doc.setDrawColor(203, 213, 225);
   doc.setLineDashPattern([1, 1], 0);
@@ -909,17 +929,33 @@ function downloadBillPdf(sessionId) {
   doc.setTextColor(71, 85, 105);
   doc.text("STATUS:", 6, 35.5);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(15, 23, 42);
-  doc.text(String(billData.status || "open").toUpperCase(), 74, 35.5, { align: "right" });
+  if (isVoid) {
+    doc.setTextColor(185, 28, 28);
+    doc.text("VOID", 74, 35.5, { align: "right" });
+  } else {
+    doc.setTextColor(15, 23, 42);
+    doc.text(statusUpper, 74, 35.5, { align: "right" });
+  }
 
-  doc.line(6, 39, 74, 39);
+  let headerBottomY = 39;
+  if (isVoid && voidCause) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text("VOID CAUSE:", 6, 40);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(185, 28, 28);
+    doc.text(String(voidCause).slice(0, 30), 74, 40, { align: "right" });
+    headerBottomY = 43.5;
+  }
+
+  doc.line(6, headerBottomY, 74, headerBottomY);
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text("ITEM / QTY", 6, 43.5);
-  doc.text("AMOUNT (RM)", 74, 43.5, { align: "right" });
-  doc.line(6, 45.5, 74, 45.5);
+  doc.text("ITEM / QTY", 6, headerBottomY + 4.5);
+  doc.text("AMOUNT (RM)", 74, headerBottomY + 4.5, { align: "right" });
+  doc.line(6, headerBottomY + 6.5, 74, headerBottomY + 6.5);
 
-  let y = 50.5;
+  let y = headerBottomY + 11.5;
   doc.setFontSize(8);
   items.forEach((item) => {
     const pcs = item.piece_count ? ` (${item.piece_count} pcs)` : "";
@@ -942,14 +978,14 @@ function downloadBillPdf(sessionId) {
 
   doc.line(6, y - 1.5, 74, y - 1.5);
   y += 4;
-  doc.setFillColor(248, 250, 252);
+  doc.setFillColor(isVoid ? 254 : 248, isVoid ? 242 : 250, isVoid ? 242 : 252);
   doc.setLineDashPattern([], 0);
   doc.roundedRect(6, y - 4, 68, 10, 2, 2, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text("TOTAL", 9, y + 2.2);
-  doc.setTextColor(255, 94, 54);
+  doc.setTextColor(isVoid ? 153 : 15, isVoid ? 27 : 23, isVoid ? 27 : 42);
+  doc.text(isVoid ? "TOTAL (VOID)" : "TOTAL", 9, y + 2.2);
+  doc.setTextColor(isVoid ? 185 : 255, isVoid ? 28 : 94, isVoid ? 28 : 54);
   doc.text("RM " + total, 71, y + 2.2, { align: "right" });
 
   doc.save(`AFRC-Receipt-${billNo}.pdf`);

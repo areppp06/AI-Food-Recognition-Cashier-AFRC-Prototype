@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parent.parent
 ENV_DIR = ROOT / "env"
 load_dotenv(ENV_DIR / ".env")
 load_dotenv(ENV_DIR / "curlec.env")
+load_dotenv(ROOT / ".env")
+load_dotenv(ROOT / "curlec.env")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./afrc.db")
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -47,6 +49,7 @@ class SessionBill(Base):
     raw_ai = Column(Text)
     final_bill = Column(Text)
     status = Column(String, default="open")
+    void_reason = Column(String, default="")
     receipt_email = Column(String, default="")
     curlec_order_id = Column(String, default="")
     curlec_payment_id = Column(String, default="")
@@ -103,6 +106,8 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN bill_number TEXT DEFAULT ''")
         if session_columns and "status" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN status TEXT DEFAULT 'open'")
+        if session_columns and "void_reason" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN void_reason TEXT DEFAULT ''")
         if session_columns and "receipt_email" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN receipt_email TEXT DEFAULT ''")
         if session_columns and "curlec_order_id" not in session_columns:
@@ -119,6 +124,22 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN updated_at DATETIME")
         if session_columns and "paid_at" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN paid_at DATETIME")
+        conn.exec_driver_sql(
+            "UPDATE sessions SET status = 'void', void_reason = 'Needed Cashier Assistance' "
+            "WHERE status = 'needs_cashier'"
+        )
+        conn.exec_driver_sql(
+            "UPDATE sessions SET status = 'void', void_reason = 'Customer Cancelled' "
+            "WHERE status = 'cancelled' AND (void_reason IS NULL OR void_reason = '')"
+        )
+        conn.exec_driver_sql(
+            "UPDATE sessions SET void_reason = 'Exceeded 4 Retries Limit' "
+            "WHERE status = 'void' AND (void_reason IS NULL OR void_reason = '') AND retake_count >= 4"
+        )
+        conn.exec_driver_sql(
+            "UPDATE sessions SET void_reason = 'Ghosted / Stale Bill (15m Timeout)' "
+            "WHERE status = 'void' AND (void_reason IS NULL OR void_reason = '')"
+        )
     db = SessionLocal()
     # Backfill bill_number for any existing sessions missing one
     missing_bills = (
