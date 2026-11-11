@@ -16,6 +16,7 @@
 - Cashier verification screen with 4-digit PIN
 - Audit logs for cashier actions
 - Structured JSON responses
+- Server-enforced scan rate limiting tied to session, IP address, and device ID (persisted in SQLite, live-configurable via `env/rate-limit.env`)
 
 ## Tech Stack
 - Backend: Python + FastAPI + SQLite
@@ -39,7 +40,7 @@ bash install.sh
 ```
 
 What `bash install.sh` does automatically:
-1. **Interactive Env Setup**: On first run (when `env/.env` or `env/curlec.env` is missing), it prompts you to enter each environment variable one by one. Press **Enter** to keep the default shown in `[brackets]`, or type your value.
+1. **Interactive Env Setup**: On first run (when `env/.env`, `env/curlec.env`, or `env/rate-limit.env` is missing), it prompts you to enter each environment variable one by one. Press **Enter** to keep the default shown in `[brackets]`, or type your value.
    - *Tip*: Include your VPS IP or domain in `TURNSTILE_HOSTNAMES` (e.g., `localhost,127.0.0.1,YOUR_VPS_IP`).
 2. **Virtual Environment & Packages**: Creates `./venv` and installs all dependencies from `requirements.txt`.
 3. **Auto-Configures & Starts `systemd` Service**: Automatically creates `/etc/systemd/system/afrc.service`, enables it on boot, and runs FastAPI (`uvicorn`) in the background on `http://0.0.0.0:8000` (or pass `--foreground` to run in the current terminal).
@@ -66,7 +67,7 @@ What `bash install.sh` does automatically:
 ### Manual Setup
 1. `python3 -m venv venv && source venv/bin/activate`
 2. `pip install -r requirements.txt`
-3. Copy `env/.env.example` to `env/.env` and `env/curlec.env.example` to `env/curlec.env` and add your keys
+3. Copy `env/.env.example` to `env/.env`, `env/curlec.env.example` to `env/curlec.env`, and `env/rate-limit.env.example` to `env/rate-limit.env` and configure your keys/limits
 4. `uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000`
 5. Open http://localhost:8000
 
@@ -91,7 +92,8 @@ What `bash install.sh` does automatically:
 │   └── ai_service.py    # Vision AI wrapper
 ├── env/
 │   ├── .env.example
-│   └── curlec.env.example
+│   ├── curlec.env.example
+│   └── rate-limit.env.example
 ├── frontend/
 │   ├── index.html       # Customer flow
 │   ├── admin.html

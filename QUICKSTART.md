@@ -26,10 +26,10 @@ bash install.sh
 
 ### What `bash install.sh` Does:
 1. **Interactive Environment Setup** (First Run Only):
-   - Checks if `env/.env` and `env/curlec.env` exist.
+   - Checks if `env/.env`, `env/curlec.env`, and `env/rate-limit.env` exist.
    - If missing, prompts you directly in the terminal for each configuration value.
    - Press **Enter** to accept the default value shown in `[brackets]`, or type your own value and press **Enter**.
-   - Saves your credentials into `env/.env` and `env/curlec.env` with restricted permissions (`chmod 600`).
+   - Saves your settings into `env/.env`, `env/curlec.env`, and `env/rate-limit.env` with restricted permissions (`chmod 600`).
 2. **Python Virtual Environment**:
    - Creates `./venv` if it doesn't exist and upgrades `pip`.
    - Installs all required packages from `requirements.txt`.
@@ -41,7 +41,7 @@ bash install.sh
 
 ## 3. Environment Variables Reference
 
-During the interactive setup, `install.sh` walks through two files inside the `env/` directory:
+During the interactive setup, `install.sh` walks through three files inside the `env/` directory:
 
 ### `env/.env` (App, AI Provider & Cloudflare Turnstile)
 
@@ -71,6 +71,19 @@ During the interactive setup, `install.sh` walks through two files inside the `e
 | `CURLEC_KEY_SECRET` | `your-curlec-key-secret` | Curlec / Razorpay API Key Secret |
 | `CURLEC_WEBHOOK_SECRET` | `your-curlec-webhook-secret` | Webhook secret used to verify `/api/curlec/webhook` events |
 
+### `env/rate-limit.env` (Scan Rate Limiting & Cooldown)
+
+> Changes saved to `env/rate-limit.env` (or `rate-limit.env`) take effect immediately on the next request without restarting the server. Active cooldowns and scan attempt windows are stored in SQLite and persist across crashes/restarts.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `MAX_SCANS_PER_SESSION` | `5` | Max photo scans allowed per browser/bill session within `SCAN_WINDOW_MINUTES` |
+| `MAX_SCANS_PER_DEVICE` | `5` | Max photo scans allowed per device ID within `SCAN_WINDOW_MINUTES` |
+| `MAX_SCANS_PER_IP` | `6` | Max photo scans allowed per IP address within `SCAN_WINDOW_MINUTES` |
+| `SCAN_WINDOW_MINUTES` | `15` | Sliding time window (in minutes) before each scan attempt drops from the count |
+| `COOLDOWN_MINUTES` | `25` | Lockout duration (in minutes) once a session, device ID, IP, or retake limit is exceeded |
+| `MAX_RETAKES` | `4` | Max photo retakes allowed per bill (keep `MAX_SCANS_PER_SESSION` and `MAX_SCANS_PER_DEVICE` at least `MAX_RETAKES + 1`) |
+
 ---
 
 ## 4. `install.sh` Options & Flags
@@ -79,7 +92,7 @@ During the interactive setup, `install.sh` walks through two files inside the `e
   ```bash
   bash install.sh --configure
   ```
-  *(Your current values in `env/.env` and `env/curlec.env` will be shown as the defaults in `[brackets]` so you only need to type the ones you want to change.)*
+  *(Your current values in `env/.env`, `env/curlec.env`, and `env/rate-limit.env` will be shown as the defaults in `[brackets]` so you only need to type the ones you want to change.)*
 
 - **Install dependencies & configure env without starting the server:**
   ```bash
