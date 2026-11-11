@@ -16,13 +16,16 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
 
-from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, next_bill_number
+from .db import SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, next_bill_number
 from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
 MAX_RETAKES = 4
-COOLDOWN_MINUTES = 25
+COOLDOWN_MINUTES = int(os.getenv("COOLDOWN_MINUTES", "25"))
+MAX_SCANS_PER_WINDOW = int(os.getenv("MAX_SCANS_PER_WINDOW", "5"))
+MAX_SCANS_PER_IP = int(os.getenv("MAX_SCANS_PER_IP", "6"))
+SCAN_WINDOW_MINUTES = int(os.getenv("SCAN_WINDOW_MINUTES", "15"))
 BILL_EXPIRY_MINUTES = int(os.getenv("BILL_EXPIRY_MINUTES", "15"))
 app = FastAPI(title="AFRC Prototype", version="1.0")
 
@@ -161,6 +164,19 @@ def _device_fingerprint(request: Request) -> str:
     raw = f"{ip}|{ua}"
     return "fp-" + hashlib.sha256(raw.encode("utf-8", errors="ignore")).hexdigest()[:28]
 
+def _get_device_id(request: Request, explicit_device: str = "", explicit_client: str = "") -> str:
+    dev = (
+        (explicit_device or "").strip()
+        or request.cookies.get("afrc_device_id", "").strip()
+        or request.headers.get("x-afrc-device", "").strip()
+        or (explicit_client or "").strip()
+        or request.cookies.get("afrc_client_id", "").strip()
+        or request.headers.get("x-afrc-client", "").strip()
+    )
+    if dev and len(dev) <= 128:
+        return dev
+    return _device_fingerprint(request)
+
 def _get_client_token(request: Request, explicit: str = "") -> str:
     token = (
         (explicit or "").strip()
@@ -171,17 +187,64 @@ def _get_client_token(request: Request, explicit: str = "") -> str:
         return token
     return _device_fingerprint(request)
 
-def _all_client_tokens(request: Request, explicit: str = "") -> list:
+def _all_client_tokens(request: Request, explicit: str = "", explicit_device: str = "") -> list:
     tokens = []
     for candidate in (
         (explicit or "").strip(),
+        (explicit_device or "").strip(),
         request.cookies.get("afrc_client_id", "").strip(),
+        request.cookies.get("afrc_device_id", "").strip(),
         request.headers.get("x-afrc-client", "").strip(),
+        request.headers.get("x-afrc-device", "").strip(),
         _device_fingerprint(request),
     ):
         if candidate and len(candidate) <= 128 and candidate not in tokens:
             tokens.append(candidate)
     return tokens
+
+def _all_session_ids(request: Request, explicit_session: str = "") -> list:
+    sids = []
+    for candidate in (
+        (explicit_session or "").strip(),
+        request.headers.get("x-afrc-session", "").strip(),
+        request.cookies.get("afrc_browser_session", "").strip(),
+        request.cookies.get("afrc_active_session", "").strip(),
+    ):
+        if candidate and len(candidate) <= 128 and candidate not in sids:
+            sids.append(candidate)
+    return sids
+
+def _get_scan_session_id(request: Request, explicit_session: str = "") -> str:
+    sid = (
+        request.headers.get("x-afrc-session", "").strip()
+        or request.cookies.get("afrc_browser_session", "").strip()
+        or (explicit_session or "").strip()
+        or request.cookies.get("afrc_active_session", "").strip()
+    )
+    if sid and len(sid) <= 128:
+        return sid
+    return ""
+
+def _rate_limit_keys(
+    request: Request,
+    client_token: str = "",
+    session_id: str = "",
+    device_id: str = "",
+) -> list:
+    keys = []
+    for t in _all_client_tokens(request, client_token, device_id):
+        for prefix in ("token:", "device:"):
+            k = f"{prefix}{t}"
+            if k not in keys:
+                keys.append(k)
+    ip = _client_ip(request)
+    if ip:
+        keys.append(f"ip:{ip}")
+    for sid in _all_session_ids(request, session_id):
+        k = f"session:{sid}"
+        if k not in keys:
+            keys.append(k)
+    return keys
 
 def _find_active_bill(
     request: Request,
@@ -237,40 +300,172 @@ def _expire_stale_bills(db: Session) -> None:
     if changed:
         db.commit()
 
-def _check_cooldown(request: Request, client_token: str, db: Session) -> int:
-    now = datetime.utcnow()
-    keys = []
-    for t in _all_client_tokens(request, client_token):
-        keys.append(f"token:{t}")
+def _scan_usage_status(
+    request: Request,
+    client_token: str,
+    db: Session,
+    session_id: str = "",
+    device_id: str = "",
+) -> dict:
+    window_start = datetime.utcnow() - timedelta(minutes=SCAN_WINDOW_MINUTES)
+    dev_ids = _all_client_tokens(request, client_token, device_id)
+    sids = _all_session_ids(request, session_id)
     ip = _client_ip(request)
-    if ip:
-        keys.append(f"ip:{ip}")
+
+    device_scans = (
+        db.query(ScanAttempt)
+        .filter(
+            ScanAttempt.created_at >= window_start,
+            ScanAttempt.device_id.in_(dev_ids),
+        )
+        .count()
+        if dev_ids
+        else 0
+    )
+    session_scans = (
+        db.query(ScanAttempt)
+        .filter(
+            ScanAttempt.created_at >= window_start,
+            ScanAttempt.session_id.in_(sids),
+        )
+        .count()
+        if sids
+        else 0
+    )
+    ip_scans = (
+        db.query(ScanAttempt)
+        .filter(
+            ScanAttempt.created_at >= window_start,
+            ScanAttempt.ip == ip,
+        )
+        .count()
+        if ip
+        else 0
+    )
+
+    used = max(device_scans, session_scans)
+    remaining = max(0, MAX_SCANS_PER_WINDOW - used)
+    if ip_scans >= MAX_SCANS_PER_IP:
+        remaining = 0
+    return {
+        "device_scans": device_scans,
+        "session_scans": session_scans,
+        "ip_scans": ip_scans,
+        "scans_used": used,
+        "scans_limit": MAX_SCANS_PER_WINDOW,
+        "scans_remaining": remaining,
+    }
+
+def _check_cooldown(
+    request: Request,
+    client_token: str,
+    db: Session,
+    session_id: str = "",
+    device_id: str = "",
+) -> tuple[int, str]:
+    now = datetime.utcnow()
+    keys = _rate_limit_keys(
+        request,
+        client_token=client_token,
+        session_id=session_id,
+        device_id=device_id,
+    )
     if not keys:
-        return 0
+        return 0, ""
     rows = db.query(ClientCooldown).filter(ClientCooldown.client_key.in_(keys)).all()
     max_remaining = 0
+    reason = ""
     for r in rows:
         if r.cooldown_until and r.cooldown_until > now:
             rem = math.ceil((r.cooldown_until - now).total_seconds() / 60.0)
             if rem > max_remaining:
                 max_remaining = rem
-    return max_remaining
+                reason = (r.reason or "").strip()
+    return max_remaining, reason
 
-def _set_cooldown(request: Request, client_token: str, db: Session) -> None:
+def _set_cooldown(
+    request: Request,
+    client_token: str,
+    db: Session,
+    session_id: str = "",
+    device_id: str = "",
+    reason: str = "",
+) -> None:
     until = datetime.utcnow() + timedelta(minutes=COOLDOWN_MINUTES)
-    keys = []
-    for t in _all_client_tokens(request, client_token):
-        keys.append(f"token:{t}")
-    ip = _client_ip(request)
-    if ip:
-        keys.append(f"ip:{ip}")
+    keys = _rate_limit_keys(
+        request,
+        client_token=client_token,
+        session_id=session_id,
+        device_id=device_id,
+    )
     for k in keys:
         row = db.query(ClientCooldown).filter(ClientCooldown.client_key == k).first()
         if row:
             row.cooldown_until = until
+            if reason:
+                row.reason = reason
         else:
-            db.add(ClientCooldown(client_key=k, cooldown_until=until))
+            db.add(ClientCooldown(client_key=k, cooldown_until=until, reason=reason))
     db.commit()
+
+def _record_and_enforce_scan_limit(
+    request: Request,
+    client_token: str,
+    db: Session,
+    session_id: str = "",
+    device_id: str = "",
+) -> dict:
+    usage = _scan_usage_status(
+        request,
+        client_token=client_token,
+        db=db,
+        session_id=session_id,
+        device_id=device_id,
+    )
+    reason = ""
+    if usage["session_scans"] >= MAX_SCANS_PER_WINDOW:
+        reason = f"Too many photo scan attempts in this session (max {MAX_SCANS_PER_WINDOW} per {SCAN_WINDOW_MINUTES} min)."
+    elif usage["device_scans"] >= MAX_SCANS_PER_WINDOW:
+        reason = f"Too many photo scan attempts from this device (max {MAX_SCANS_PER_WINDOW} per {SCAN_WINDOW_MINUTES} min)."
+    elif usage["ip_scans"] >= MAX_SCANS_PER_IP:
+        reason = f"Too many photo scan attempts from your network IP (max {MAX_SCANS_PER_IP} per {SCAN_WINDOW_MINUTES} min)."
+
+    if reason:
+        _set_cooldown(
+            request,
+            client_token=client_token,
+            db=db,
+            session_id=session_id,
+            device_id=device_id,
+            reason=reason,
+        )
+        raise HTTPException(
+            status_code=429,
+            detail=ErrorResponse(
+                error_code="RATE_LIMIT",
+                message=f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min.",
+            ).dict(),
+        )
+
+    dev_id = _get_device_id(request, explicit_device=device_id, explicit_client=client_token)
+    sid = _get_scan_session_id(request, explicit_session=session_id)
+    ip = _client_ip(request)
+    db.add(
+        ScanAttempt(
+            ip=ip,
+            device_id=dev_id,
+            session_id=sid,
+            created_at=datetime.utcnow(),
+        )
+    )
+    db.commit()
+    return _scan_usage_status(
+        request,
+        client_token=client_token,
+        db=db,
+        session_id=session_id,
+        device_id=device_id,
+    )
 
 def _require_turnstile(token: str, expected_action: str, request: Request) -> None:
     hostnames = {
@@ -460,23 +655,41 @@ def get_client_state(
     request: Request,
     session_id: str = "",
     client_token: str = "",
+    device_id: str = "",
+    browser_session_id: str = "",
     db: Session = Depends(get_db),
 ):
     _expire_stale_bills(db)
     c_token = _get_client_token(request, client_token)
-    rem_mins = _check_cooldown(request, c_token, db)
+    d_id = _get_device_id(request, explicit_device=device_id, explicit_client=c_token)
+    b_sid = _get_scan_session_id(request, explicit_session=browser_session_id or session_id)
+    effective_sid = session_id or b_sid
+    rem_mins, cooldown_reason = _check_cooldown(
+        request, c_token, db, session_id=effective_sid, device_id=d_id
+    )
+    usage = _scan_usage_status(
+        request, c_token, db, session_id=effective_sid, device_id=d_id
+    )
     active_bill = _find_active_bill(request, db, session_id=session_id, explicit_token=c_token)
 
     resp = JSONResponse(
         content={
             "client_token": c_token,
+            "device_id": d_id,
             "cooldown_active": rem_mins > 0,
             "cooldown_minutes": rem_mins,
+            "cooldown_reason": cooldown_reason,
+            "scans_used": usage["scans_used"],
+            "scans_limit": usage["scans_limit"],
+            "scans_remaining": usage["scans_remaining"],
             "active_bill": _bill_payload(active_bill) if active_bill else None,
         },
         headers=NO_CACHE_HEADERS,
     )
     resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
+    resp.set_cookie("afrc_device_id", d_id, max_age=86400 * 365, path="/", samesite="lax")
+    if b_sid:
+        resp.set_cookie("afrc_browser_session", b_sid, max_age=86400, path="/", samesite="lax")
     if active_bill and rem_mins <= 0:
         resp.set_cookie("afrc_active_session", active_bill.id, max_age=3600, path="/", samesite="lax")
     else:
@@ -490,20 +703,28 @@ async def recognize(
     cf_turnstile_response: Annotated[str, Form(alias="cf-turnstile-response")] = "",
     retake_session_id: Annotated[str, Form()] = "",
     client_token: Annotated[str, Form()] = "",
+    device_id: Annotated[str, Form()] = "",
+    browser_session_id: Annotated[str, Form()] = "",
     db: Session = Depends(get_db),
 ):
     _require_turnstile(cf_turnstile_response, "recognize", request)
     _expire_stale_bills(db)
 
     c_token = _get_client_token(request, client_token)
-    rem_mins = _check_cooldown(request, c_token, db)
+    d_id = _get_device_id(request, explicit_device=device_id, explicit_client=c_token)
+    retake_sid = retake_session_id.strip()
+    b_sid = _get_scan_session_id(request, explicit_session=browser_session_id or retake_sid)
+    effective_sid = retake_sid or b_sid
+
+    rem_mins, _ = _check_cooldown(
+        request, c_token, db, session_id=effective_sid, device_id=d_id
+    )
     if rem_mins > 0:
         raise HTTPException(status_code=429, detail=ErrorResponse(
             error_code="RATE_LIMIT",
             message=f"Your rate limit hit, try again after {rem_mins}min."
         ).dict())
 
-    retake_sid = retake_session_id.strip()
     existing_open = _find_active_bill(request, db, session_id=retake_sid, explicit_token=c_token)
 
     target_bill = None
@@ -523,7 +744,14 @@ async def recognize(
         target_bill.void_reason = "Exceeded 4 Retries Limit"
         target_bill.updated_at = datetime.utcnow()
         db.commit()
-        _set_cooldown(request, c_token or target_bill.client_token or "", db)
+        _set_cooldown(
+            request,
+            c_token or target_bill.client_token or "",
+            db,
+            session_id=target_bill.id,
+            device_id=d_id,
+            reason="Exceeded 4 photo retries limit.",
+        )
         raise HTTPException(status_code=429, detail=ErrorResponse(
             error_code="RATE_LIMIT",
             message=f"Your rate limit hit, try again after {COOLDOWN_MINUTES}min."
@@ -542,11 +770,21 @@ async def recognize(
                 error_code="UPLOAD_FAILED",
                 message="Photo is too small or empty. Please retake."
             ).dict())
+    except HTTPException:
+        raise
     except Exception:
         raise HTTPException(status_code=400, detail=ErrorResponse(
             error_code="UPLOAD_FAILED",
             message="Failed to receive photo. Please try again."
         ).dict())
+
+    _record_and_enforce_scan_limit(
+        request,
+        c_token,
+        db,
+        session_id=effective_sid,
+        device_id=d_id,
+    )
 
     target_bill_id = target_bill.id if target_bill else ""
     available = [_dish_json(d) for d in db.query(Dish).filter(Dish.available == True).all()]
@@ -666,6 +904,9 @@ async def recognize(
     ).dict()
     resp = JSONResponse(content=payload, headers=NO_CACHE_HEADERS)
     resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
+    resp.set_cookie("afrc_device_id", d_id, max_age=86400 * 365, path="/", samesite="lax")
+    if b_sid:
+        resp.set_cookie("afrc_browser_session", b_sid, max_age=86400, path="/", samesite="lax")
     resp.set_cookie("afrc_active_session", session_id, max_age=3600, path="/", samesite="lax")
     return resp
 
@@ -856,12 +1097,21 @@ def void_retake(session_id: str, request: Request, payload: dict = None, db: Ses
         raise HTTPException(status_code=404, detail="Bill not found")
     if bill.status == "paid":
         raise HTTPException(status_code=409, detail="This bill is already paid")
-    c_token = _get_client_token(request, (payload or {}).get("client_token", "")) or bill.client_token or ""
+    body = payload or {}
+    c_token = _get_client_token(request, body.get("client_token", "")) or bill.client_token or ""
+    d_id = _get_device_id(request, explicit_device=body.get("device_id", ""), explicit_client=c_token)
     bill.status = "void"
     bill.void_reason = "Exceeded 4 Retries Limit"
     bill.updated_at = datetime.utcnow()
     db.commit()
-    _set_cooldown(request, c_token, db)
+    _set_cooldown(
+        request,
+        c_token,
+        db,
+        session_id=session_id,
+        device_id=d_id,
+        reason="Exceeded 4 photo retries limit.",
+    )
     resp = JSONResponse(
         content={
             "status": "void",

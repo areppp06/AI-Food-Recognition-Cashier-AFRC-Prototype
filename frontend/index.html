@@ -815,6 +815,28 @@ function getOrCreateClientToken() {
   setCookie("afrc_client_id", token, 86400 * 30);
   return token;
 }
+function getOrCreateDeviceId() {
+  let devId = "";
+  try { devId = localStorage.getItem("afrc_device_id") || ""; } catch (e) {}
+  if (!devId) devId = getCookie("afrc_device_id");
+  if (!devId) {
+    devId = (window.crypto && crypto.randomUUID) ? ("dev-" + crypto.randomUUID()) : ("dev-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+  }
+  try { localStorage.setItem("afrc_device_id", devId); } catch (e) {}
+  setCookie("afrc_device_id", devId, 86400 * 365);
+  return devId;
+}
+function getOrCreateBrowserSessionId() {
+  let sid = "";
+  try { sid = sessionStorage.getItem("afrc_browser_session") || ""; } catch (e) {}
+  if (!sid) sid = getCookie("afrc_browser_session");
+  if (!sid) {
+    sid = (window.crypto && crypto.randomUUID) ? ("bs-" + crypto.randomUUID()) : ("bs-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+  }
+  try { sessionStorage.setItem("afrc_browser_session", sid); } catch (e) {}
+  setCookie("afrc_browser_session", sid, 86400);
+  return sid;
+}
 function getSavedActiveSession() {
   let sid = "";
   try { sid = localStorage.getItem("afrc_active_session") || ""; } catch (e) {}
@@ -838,11 +860,14 @@ function stopCameraStream() {
   }
 }
 
-function showRateLimitLock(mins) {
+function showRateLimitLock(mins, reason) {
   stopCameraStream();
   cameraCard.style.display = "none";
   result.innerHTML = "";
   const waitMins = mins || 25;
+  const note = reason
+    ? reason
+    : "Too many photo scan attempts detected. Please wait before scanning again, or head to the cashier for assistance.";
   stateLockBox.innerHTML = `
     <div class="error-card" style="padding: 2rem 1.5rem;">
       <div class="error-title" style="font-size: 1.2rem;">Rate Limit Reached</div>
@@ -850,7 +875,7 @@ function showRateLimitLock(mins) {
         Your rate limit hit, try again after ${esc(waitMins)}min.
       </p>
       <p style="font-size: 0.85rem; color: #7f1d1d; margin-bottom: 1rem;">
-        Your previous bill has been voided. Please proceed to the counter to pay with our cashier.
+        ${esc(note)}
       </p>
       <div class="error-badge">CODE: RATE_LIMIT</div>
     </div>
@@ -1044,10 +1069,24 @@ function showPendingBillLock(bill) {
 
 async function checkClientState() {
   const cToken = getOrCreateClientToken();
+  const deviceId = getOrCreateDeviceId();
+  const browserSid = getOrCreateBrowserSessionId();
   const savedSid = retakeSessionId || getSavedActiveSession();
   try {
-    const q = new URLSearchParams({ client_token: cToken, session_id: savedSid });
-    const res = await fetch("/api/client-state?" + q.toString(), { cache: "no-store" });
+    const q = new URLSearchParams({
+      client_token: cToken,
+      device_id: deviceId,
+      browser_session_id: browserSid,
+      session_id: savedSid,
+    });
+    const res = await fetch("/api/client-state?" + q.toString(), {
+      cache: "no-store",
+      headers: {
+        "X-AFRC-Client": cToken,
+        "X-AFRC-Device": deviceId,
+        "X-AFRC-Session": browserSid,
+      },
+    });
     if (!res.ok) {
       cameraCard.style.display = "block";
       return true;
@@ -1057,9 +1096,13 @@ async function checkClientState() {
       try { localStorage.setItem("afrc_client_id", state.client_token); } catch (e) {}
       setCookie("afrc_client_id", state.client_token, 86400 * 30);
     }
+    if (state.device_id) {
+      try { localStorage.setItem("afrc_device_id", state.device_id); } catch (e) {}
+      setCookie("afrc_device_id", state.device_id, 86400 * 365);
+    }
     if (state.cooldown_active) {
       clearSavedActiveSession();
-      showRateLimitLock(state.cooldown_minutes || 25);
+      showRateLimitLock(state.cooldown_minutes || 25, state.cooldown_reason || "");
       return false;
     }
     if (state.active_bill) {
@@ -1536,17 +1579,31 @@ capBtn.onclick = async () => {
       return;
     }
 
+    const cToken = getOrCreateClientToken();
+    const deviceId = getOrCreateDeviceId();
+    const browserSid = getOrCreateBrowserSessionId();
+
     const form = new FormData();
     form.append("file", blob, "plate.jpg");
     form.append("cf-turnstile-response", token);
-    form.append("client_token", getOrCreateClientToken());
+    form.append("client_token", cToken);
+    form.append("device_id", deviceId);
+    form.append("browser_session_id", browserSid);
     if (retakeSessionId) {
       form.append("retake_session_id", retakeSessionId);
     }
 
     let redirected = false;
     try {
-      const res = await fetch("/api/recognize", { method: "POST", body: form });
+      const res = await fetch("/api/recognize", {
+        method: "POST",
+        headers: {
+          "X-AFRC-Client": cToken,
+          "X-AFRC-Device": deviceId,
+          "X-AFRC-Session": browserSid,
+        },
+        body: form,
+      });
       const data = await res.json();
 
       if (!res.ok) {

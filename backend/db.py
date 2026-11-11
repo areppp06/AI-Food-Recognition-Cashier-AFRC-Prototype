@@ -64,6 +64,15 @@ class ClientCooldown(Base):
     __tablename__ = "client_cooldowns"
     client_key = Column(String, primary_key=True)
     cooldown_until = Column(DateTime)
+    reason = Column(String, default="")
+
+class ScanAttempt(Base):
+    __tablename__ = "scan_attempts"
+    id = Column(Integer, primary_key=True, index=True)
+    ip = Column(String, default="", index=True)
+    device_id = Column(String, default="", index=True)
+    session_id = Column(String, default="", index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 def format_bill_number(seq: int) -> str:
     seq = max(1, int(seq))
@@ -124,6 +133,9 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN updated_at DATETIME")
         if session_columns and "paid_at" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN paid_at DATETIME")
+        cooldown_columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(client_cooldowns)")]
+        if cooldown_columns and "reason" not in cooldown_columns:
+            conn.exec_driver_sql("ALTER TABLE client_cooldowns ADD COLUMN reason TEXT DEFAULT ''")
         conn.exec_driver_sql(
             "UPDATE sessions SET status = 'void', void_reason = 'Needed Cashier Assistance' "
             "WHERE status = 'needs_cashier'"
