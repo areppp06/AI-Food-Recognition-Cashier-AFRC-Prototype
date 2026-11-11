@@ -602,13 +602,116 @@
   }
   .chart-wrap {
     position: relative;
-    height: 310px;
     width: 100%;
   }
-  .chart-wrap-sm {
+  .svg-legend {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+  }
+  .svg-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .swatch-bar {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    background: #facc15;
+    border: 1px solid #eab308;
+    display: inline-block;
+  }
+  .swatch-line {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  .swatch-line.green { background: #10b981; }
+  .swatch-line.red {
+    background: repeating-linear-gradient(90deg, #ef4444 0 4px, transparent 4px 7px);
+    height: 3px;
+    border-radius: 2px;
+  }
+  .chart-stage {
     position: relative;
-    height: 210px;
     width: 100%;
+    height: 275px;
+    user-select: none;
+  }
+  .chart-stage svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  .chart-tooltip {
+    position: absolute;
+    z-index: 20;
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0.96);
+    color: #f8fafc;
+    border-radius: 10px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.76rem;
+    line-height: 1.45;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.22);
+    min-width: 175px;
+    display: none;
+  }
+  .chart-tooltip-title {
+    font-weight: 700;
+    margin-bottom: 0.28rem;
+    color: #ffffff;
+  }
+  .chart-tooltip-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+  }
+  .chart-tooltip-lbl {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #cbd5e1;
+  }
+  .chart-tooltip-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .chart-wrap-sm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 0.35rem 0;
+    width: 100%;
+  }
+  .outcome-legend {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+  }
+  .outcome-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
   }
   .breakdown-grid {
     display: grid;
@@ -830,7 +933,15 @@
           </div>
           <div class="panel-body">
             <div class="chart-wrap">
-              <canvas id="salesChartCanvas"></canvas>
+              <div class="svg-legend">
+                <span class="svg-legend-item"><span class="swatch-line red"></span>Voided Bills</span>
+                <span class="svg-legend-item"><span class="swatch-line green"></span>Paid Bills</span>
+                <span class="svg-legend-item"><span class="swatch-bar"></span>Paid Revenue (RM)</span>
+              </div>
+              <div class="chart-stage" id="salesChartStage">
+                <svg id="salesChartSvg" role="img" aria-label="Sales Revenue and Bill Activity Chart"></svg>
+                <div class="chart-tooltip" id="salesChartTooltip"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -844,9 +955,7 @@
               </div>
             </div>
             <div class="panel-body">
-              <div class="chart-wrap-sm">
-                <canvas id="outcomeChartCanvas"></canvas>
-              </div>
+              <div class="chart-wrap-sm" id="outcomeChartHost"></div>
             </div>
           </div>
         </div>
@@ -1004,7 +1113,6 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 let pageBills = [];
@@ -1014,8 +1122,7 @@ let analyticsPeriod = "7d";
 let analyticsMonth = "";
 let analyticsQuarter = "";
 let analyticsReqSeq = 0;
-let salesChartInstance = null;
-let outcomeChartInstance = null;
+let resizeChartTimer = null;
 let statusFilter = "all";
 let currentPage = 1;
 let pageSize = 20;
@@ -1045,6 +1152,9 @@ function switchTab(tabId, title) {
   });
   document.getElementById("pageTitle").textContent = title;
   document.getElementById("sidebar").classList.remove("open");
+  if (tabId === "dashboard" && latestAnalytics) {
+    renderSalesSvgChart(latestAnalytics.series || []);
+  }
 }
 
 function statusBadge(status, voidReason) {
@@ -1222,6 +1332,245 @@ async function onQuarterSelectChange() {
   await fetchAnalyticsUpdate();
 }
 
+function niceMoneyMax(rawMax, steps = 5) {
+  if (!rawMax || rawMax <= 0) return steps * 10;
+  const rough = rawMax / steps;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  const s = norm <= 1 ? 1 : norm <= 1.5 ? 1.5 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
+  return s * mag * steps;
+}
+
+function niceIntMax(rawMax, steps = 5) {
+  if (!rawMax || rawMax <= 0) return steps;
+  const rawStep = Math.ceil(rawMax / steps);
+  if (rawStep <= 5) return rawStep * steps;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const norm = rawStep / mag;
+  const s = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
+  return Math.ceil(s * mag) * steps;
+}
+
+function renderSalesSvgChart(series) {
+  const stage = document.getElementById("salesChartStage");
+  const svg = document.getElementById("salesChartSvg");
+  const tip = document.getElementById("salesChartTooltip");
+  if (!stage || !svg || !tip) return;
+  tip.style.display = "none";
+
+  const items = Array.isArray(series) ? series : [];
+  if (!items.length) {
+    svg.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="#94a3b8" font-size="13" font-family="Plus Jakarta Sans, sans-serif">No sales activity in this period.</text>`;
+    svg.onmousemove = null;
+    svg.onmouseleave = null;
+    return;
+  }
+
+  const W = Math.max(480, stage.clientWidth || 720);
+  const H = 275;
+  const padL = 64;
+  const padR = 52;
+  const padT = 12;
+  const padB = 34;
+  const plotW = Math.max(120, W - padL - padR);
+  const plotH = Math.max(100, H - padT - padB);
+  const baseY = padT + plotH;
+
+  const maxRev = niceMoneyMax(Math.max(...items.map(s => Number(s.revenue || 0)), 0), 5);
+  const maxCnt = niceIntMax(Math.max(...items.map(s => Math.max(Number(s.paid_count || 0), Number(s.void_count || 0))), 0), 5);
+
+  const steps = 5;
+  let gridSvg = "";
+  for (let i = 0; i <= steps; i++) {
+    const y = padT + plotH - (i / steps) * plotH;
+    const revTick = Math.round((maxRev * i) / steps);
+    const cntTick = Math.round((maxCnt * i) / steps);
+    gridSvg += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${padL + plotW}" y2="${y.toFixed(1)}" stroke="${i === 0 ? "#cbd5e1" : "#f1f5f9"}" stroke-width="1"/>`;
+    gridSvg += `<text x="${padL - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end" fill="#64748b" font-size="11" font-family="Plus Jakarta Sans, sans-serif">RM ${revTick}</text>`;
+    gridSvg += `<text x="${padL + plotW + 8}" y="${(y + 4).toFixed(1)}" text-anchor="start" fill="#64748b" font-size="11" font-family="Plus Jakarta Sans, sans-serif">${cntTick}</text>`;
+  }
+
+  gridSvg += `<text transform="rotate(-90 14 ${padT + plotH / 2})" x="14" y="${padT + plotH / 2}" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600" font-family="Plus Jakarta Sans, sans-serif">Revenue (RM)</text>`;
+  gridSvg += `<text transform="rotate(90 ${W - 12} ${padT + plotH / 2})" x="${W - 12}" y="${padT + plotH / 2}" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600" font-family="Plus Jakarta Sans, sans-serif">Bills</text>`;
+
+  const n = items.length;
+  const slotW = plotW / n;
+  const barW = Math.max(4, Math.min(48, slotW * 0.62));
+  const labelStride = Math.max(1, Math.ceil(n / Math.max(4, Math.floor(plotW / 68))));
+
+  let barsSvg = "";
+  let xLabelsSvg = "";
+  const paidPts = [];
+  const voidPts = [];
+  const cxList = [];
+
+  items.forEach((s, idx) => {
+    const cx = padL + idx * slotW + slotW / 2;
+    cxList.push(cx);
+    const rev = Number(s.revenue || 0);
+    const paid = Number(s.paid_count || 0);
+    const voidCnt = Number(s.void_count || 0);
+
+    const barH = maxRev > 0 ? Math.max(0, (rev / maxRev) * plotH) : 0;
+    const bx = cx - barW / 2;
+    const by = baseY - barH;
+    if (barH > 0.5) {
+      const r = Math.min(5, barW / 2, barH);
+      const pathD = `M ${bx.toFixed(1)},${(by + r).toFixed(1)} Q ${bx.toFixed(1)},${by.toFixed(1)} ${(bx + r).toFixed(1)},${by.toFixed(1)} L ${(bx + barW - r).toFixed(1)},${by.toFixed(1)} Q ${(bx + barW).toFixed(1)},${by.toFixed(1)} ${(bx + barW).toFixed(1)},${(by + r).toFixed(1)} L ${(bx + barW).toFixed(1)},${baseY.toFixed(1)} L ${bx.toFixed(1)},${baseY.toFixed(1)} Z`;
+      barsSvg += `<path d="${pathD}" fill="#facc15" stroke="#eab308" stroke-width="1"/>`;
+    }
+
+    const py = baseY - (paid / maxCnt) * plotH;
+    const vy = baseY - (voidCnt / maxCnt) * plotH;
+    paidPts.push({ x: cx, y: py });
+    voidPts.push({ x: cx, y: vy });
+
+    if (idx % labelStride === 0 || (n <= 12)) {
+      xLabelsSvg += `<text x="${cx.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#64748b" font-size="11" font-family="Plus Jakarta Sans, sans-serif">${esc(s.label)}</text>`;
+    }
+  });
+
+  const paidLinePts = paidPts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const voidLinePts = voidPts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+  let linesSvg = "";
+  linesSvg += `<polyline fill="none" stroke="#10b981" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${paidLinePts}"/>`;
+  linesSvg += `<polyline fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round" points="${voidLinePts}"/>`;
+  paidPts.forEach(p => {
+    linesSvg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.2" fill="#10b981" stroke="#ffffff" stroke-width="1"/>`;
+  });
+  voidPts.forEach(p => {
+    linesSvg += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.8" fill="#ef4444" stroke="#ffffff" stroke-width="1"/>`;
+  });
+
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = `
+    <g>${gridSvg}</g>
+    <rect id="svgHoverBand" x="0" y="${padT}" width="${slotW.toFixed(1)}" height="${plotH}" fill="rgba(15, 23, 42, 0.05)" rx="4" opacity="0" style="pointer-events:none;"/>
+    <g>${barsSvg}</g>
+    <g>${linesSvg}</g>
+    <g>${xLabelsSvg}</g>
+    <circle id="svgHoverPaidDot" cx="0" cy="0" r="5" fill="#10b981" stroke="#ffffff" stroke-width="2" opacity="0" style="pointer-events:none;"/>
+    <circle id="svgHoverVoidDot" cx="0" cy="0" r="4.5" fill="#ef4444" stroke="#ffffff" stroke-width="2" opacity="0" style="pointer-events:none;"/>
+    <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" fill="transparent" style="cursor:crosshair;"/>
+  `;
+
+  const band = document.getElementById("svgHoverBand");
+  const pDot = document.getElementById("svgHoverPaidDot");
+  const vDot = document.getElementById("svgHoverVoidDot");
+
+  const showAtIndex = (idx, clientY) => {
+    const item = items[idx];
+    if (!item) return;
+    band.setAttribute("x", (padL + idx * slotW).toFixed(1));
+    band.setAttribute("opacity", "1");
+    pDot.setAttribute("cx", paidPts[idx].x.toFixed(1));
+    pDot.setAttribute("cy", paidPts[idx].y.toFixed(1));
+    pDot.setAttribute("opacity", "1");
+    vDot.setAttribute("cx", voidPts[idx].x.toFixed(1));
+    vDot.setAttribute("cy", voidPts[idx].y.toFixed(1));
+    vDot.setAttribute("opacity", "1");
+
+    tip.innerHTML = `
+      <div class="chart-tooltip-title">${esc(item.label)}</div>
+      <div class="chart-tooltip-row">
+        <span class="chart-tooltip-lbl"><span class="chart-tooltip-dot" style="background:#facc15;border:1px solid #eab308;"></span>Paid Revenue (RM)</span>
+        <strong>RM ${Number(item.revenue || 0).toFixed(2)}</strong>
+      </div>
+      <div class="chart-tooltip-row">
+        <span class="chart-tooltip-lbl"><span class="chart-tooltip-dot" style="background:#10b981;"></span>Paid Bills</span>
+        <strong>${Number(item.paid_count || 0)}</strong>
+      </div>
+      <div class="chart-tooltip-row">
+        <span class="chart-tooltip-lbl"><span class="chart-tooltip-dot" style="background:#ef4444;"></span>Voided Bills</span>
+        <strong>${Number(item.void_count || 0)}</strong>
+      </div>
+    `;
+    tip.style.display = "block";
+    const stageRect = stage.getBoundingClientRect();
+    const relX = (cxList[idx] / W) * stageRect.width;
+    const tipW = tip.offsetWidth || 185;
+    const leftPx = relX + 14 + tipW > stageRect.width
+      ? Math.max(4, relX - tipW - 14)
+      : Math.max(4, relX + 14);
+    const relY = clientY ? Math.max(6, Math.min(stageRect.height - 95, clientY - stageRect.top - 40)) : 16;
+    tip.style.left = `${Math.round(leftPx)}px`;
+    tip.style.top = `${Math.round(relY)}px`;
+  };
+
+  svg.onmousemove = (ev) => {
+    const rect = svg.getBoundingClientRect();
+    const scaleX = W / (rect.width || W);
+    const svgX = (ev.clientX - rect.left) * scaleX;
+    if (svgX < padL || svgX > padL + plotW) {
+      band.setAttribute("opacity", "0");
+      pDot.setAttribute("opacity", "0");
+      vDot.setAttribute("opacity", "0");
+      tip.style.display = "none";
+      return;
+    }
+    const idx = Math.max(0, Math.min(n - 1, Math.floor((svgX - padL) / slotW)));
+    showAtIndex(idx, ev.clientY);
+  };
+
+  svg.onmouseleave = () => {
+    band.setAttribute("opacity", "0");
+    pDot.setAttribute("opacity", "0");
+    vDot.setAttribute("opacity", "0");
+    tip.style.display = "none";
+  };
+}
+
+function renderOutcomeSvgChart(pt) {
+  const host = document.getElementById("outcomeChartHost");
+  if (!host) return;
+  const paidV = Number(pt.paid_count || 0);
+  const voidV = Number(pt.void_count || 0);
+  const openV = Number(pt.open_count || 0);
+  const total = paidV + voidV + openV;
+
+  const size = 160;
+  const r = 56;
+  const circ = 2 * Math.PI * r;
+  let arcs = "";
+  if (total <= 0) {
+    arcs = `<circle cx="80" cy="80" r="${r}" fill="none" stroke="#e2e8f0" stroke-width="22"/>`;
+  } else {
+    const parts = [
+      { label: "Paid", val: paidV, color: "#10b981" },
+      { label: "Voided", val: voidV, color: "#ef4444" },
+      { label: "Open / Pending", val: openV, color: "#f59e0b" },
+    ];
+    let offset = 0;
+    parts.forEach(part => {
+      if (part.val <= 0) return;
+      const len = (part.val / total) * circ;
+      arcs += `<circle cx="80" cy="80" r="${r}" fill="none" stroke="${part.color}" stroke-width="22" stroke-dasharray="${len.toFixed(2)} ${(circ - len).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 80 80)"/>`;
+      offset += len;
+    });
+  }
+
+  host.innerHTML = `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-label="Bill Outcomes Donut">
+      ${arcs}
+      <text x="80" y="76" text-anchor="middle" fill="#0f172a" font-size="22" font-weight="800" font-family="Plus Jakarta Sans, sans-serif">${total}</text>
+      <text x="80" y="95" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600" font-family="Plus Jakarta Sans, sans-serif">bills</text>
+    </svg>
+    <div class="outcome-legend">
+      <span class="outcome-legend-item"><span class="swatch-line green"></span>Paid (${paidV})</span>
+      <span class="outcome-legend-item"><span class="swatch-line" style="background:#ef4444;"></span>Voided (${voidV})</span>
+      <span class="outcome-legend-item"><span class="swatch-line" style="background:#f59e0b;"></span>Open (${openV})</span>
+    </div>
+  `;
+}
+
+window.addEventListener("resize", () => {
+  clearTimeout(resizeChartTimer);
+  resizeChartTimer = setTimeout(() => {
+    if (latestAnalytics) renderSalesSvgChart(latestAnalytics.series || []);
+  }, 120);
+});
+
 function renderAnalytics(analytics) {
   if (!analytics) return;
   syncPeriodSelectors(analytics);
@@ -1234,173 +1583,8 @@ function renderAnalytics(analytics) {
     `${pt.total_bills || 0} bills in ${analytics.period_label.toLowerCase()}`;
 
   const series = analytics.series || [];
-  const labels = series.map(s => s.label);
-  const revData = series.map(s => s.revenue);
-  const paidData = series.map(s => s.paid_count);
-  const voidData = series.map(s => s.void_count);
-
-  if (window.Chart) {
-    if (salesChartInstance) {
-      salesChartInstance.destroy();
-      salesChartInstance = null;
-    }
-    const salesCtx = document.getElementById("salesChartCanvas").getContext("2d");
-    salesChartInstance = new Chart(salesCtx, {
-      type: "bar",
-      data: {
-        labels,
-        datasets: [
-          {
-            type: "bar",
-            label: "Paid Revenue (RM)",
-            data: revData,
-            backgroundColor: "#facc15",
-            hoverBackgroundColor: "#facc15",
-            borderColor: "#eab308",
-            hoverBorderColor: "#eab308",
-            borderWidth: 1,
-            hoverBorderWidth: 1,
-            borderRadius: 6,
-            yAxisID: "yRev",
-            order: 2,
-          },
-          {
-            type: "line",
-            label: "Paid Bills",
-            data: paidData,
-            borderColor: "#10b981",
-            backgroundColor: "#10b981",
-            pointBackgroundColor: "#10b981",
-            pointHoverBackgroundColor: "#10b981",
-            tension: 0.25,
-            borderWidth: 2.5,
-            pointRadius: 3,
-            pointHoverRadius: 4,
-            yAxisID: "yCnt",
-            order: 1,
-          },
-          {
-            type: "line",
-            label: "Voided Bills",
-            data: voidData,
-            borderColor: "#ef4444",
-            backgroundColor: "#ef4444",
-            pointBackgroundColor: "#ef4444",
-            pointHoverBackgroundColor: "#ef4444",
-            borderDash: [5, 4],
-            tension: 0.25,
-            borderWidth: 2,
-            pointRadius: 2.5,
-            pointHoverRadius: 4,
-            yAxisID: "yCnt",
-            order: 0,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        animations: {
-          colors: false,
-          numbers: false,
-          x: false,
-          y: false,
-        },
-        transitions: {
-          active: { animation: { duration: 0 } },
-          resize: { animation: { duration: 0 } },
-          show: { animation: { duration: 0 } },
-          hide: { animation: { duration: 0 } },
-        },
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-          legend: {
-            position: "top",
-            align: "end",
-            labels: {
-              boxWidth: 12,
-              boxHeight: 12,
-              font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: 600 },
-            },
-          },
-          tooltip: {
-            animation: false,
-            callbacks: {
-              label: (ctx) => ctx.dataset.yAxisID === "yRev"
-                ? `${ctx.dataset.label}: RM ${Number(ctx.parsed.y || 0).toFixed(2)}`
-                : `${ctx.dataset.label}: ${ctx.parsed.y || 0}`,
-            },
-          },
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true },
-          },
-          yRev: {
-            type: "linear",
-            position: "left",
-            beginAtZero: true,
-            title: { display: true, text: "Revenue (RM)", font: { size: 11, weight: 600 } },
-            ticks: { callback: (v) => "RM " + v },
-            grid: { color: "#f1f5f9" },
-          },
-          yCnt: {
-            type: "linear",
-            position: "right",
-            beginAtZero: true,
-            title: { display: true, text: "Bills", font: { size: 11, weight: 600 } },
-            ticks: { precision: 0 },
-            grid: { drawOnChartArea: false },
-          },
-        },
-      },
-    });
-
-    const paidV = pt.paid_count || 0;
-    const voidV = pt.void_count || 0;
-    const openV = pt.open_count || 0;
-    const hasAny = (paidV + voidV + openV) > 0;
-    const outLabels = hasAny ? ["Paid", "Voided", "Open / Pending"] : ["No Bills"];
-    const outData = hasAny ? [paidV, voidV, openV] : [1];
-    const outColors = hasAny ? ["#10b981", "#ef4444", "#f59e0b"] : ["#e2e8f0"];
-
-    if (outcomeChartInstance) {
-      outcomeChartInstance.data.labels = outLabels;
-      outcomeChartInstance.data.datasets[0].data = outData;
-      outcomeChartInstance.data.datasets[0].backgroundColor = outColors;
-      outcomeChartInstance.options.plugins.tooltip.enabled = hasAny;
-      outcomeChartInstance.update("none");
-    } else {
-      const outcomeCtx = document.getElementById("outcomeChartCanvas").getContext("2d");
-      outcomeChartInstance = new Chart(outcomeCtx, {
-        type: "doughnut",
-        data: {
-          labels: outLabels,
-          datasets: [{
-            data: outData,
-            backgroundColor: outColors,
-            borderWidth: 2,
-            borderColor: "#ffffff",
-          }],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false,
-          cutout: "62%",
-          plugins: {
-            legend: {
-              position: "bottom",
-              labels: { boxWidth: 12, padding: 12, font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: 600 } },
-            },
-            tooltip: { enabled: hasAny },
-          },
-        },
-      });
-    }
-  }
+  renderSalesSvgChart(series);
+  renderOutcomeSvgChart(pt);
 
   // Top Dishes
   const topEl = document.getElementById("topDishesList");
