@@ -1123,6 +1123,7 @@ let analyticsMonth = "";
 let analyticsQuarter = "";
 let analyticsReqSeq = 0;
 let resizeChartTimer = null;
+let billsTableDirty = true;
 let statusFilter = "all";
 let currentPage = 1;
 let pageSize = 20;
@@ -1154,6 +1155,10 @@ function switchTab(tabId, title) {
   document.getElementById("sidebar").classList.remove("open");
   if (tabId === "dashboard" && latestAnalytics) {
     renderSalesSvgChart(latestAnalytics.series || []);
+  }
+  if (tabId === "bills" && billsTableDirty) {
+    renderBillsTable();
+    billsTableDirty = false;
   }
 }
 
@@ -1189,7 +1194,7 @@ function renderPhotoCell(b) {
   const imgUrl = `/api/sessions/${encodeURIComponent(b.session_id)}/image?v=${encodeURIComponent(b.retake_count || 0)}`;
   return `
     <button class="photo-thumb-btn" type="button" title="Click to view full photo" aria-label="View plate photo for Bill #${esc(b.bill_number || "")}" onclick="viewPhoto('${imgUrl}')">
-      <img src="${imgUrl}" alt="Plate preview" onerror="hideBrokenThumb(this)">
+      <img src="${imgUrl}" alt="Plate preview" loading="lazy" decoding="async" onerror="hideBrokenThumb(this)">
     </button>`;
 }
 
@@ -1245,7 +1250,13 @@ async function loadBills(options = {}) {
     renderAnalytics(data.analytics);
   }
 
-  renderBillsTable();
+  const billsPane = document.getElementById("tab-bills");
+  if (billsPane && billsPane.classList.contains("active")) {
+    renderBillsTable();
+    billsTableDirty = false;
+  } else {
+    billsTableDirty = true;
+  }
   renderPagination();
 }
 

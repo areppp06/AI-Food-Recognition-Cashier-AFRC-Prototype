@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, event, Column, Integer, String, Float, Boolean, DateTime, Text
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import NullPool
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -16,8 +17,14 @@ load_dotenv(ROOT / "curlec.env")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./afrc.db")
 
 _is_sqlite = DATABASE_URL.startswith("sqlite")
-_connect_args = {"check_same_thread": False, "timeout": 30} if _is_sqlite else {}
-engine = create_engine(DATABASE_URL, connect_args=_connect_args)
+if _is_sqlite:
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False, "timeout": 30},
+        poolclass=NullPool,
+    )
+else:
+    engine = create_engine(DATABASE_URL)
 
 if _is_sqlite:
     @event.listens_for(engine, "connect")

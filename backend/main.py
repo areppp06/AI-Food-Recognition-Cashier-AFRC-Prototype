@@ -110,6 +110,20 @@ def _register_r2_key(key: str) -> None:
     else:
         _R2_SESSION_KEYS[stem] = key
 
+_HTTP_CLIENT: httpx.AsyncClient | None = None
+_R2_FETCH_SEM: asyncio.Semaphore | None = None
+_R2_MISSING_UNTIL: dict[str, float] = {}
+_R2_MISSING_TTL_SEC: float = 120.0
+
+def _get_http_client() -> httpx.AsyncClient:
+    global _HTTP_CLIENT
+    if _HTTP_CLIENT is None or _HTTP_CLIENT.is_closed:
+        _HTTP_CLIENT = httpx.AsyncClient(
+            timeout=8.0,
+            limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+        )
+    return _HTTP_CLIENT
+
 async def _upload_plate_to_r2(key: str, image_bytes: bytes) -> bool:
     cfg = _r2_config()
     if not cfg:
@@ -120,28 +134,32 @@ async def _upload_plate_to_r2(key: str, image_bytes: bytes) -> bool:
         "Content-Type": "image/jpeg",
     }
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            for safe_chars in ("/", ""):
-                url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{quote(key, safe=safe_chars)}"
-                resp = await client.put(url, content=image_bytes, headers=headers)
-                if 200 <= resp.status_code < 300:
-                    _register_r2_key(key)
-                    return True
+        client = _get_http_client()
+        for safe_chars in ("/", ""):
+            url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{quote(key, safe=safe_chars)}"
+            resp = await client.put(url, content=image_bytes, headers=headers, timeout=15.0)
+            if 200 <= resp.status_code < 300:
+                _register_r2_key(key)
+                return True
     except Exception:
         return False
     return False
 
 async def _fetch_plate_from_r2(key: str):
+    global _R2_FETCH_SEM
     cfg = _r2_config()
     if not cfg or not key:
         return None
+    if _R2_FETCH_SEM is None:
+        _R2_FETCH_SEM = asyncio.Semaphore(4)
     account_id, api_token, bucket = cfg
     headers = {"Authorization": f"Bearer {api_token}"}
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with _R2_FETCH_SEM:
+            client = _get_http_client()
             for safe_chars in ("/", ""):
                 url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket}/objects/{quote(key, safe=safe_chars)}"
-                resp = await client.get(url, headers=headers)
+                resp = await client.get(url, headers=headers, timeout=8.0)
                 if 200 <= resp.status_code < 300 and resp.content:
                     return resp.content
     except Exception:
@@ -651,6 +669,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
+    global _HTTP_CLIENT
     tasks = list(_BACKGROUND_TASKS)
     for task in tasks:
         task.cancel()
@@ -659,6 +678,12 @@ async def shutdown():
             await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=2.0)
         except (asyncio.TimeoutError, Exception):
             pass
+    if _HTTP_CLIENT is not None and not _HTTP_CLIENT.is_closed:
+        try:
+            await asyncio.wait_for(_HTTP_CLIENT.aclose(), timeout=1.5)
+        except Exception:
+            pass
+        _HTTP_CLIENT = None
 
 NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -1104,24 +1129,50 @@ def start_retake(session_id: str, request: Request, payload: dict = None, db: Se
     resp.set_cookie("afrc_active_session", bill.id, max_age=3600, path="/", samesite="lax")
     return resp
 
+def _get_bill_image_meta(session_id: str):
+    db = SessionLocal()
+    try:
+        bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+        if not bill:
+            return None
+        return {
+            "id": bill.id,
+            "bill_number": bill.bill_number or "",
+            "image_key": bill.image_key or "",
+        }
+    finally:
+        db.close()
+
+def _save_bill_image_key(session_id: str, key: str) -> None:
+    db = SessionLocal()
+    try:
+        bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+        if bill and not bill.image_key:
+            bill.image_key = key
+            db.commit()
+    finally:
+        db.close()
+
 @app.get("/api/sessions/{session_id}/image")
-async def get_session_image(session_id: str, db: Session = Depends(get_db)):
-    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
-    if not bill:
+async def get_session_image(session_id: str):
+    meta = await asyncio.to_thread(_get_bill_image_meta, session_id)
+    if not meta:
         raise HTTPException(status_code=404, detail="Bill not found")
-    img_path = UPLOAD_DIR / f"{bill.id}.jpg"
+    img_path = UPLOAD_DIR / f"{meta['id']}.jpg"
     if img_path.is_file() and img_path.stat().st_size > 0:
         return FileResponse(img_path, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
 
-    bill_no_upper = (bill.bill_number or "").upper()
-    if bill.id not in _R2_SESSION_KEYS and bill_no_upper not in _R2_BILL_KEYS and not bill.image_key:
-        await _sync_r2_objects_async(force=False)
+    now_mono = asyncio.get_running_loop().time()
+    miss_until = _R2_MISSING_UNTIL.get(meta["id"], 0.0)
+    if miss_until > now_mono:
+        raise HTTPException(status_code=404, detail="Image not found")
 
+    bill_no_upper = meta["bill_number"].upper()
     candidate_keys = []
     for k in (
-        bill.image_key,
-        _R2_SESSION_KEYS.get(bill.id),
-        f"plates/{bill.bill_number}_{bill.id}.jpg" if bill.bill_number else "",
+        meta["image_key"],
+        _R2_SESSION_KEYS.get(meta["id"]),
+        f"plates/{meta['bill_number']}_{meta['id']}.jpg" if meta["bill_number"] else "",
         _R2_BILL_KEYS.get(bill_no_upper),
     ):
         if k and k not in candidate_keys:
@@ -1130,19 +1181,20 @@ async def get_session_image(session_id: str, db: Session = Depends(get_db)):
     for key in candidate_keys:
         r2_bytes = await _fetch_plate_from_r2(key)
         if r2_bytes:
+            _R2_MISSING_UNTIL.pop(meta["id"], None)
             try:
                 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
                 img_path.write_bytes(r2_bytes)
             except OSError:
                 pass
-            if not bill.image_key:
-                bill.image_key = key
-                db.commit()
+            if not meta["image_key"]:
+                await asyncio.to_thread(_save_bill_image_key, meta["id"], key)
             return Response(
                 content=r2_bytes,
                 media_type="image/jpeg",
                 headers={"Cache-Control": "no-cache"},
             )
+    _R2_MISSING_UNTIL[meta["id"]] = now_mono + _R2_MISSING_TTL_SEC
     raise HTTPException(status_code=404, detail="Image not found")
 
 @app.post("/api/sessions/{session_id}/need-cashier")
