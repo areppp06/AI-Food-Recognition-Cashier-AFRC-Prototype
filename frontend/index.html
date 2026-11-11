@@ -1066,16 +1066,48 @@ async function checkClientState() {
   }
 }
 
+async function autoTriggerCameraIfAllowed() {
+  if (stream || cameraCard.style.display === "none") return;
+  try {
+    const mediaStream = await openMainRearCamera();
+    if (cameraCard.style.display === "none") {
+      mediaStream.getTracks().forEach(t => t.stop());
+      return;
+    }
+    attachStreamToVideo(mediaStream);
+  } catch (e) {
+    const isCamRetry = new URLSearchParams(location.search).get("cam_retry") === "1";
+    if (isCamRetry) {
+      showCameraPermissionHelp(true);
+      return;
+    }
+    if (navigator.permissions && typeof navigator.permissions.query === "function") {
+      try {
+        const perm = await navigator.permissions.query({ name: "camera" });
+        if (perm && perm.state === "denied") {
+          showCameraPermissionHelp(true);
+        }
+      } catch (err) {}
+    }
+  }
+}
+
 window.addEventListener("pageshow", () => {
   cameraCard.style.display = "none";
-  checkClientState();
+  checkClientState().then(allowed => {
+    if (allowed) autoTriggerCameraIfAllowed();
+  });
 });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") {
-    checkClientState();
+    checkClientState().then(allowed => {
+      if (allowed) autoTriggerCameraIfAllowed();
+    });
   }
 });
-checkClientState();
+checkClientState().then(allowed => {
+  if (allowed) autoTriggerCameraIfAllowed();
+});
 
 let stream;
 let recognizeWidgetId;
@@ -1288,21 +1320,141 @@ async function openMainRearCamera() {
   return initialStream;
 }
 
-startBtn.onclick = async () => {
-  const allowed = await checkClientState();
-  if (!allowed) return;
+function attachStreamToVideo(mediaStream) {
+  stream = mediaStream;
+  video.srcObject = stream;
+  camPlaceholder.style.display = "none";
+  canvas.style.display = "none";
+  video.style.display = "block";
+  videoBox.classList.add("scanner-active");
+  capBtn.disabled = false;
+  startBtn.disabled = true;
+  result.innerHTML = "";
+}
+
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/i.test(navigator.userAgent || "") ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function showCameraPermissionHelp(showHardBlockSteps) {
+  if (stream) {
+    canvas.style.display = "none";
+    video.style.display = "block";
+  }
+  const ios = isIOSDevice();
+  const stepsHtml = ios
+    ? `
+      <div style="text-align:left; background:#ffffff; border:1px solid #fecaca; border-radius:14px; padding:0.95rem 1rem; margin:0.85rem 0 1.1rem; font-size:0.84rem; color:#334155; line-height:1.55;">
+        <div style="font-weight:700; color:#991b1b; margin-bottom:0.4rem;">Quick 2-Tap Fix on iPhone (Safari):</div>
+        <div><strong>1.</strong> Tap the <strong>aA</strong> or <strong>Page Settings</strong> icon in the address bar, or tap <strong>Reset &amp; Re-Prompt</strong> below.</div>
+        <div><strong>2.</strong> Tap <strong>Website Settings → Camera → Allow</strong>.</div>
+      </div>`
+    : `
+      <div style="text-align:left; background:#ffffff; border:1px solid #fecaca; border-radius:14px; padding:0.95rem 1rem; margin:0.85rem 0 1.1rem; font-size:0.84rem; color:#334155; line-height:1.55;">
+        <div style="font-weight:700; color:#991b1b; margin-bottom:0.4rem;">Quick 2-Tap Fix on Android (Chrome):</div>
+        <div><strong>1.</strong> Tap the <strong>Tune / Sliders icon (⚙️)</strong> on the left side of the address bar at the top.</div>
+        <div><strong>2.</strong> Tap <strong>Permissions → Camera → Allow</strong> (or <strong>Reset permissions</strong>) — the camera will start automatically!</div>
+      </div>`;
+
+  result.innerHTML = `
+    <div class="error-card">
+      <div class="error-title">Camera Permission Blocked</div>
+      <p class="error-text" style="margin-bottom:0.6rem;">
+        Camera access was blocked. Tap the fix button below to wipe cached settings and request camera access again.
+      </p>
+      ${showHardBlockSteps ? stepsHtml : ""}
+      <div style="display:flex; flex-direction:column; gap:0.6rem; align-items:center;">
+        <button class="btn" type="button" onclick="fixAndPromptCamera()" style="width:100%; max-width:320px;">
+          Fix &amp; Allow Camera
+        </button>
+        <button class="btn btn-secondary" type="button" onclick="wipeCacheAndReloadForCamera()" style="width:100%; max-width:320px; font-size:0.85rem; padding:0.7rem 1.2rem;">
+          Wipe Client Cache &amp; Reload
+        </button>
+      </div>
+    </div>
+  `;
+  status.style.display = "none";
+  capBtn.disabled = !stream;
+}
+
+async function fixAndPromptCamera() {
+  preferredMainDeviceId = "";
+  const t0 = Date.now();
   try {
     stopCameraStream();
-    stream = await openMainRearCamera();
-    video.srcObject = stream;
-    camPlaceholder.style.display = "none";
-    video.style.display = "block";
-    videoBox.classList.add("scanner-active");
-    capBtn.disabled = false;
-    startBtn.disabled = true;
-    result.innerHTML = "";
+    // MUST call getUserMedia synchronously inside the user tap gesture first!
+    const mediaStream = await openMainRearCamera();
+    attachStreamToVideo(mediaStream);
+    return;
   } catch (e) {
-    showError("CAMERA_DENIED", "Camera access is required. Please allow camera permissions and try again.");
+    const elapsed = Date.now() - t0;
+    // If browser rejected in <350ms without showing a popup, permission is cached as denied
+    try {
+      await fetch("/api/clear-site-cache", { method: "POST", cache: "no-store" });
+      if (window.caches && caches.keys) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+    } catch (err) {}
+
+    if (elapsed < 350 && isIOSDevice() && !location.search.includes("cam_retry=1")) {
+      // On iOS Safari, a fresh navigation resets per-page "Don't Allow"
+      const nextUrl = new URL(location.href);
+      nextUrl.searchParams.set("cam_retry", "1");
+      nextUrl.searchParams.set("_t", String(Date.now()));
+      location.replace(nextUrl.toString());
+      return;
+    }
+    showCameraPermissionHelp(true);
+  }
+}
+
+async function wipeCacheAndReloadForCamera() {
+  preferredMainDeviceId = "";
+  try {
+    await fetch("/api/clear-site-cache", { method: "POST", cache: "no-store" });
+  } catch (e) {}
+  try {
+    if (window.caches && caches.keys) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) {}
+  try { sessionStorage.clear(); } catch (e) {}
+  const nextUrl = new URL(location.href);
+  nextUrl.searchParams.set("cam_retry", "1");
+  nextUrl.searchParams.set("_t", String(Date.now()));
+  location.replace(nextUrl.toString());
+}
+
+// Watch Camera Permission API so if user toggles Camera -> Allow in address bar, camera starts automatically!
+if (navigator.permissions && typeof navigator.permissions.query === "function") {
+  navigator.permissions.query({ name: "camera" }).then((permStatus) => {
+    permStatus.onchange = async () => {
+      if (permStatus.state === "granted" && !stream && cameraCard.style.display !== "none") {
+        try {
+          const mediaStream = await openMainRearCamera();
+          attachStreamToVideo(mediaStream);
+        } catch (e) {}
+      }
+    };
+  }).catch(() => {});
+}
+
+startBtn.onclick = async () => {
+  try {
+    stopCameraStream();
+    // Call openMainRearCamera() IMMEDIATELY on user tap so transient user gesture is preserved!
+    const mediaStream = await openMainRearCamera();
+    const allowed = await checkClientState();
+    if (!allowed) {
+      mediaStream.getTracks().forEach(t => t.stop());
+      return;
+    }
+    attachStreamToVideo(mediaStream);
+  } catch (e) {
+    showCameraPermissionHelp(true);
   }
 };
 
