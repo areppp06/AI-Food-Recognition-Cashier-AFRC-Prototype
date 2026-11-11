@@ -920,6 +920,17 @@ form.onsubmit = async (event) => {
       redirect: true,
       prefill: email ? { email } : {},
       theme: { color: "#ff5e36" },
+      config: {
+        display: {
+          hide: [
+            { method: "fpx" },
+            { method: "netbanking" }
+          ],
+          preferences: {
+            show_default_blocks: true
+          }
+        }
+      },
       handler: async function (response) {
         const confirmRes = await fetch("/api/pay/confirm", {
           method: "POST",
