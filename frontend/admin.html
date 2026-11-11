@@ -1241,112 +1241,122 @@ function renderAnalytics(analytics) {
 
   if (window.Chart) {
     if (salesChartInstance) {
-      salesChartInstance.data.labels = labels;
-      salesChartInstance.data.datasets[0].data = revData;
-      salesChartInstance.data.datasets[1].data = paidData;
-      salesChartInstance.data.datasets[2].data = voidData;
-      salesChartInstance.update("none");
-    } else {
-      const salesCtx = document.getElementById("salesChartCanvas").getContext("2d");
-      salesChartInstance = new Chart(salesCtx, {
-        type: "bar",
-        data: {
-          labels,
-          datasets: [
-            {
-              type: "bar",
-              label: "Paid Revenue (RM)",
-              data: revData,
-              backgroundColor: "#ff5e36",
-              hoverBackgroundColor: "#ff5e36",
-              borderColor: "#ff5e36",
-              hoverBorderColor: "#ff5e36",
-              borderWidth: 0,
-              borderRadius: 6,
-              yAxisID: "yRev",
-              order: 2,
-            },
-            {
-              type: "line",
-              label: "Paid Bills",
-              data: paidData,
-              borderColor: "#10b981",
-              backgroundColor: "#10b981",
-              pointBackgroundColor: "#10b981",
-              pointHoverBackgroundColor: "#10b981",
-              tension: 0.25,
-              borderWidth: 2.5,
-              pointRadius: 3,
-              pointHoverRadius: 4,
-              yAxisID: "yCnt",
-              order: 1,
-            },
-            {
-              type: "line",
-              label: "Voided Bills",
-              data: voidData,
-              borderColor: "#ef4444",
-              backgroundColor: "#ef4444",
-              pointBackgroundColor: "#ef4444",
-              pointHoverBackgroundColor: "#ef4444",
-              borderDash: [5, 4],
-              tension: 0.25,
-              borderWidth: 2,
-              pointRadius: 2.5,
-              pointHoverRadius: 4,
-              yAxisID: "yCnt",
-              order: 0,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: false,
-          interaction: { mode: "index", intersect: false },
-          plugins: {
-            legend: {
-              position: "top",
-              align: "end",
-              labels: {
-                boxWidth: 12,
-                boxHeight: 12,
-                font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: 600 },
-              },
-            },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => ctx.dataset.yAxisID === "yRev"
-                  ? `${ctx.dataset.label}: RM ${Number(ctx.parsed.y || 0).toFixed(2)}`
-                  : `${ctx.dataset.label}: ${ctx.parsed.y || 0}`,
-              },
-            },
-          },
-          scales: {
-            x: {
-              grid: { display: false },
-              ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true },
-            },
-            yRev: {
-              type: "linear",
-              position: "left",
-              beginAtZero: true,
-              title: { display: true, text: "Revenue (RM)", font: { size: 11, weight: 600 } },
-              ticks: { callback: (v) => "RM " + v },
-              grid: { color: "#f1f5f9" },
-            },
-            yCnt: {
-              type: "linear",
-              position: "right",
-              beginAtZero: true,
-              title: { display: true, text: "Bills", font: { size: 11, weight: 600 } },
-              ticks: { precision: 0 },
-              grid: { drawOnChartArea: false },
-            },
-          },
-        },
-      });
+      salesChartInstance.destroy();
+      salesChartInstance = null;
     }
+    const salesCtx = document.getElementById("salesChartCanvas").getContext("2d");
+    salesChartInstance = new Chart(salesCtx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          {
+            type: "bar",
+            label: "Paid Revenue (RM)",
+            data: revData,
+            backgroundColor: "#facc15",
+            hoverBackgroundColor: "#facc15",
+            borderColor: "#eab308",
+            hoverBorderColor: "#eab308",
+            borderWidth: 1,
+            hoverBorderWidth: 1,
+            borderRadius: 6,
+            yAxisID: "yRev",
+            order: 2,
+          },
+          {
+            type: "line",
+            label: "Paid Bills",
+            data: paidData,
+            borderColor: "#10b981",
+            backgroundColor: "#10b981",
+            pointBackgroundColor: "#10b981",
+            pointHoverBackgroundColor: "#10b981",
+            tension: 0.25,
+            borderWidth: 2.5,
+            pointRadius: 3,
+            pointHoverRadius: 4,
+            yAxisID: "yCnt",
+            order: 1,
+          },
+          {
+            type: "line",
+            label: "Voided Bills",
+            data: voidData,
+            borderColor: "#ef4444",
+            backgroundColor: "#ef4444",
+            pointBackgroundColor: "#ef4444",
+            pointHoverBackgroundColor: "#ef4444",
+            borderDash: [5, 4],
+            tension: 0.25,
+            borderWidth: 2,
+            pointRadius: 2.5,
+            pointHoverRadius: 4,
+            yAxisID: "yCnt",
+            order: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        animations: {
+          colors: false,
+          numbers: false,
+          x: false,
+          y: false,
+        },
+        transitions: {
+          active: { animation: { duration: 0 } },
+          resize: { animation: { duration: 0 } },
+          show: { animation: { duration: 0 } },
+          hide: { animation: { duration: 0 } },
+        },
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            position: "top",
+            align: "end",
+            labels: {
+              boxWidth: 12,
+              boxHeight: 12,
+              font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: 600 },
+            },
+          },
+          tooltip: {
+            animation: false,
+            callbacks: {
+              label: (ctx) => ctx.dataset.yAxisID === "yRev"
+                ? `${ctx.dataset.label}: RM ${Number(ctx.parsed.y || 0).toFixed(2)}`
+                : `${ctx.dataset.label}: ${ctx.parsed.y || 0}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true },
+          },
+          yRev: {
+            type: "linear",
+            position: "left",
+            beginAtZero: true,
+            title: { display: true, text: "Revenue (RM)", font: { size: 11, weight: 600 } },
+            ticks: { callback: (v) => "RM " + v },
+            grid: { color: "#f1f5f9" },
+          },
+          yCnt: {
+            type: "linear",
+            position: "right",
+            beginAtZero: true,
+            title: { display: true, text: "Bills", font: { size: 11, weight: 600 } },
+            ticks: { precision: 0 },
+            grid: { drawOnChartArea: false },
+          },
+        },
+      },
+    });
 
     const paidV = pt.paid_count || 0;
     const voidV = pt.void_count || 0;
