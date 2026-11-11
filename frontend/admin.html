@@ -572,6 +572,17 @@
     border-color: #0f172a;
     color: #ffffff;
   }
+  .range-subselect {
+    padding: 0.42rem 0.75rem;
+    border-radius: 9999px;
+    border: 1.5px solid #0f172a;
+    background: #ffffff;
+    color: #0f172a;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
   .export-actions {
     display: flex;
     align-items: center;
@@ -778,10 +789,18 @@
 
       <div class="overview-toolbar">
         <div class="range-pills">
-          <button class="range-pill" data-days="1" type="button" onclick="setAnalyticsRange(1, this)">Today (Hourly)</button>
-          <button class="range-pill active" data-days="7" type="button" onclick="setAnalyticsRange(7, this)">Last 7 Days</button>
-          <button class="range-pill" data-days="30" type="button" onclick="setAnalyticsRange(30, this)">Last 30 Days</button>
-          <button class="range-pill" data-days="0" type="button" onclick="setAnalyticsRange(0, this)">All Time</button>
+          <button class="range-pill" data-period="today" type="button" onclick="setAnalyticsRange('today', this)">Today (Hourly)</button>
+          <button class="range-pill active" data-period="7d" type="button" onclick="setAnalyticsRange('7d', this)">Last 7 Days</button>
+          <button class="range-pill" data-period="30d" type="button" onclick="setAnalyticsRange('30d', this)">Last 30 Days</button>
+          <button class="range-pill" data-period="monthly" type="button" onclick="setAnalyticsRange('monthly', this)">Monthly</button>
+          <button class="range-pill" data-period="quarterly" type="button" onclick="setAnalyticsRange('quarterly', this)">Quarterly</button>
+          <button class="range-pill" data-period="all" type="button" onclick="setAnalyticsRange('all', this)">All Time</button>
+          <select class="range-subselect" id="monthSelect" style="display:none;" aria-label="Select Month" onchange="onMonthSelectChange()">
+            <option value="">Last 12 Months</option>
+          </select>
+          <select class="range-subselect" id="quarterSelect" style="display:none;" aria-label="Select Quarter" onchange="onQuarterSelectChange()">
+            <option value="">Last 4 Quarters</option>
+          </select>
         </div>
         <div class="export-actions">
           <button class="btn btn-outline" type="button" onclick="exportOverviewCsv()">
@@ -991,7 +1010,10 @@
 let pageBills = [];
 let latestSummary = null;
 let latestAnalytics = null;
-let analyticsDays = 7;
+let analyticsPeriod = "7d";
+let analyticsMonth = "";
+let analyticsQuarter = "";
+let analyticsReqSeq = 0;
 let salesChartInstance = null;
 let outcomeChartInstance = null;
 let statusFilter = "all";
@@ -1088,9 +1110,12 @@ async function loadBills(options = {}) {
     status: statusFilter,
     q,
     include_summary: includeSummary ? "true" : "false",
-    analytics_days: String(analyticsDays),
+    period: analyticsPeriod,
+    month: analyticsMonth,
+    quarter: analyticsQuarter,
+    _t: String(Date.now()),
   });
-  const res = await fetch("/api/admin/bills?" + params.toString());
+  const res = await fetch("/api/admin/bills?" + params.toString(), { cache: "no-store" });
   if (!res.ok) return;
   const data = await res.json();
   pageBills = data.bills || [];
@@ -1131,13 +1156,40 @@ function applySummaryCards(sum) {
   document.getElementById("navBillsCount").textContent = String(sum.total_bills || 0);
 }
 
-async function setAnalyticsRange(days, btn) {
-  analyticsDays = Number(days);
-  document.querySelectorAll(".range-pill").forEach(b => b.classList.remove("active"));
-  if (btn) btn.classList.add("active");
-  const res = await fetch(`/api/admin/analytics?days=${encodeURIComponent(analyticsDays)}`);
-  if (!res.ok) return;
+function syncPeriodSelectors(analytics) {
+  const monthSel = document.getElementById("monthSelect");
+  const quarterSel = document.getElementById("quarterSelect");
+  if (analytics && Array.isArray(analytics.available_months)) {
+    const curVal = analyticsMonth || "";
+    monthSel.innerHTML = `<option value="">Last 12 Months (All)</option>` +
+      analytics.available_months.map(m => `<option value="${esc(m.value)}">${esc(m.label)}</option>`).join("");
+    monthSel.value = curVal;
+  }
+  if (analytics && Array.isArray(analytics.available_quarters)) {
+    const curVal = analyticsQuarter || "";
+    quarterSel.innerHTML = `<option value="">Last 4 Quarters (All)</option>` +
+      analytics.available_quarters.map(q => `<option value="${esc(q.value)}">${esc(q.label)}</option>`).join("");
+    quarterSel.value = curVal;
+  }
+  monthSel.style.display = analyticsPeriod === "monthly" ? "inline-block" : "none";
+  quarterSel.style.display = analyticsPeriod === "quarterly" ? "inline-block" : "none";
+}
+
+async function fetchAnalyticsUpdate() {
+  const mySeq = ++analyticsReqSeq;
+  const params = new URLSearchParams({
+    period: analyticsPeriod,
+    month: analyticsPeriod === "monthly" ? analyticsMonth : "",
+    quarter: analyticsPeriod === "quarterly" ? analyticsQuarter : "",
+    _t: String(Date.now()),
+  });
+  const res = await fetch("/api/admin/analytics?" + params.toString(), { cache: "no-store" });
+  if (!res.ok) {
+    showToast("Failed to load chart data.");
+    return;
+  }
   const data = await res.json();
+  if (mySeq !== analyticsReqSeq) return;
   if (data.summary) {
     latestSummary = data.summary;
     applySummaryCards(data.summary);
@@ -1148,8 +1200,31 @@ async function setAnalyticsRange(days, btn) {
   }
 }
 
+async function setAnalyticsRange(period, btn) {
+  analyticsPeriod = String(period || "7d");
+  if (analyticsPeriod !== "monthly") analyticsMonth = "";
+  if (analyticsPeriod !== "quarterly") analyticsQuarter = "";
+  document.querySelectorAll(".range-pill").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  syncPeriodSelectors(latestAnalytics);
+  await fetchAnalyticsUpdate();
+}
+
+async function onMonthSelectChange() {
+  analyticsMonth = document.getElementById("monthSelect").value || "";
+  analyticsPeriod = "monthly";
+  await fetchAnalyticsUpdate();
+}
+
+async function onQuarterSelectChange() {
+  analyticsQuarter = document.getElementById("quarterSelect").value || "";
+  analyticsPeriod = "quarterly";
+  await fetchAnalyticsUpdate();
+}
+
 function renderAnalytics(analytics) {
   if (!analytics) return;
+  syncPeriodSelectors(analytics);
   const pt = analytics.period_totals || {};
   document.getElementById("salesChartSubtitle").textContent =
     `${analytics.period_label} — Paid revenue (RM) vs paid & voided bills`;
@@ -1159,123 +1234,162 @@ function renderAnalytics(analytics) {
     `${pt.total_bills || 0} bills in ${analytics.period_label.toLowerCase()}`;
 
   const series = analytics.series || [];
+  const labels = series.map(s => s.label);
+  const revData = series.map(s => s.revenue);
+  const paidData = series.map(s => s.paid_count);
+  const voidData = series.map(s => s.void_count);
+
   if (window.Chart) {
-    const salesCtx = document.getElementById("salesChartCanvas").getContext("2d");
-    if (salesChartInstance) salesChartInstance.destroy();
-    salesChartInstance = new Chart(salesCtx, {
-      data: {
-        labels: series.map(s => s.label),
-        datasets: [
-          {
-            type: "bar",
-            label: "Paid Revenue (RM)",
-            data: series.map(s => s.revenue),
-            backgroundColor: "rgba(255, 94, 54, 0.85)",
-            hoverBackgroundColor: "#ff5e36",
-            borderRadius: 6,
-            yAxisID: "yRev",
-            order: 2,
+    if (salesChartInstance) {
+      salesChartInstance.data.labels = labels;
+      salesChartInstance.data.datasets[0].data = revData;
+      salesChartInstance.data.datasets[1].data = paidData;
+      salesChartInstance.data.datasets[2].data = voidData;
+      salesChartInstance.update("none");
+    } else {
+      const salesCtx = document.getElementById("salesChartCanvas").getContext("2d");
+      salesChartInstance = new Chart(salesCtx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            {
+              type: "bar",
+              label: "Paid Revenue (RM)",
+              data: revData,
+              backgroundColor: "#ff5e36",
+              hoverBackgroundColor: "#ff5e36",
+              borderColor: "#ff5e36",
+              hoverBorderColor: "#ff5e36",
+              borderWidth: 0,
+              borderRadius: 6,
+              yAxisID: "yRev",
+              order: 2,
+            },
+            {
+              type: "line",
+              label: "Paid Bills",
+              data: paidData,
+              borderColor: "#10b981",
+              backgroundColor: "#10b981",
+              pointBackgroundColor: "#10b981",
+              pointHoverBackgroundColor: "#10b981",
+              tension: 0.25,
+              borderWidth: 2.5,
+              pointRadius: 3,
+              pointHoverRadius: 4,
+              yAxisID: "yCnt",
+              order: 1,
+            },
+            {
+              type: "line",
+              label: "Voided Bills",
+              data: voidData,
+              borderColor: "#ef4444",
+              backgroundColor: "#ef4444",
+              pointBackgroundColor: "#ef4444",
+              pointHoverBackgroundColor: "#ef4444",
+              borderDash: [5, 4],
+              tension: 0.25,
+              borderWidth: 2,
+              pointRadius: 2.5,
+              pointHoverRadius: 4,
+              yAxisID: "yCnt",
+              order: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: {
+              position: "top",
+              align: "end",
+              labels: {
+                boxWidth: 12,
+                boxHeight: 12,
+                font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: 600 },
+              },
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ctx.dataset.yAxisID === "yRev"
+                  ? `${ctx.dataset.label}: RM ${Number(ctx.parsed.y || 0).toFixed(2)}`
+                  : `${ctx.dataset.label}: ${ctx.parsed.y || 0}`,
+              },
+            },
           },
-          {
-            type: "line",
-            label: "Paid Bills",
-            data: series.map(s => s.paid_count),
-            borderColor: "#10b981",
-            backgroundColor: "#10b981",
-            tension: 0.3,
-            borderWidth: 2.5,
-            pointRadius: 3,
-            yAxisID: "yCnt",
-            order: 1,
-          },
-          {
-            type: "line",
-            label: "Voided Bills",
-            data: series.map(s => s.void_count),
-            borderColor: "#ef4444",
-            backgroundColor: "#ef4444",
-            borderDash: [5, 4],
-            tension: 0.3,
-            borderWidth: 2,
-            pointRadius: 2.5,
-            yAxisID: "yCnt",
-            order: 0,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: "index", intersect: false },
-        plugins: {
-          legend: {
-            position: "top",
-            align: "end",
-            labels: { boxWidth: 12, font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: "600" } },
-          },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => ctx.dataset.yAxisID === "yRev"
-                ? `${ctx.dataset.label}: RM ${Number(ctx.parsed.y || 0).toFixed(2)}`
-                : `${ctx.dataset.label}: ${ctx.parsed.y || 0}`,
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true },
+            },
+            yRev: {
+              type: "linear",
+              position: "left",
+              beginAtZero: true,
+              title: { display: true, text: "Revenue (RM)", font: { size: 11, weight: 600 } },
+              ticks: { callback: (v) => "RM " + v },
+              grid: { color: "#f1f5f9" },
+            },
+            yCnt: {
+              type: "linear",
+              position: "right",
+              beginAtZero: true,
+              title: { display: true, text: "Bills", font: { size: 11, weight: 600 } },
+              ticks: { precision: 0 },
+              grid: { drawOnChartArea: false },
             },
           },
         },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true },
-          },
-          yRev: {
-            type: "linear",
-            position: "left",
-            beginAtZero: true,
-            title: { display: true, text: "Revenue (RM)", font: { size: 11, weight: "600" } },
-            ticks: { callback: (v) => "RM " + v },
-            grid: { color: "#f1f5f9" },
-          },
-          yCnt: {
-            type: "linear",
-            position: "right",
-            beginAtZero: true,
-            title: { display: true, text: "Bills", font: { size: 11, weight: "600" } },
-            ticks: { precision: 0 },
-            grid: { drawOnChartArea: false },
-          },
-        },
-      },
-    });
+      });
+    }
 
-    const outcomeCtx = document.getElementById("outcomeChartCanvas").getContext("2d");
-    if (outcomeChartInstance) outcomeChartInstance.destroy();
     const paidV = pt.paid_count || 0;
     const voidV = pt.void_count || 0;
     const openV = pt.open_count || 0;
     const hasAny = (paidV + voidV + openV) > 0;
-    outcomeChartInstance = new Chart(outcomeCtx, {
-      type: "doughnut",
-      data: {
-        labels: hasAny ? ["Paid", "Voided", "Open / Pending"] : ["No Bills"],
-        datasets: [{
-          data: hasAny ? [paidV, voidV, openV] : [1],
-          backgroundColor: hasAny ? ["#10b981", "#ef4444", "#f59e0b"] : ["#e2e8f0"],
-          borderWidth: 2,
-          borderColor: "#ffffff",
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: "62%",
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: { boxWidth: 12, padding: 12, font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: "600" } },
-          },
-          tooltip: { enabled: hasAny },
+    const outLabels = hasAny ? ["Paid", "Voided", "Open / Pending"] : ["No Bills"];
+    const outData = hasAny ? [paidV, voidV, openV] : [1];
+    const outColors = hasAny ? ["#10b981", "#ef4444", "#f59e0b"] : ["#e2e8f0"];
+
+    if (outcomeChartInstance) {
+      outcomeChartInstance.data.labels = outLabels;
+      outcomeChartInstance.data.datasets[0].data = outData;
+      outcomeChartInstance.data.datasets[0].backgroundColor = outColors;
+      outcomeChartInstance.options.plugins.tooltip.enabled = hasAny;
+      outcomeChartInstance.update("none");
+    } else {
+      const outcomeCtx = document.getElementById("outcomeChartCanvas").getContext("2d");
+      outcomeChartInstance = new Chart(outcomeCtx, {
+        type: "doughnut",
+        data: {
+          labels: outLabels,
+          datasets: [{
+            data: outData,
+            backgroundColor: outColors,
+            borderWidth: 2,
+            borderColor: "#ffffff",
+          }],
         },
-      },
-    });
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          cutout: "62%",
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { boxWidth: 12, padding: 12, font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: 600 } },
+            },
+            tooltip: { enabled: hasAny },
+          },
+        },
+      });
+    }
   }
 
   // Top Dishes
@@ -1320,7 +1434,12 @@ function renderAnalytics(analytics) {
 }
 
 function exportOverviewCsv() {
-  window.location.href = `/api/admin/export?days=${encodeURIComponent(analyticsDays)}`;
+  const params = new URLSearchParams({
+    period: analyticsPeriod,
+    month: analyticsPeriod === "monthly" ? analyticsMonth : "",
+    quarter: analyticsPeriod === "quarterly" ? analyticsQuarter : "",
+  });
+  window.location.href = "/api/admin/export?" + params.toString();
 }
 
 function exportOverviewPdf() {
@@ -1464,7 +1583,7 @@ function exportOverviewPdf() {
     });
   }
 
-  doc.save(`AFRC-Sales-Overview-${new Date().toISOString().slice(0, 10)}.pdf`);
+  doc.save(`AFRC-Sales-Overview-${an.file_tag || "report"}-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
 function onBillSearchInput() {

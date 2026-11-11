@@ -5,6 +5,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 import asyncio
+import calendar
 import csv
 import io
 import math
@@ -14,7 +15,7 @@ import json
 import hashlib
 import httpx
 import razorpay
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
 from dotenv import dotenv_values
@@ -1412,9 +1413,17 @@ def _local_tz_offset() -> timedelta:
         hours = 8.0
     return timedelta(hours=hours)
 
+def _shift_year_month(year: int, month: int, delta_months: int) -> tuple[int, int]:
+    total = year * 12 + (month - 1) + delta_months
+    y, m_idx = divmod(total, 12)
+    return y, m_idx + 1
+
 def _compute_overview_data(
     db: Session,
     days: int = 7,
+    period: str = "",
+    month: str = "",
+    quarter: str = "",
     include_export_bills: bool = False,
 ) -> dict:
     offset = _local_tz_offset()
@@ -1445,41 +1454,198 @@ def _compute_overview_data(
         days_int = int(days)
     except (TypeError, ValueError):
         days_int = 7
-    if days_int not in (0, 1, 7, 14, 30):
-        days_int = 7
 
-    cutoff_date = None if days_int == 0 else (today_date - timedelta(days=days_int - 1))
+    p_norm = (period or "").strip().lower()
+    if p_norm not in ("today", "7d", "30d", "monthly", "quarterly", "all"):
+        if days_int == 1:
+            p_norm = "today"
+        elif days_int == 30:
+            p_norm = "30d"
+        elif days_int == 0:
+            p_norm = "all"
+        else:
+            p_norm = "7d"
 
-    # Pre-initialize contiguous buckets for 1 (hourly) or 7/14/30 (daily)
+    month_str = (month or "").strip()
+    quarter_str = (quarter or "").strip().upper()
+
+    # Available months (last 12) and quarters (last 8) for selectors
+    available_months = []
+    for delta in range(0, -12, -1):
+        ym_y, ym_m = _shift_year_month(today_date.year, today_date.month, delta)
+        available_months.append({
+            "value": f"{ym_y:04d}-{ym_m:02d}",
+            "label": date(ym_y, ym_m, 1).strftime("%B %Y"),
+        })
+
+    cur_q = (today_date.month - 1) // 3 + 1
+    available_quarters = []
+    q_month_span = {1: "Jan-Mar", 2: "Apr-Jun", 3: "Jul-Sep", 4: "Oct-Dec"}
+    for q_idx in range(8):
+        total_q = today_date.year * 4 + (cur_q - 1) - q_idx
+        qy, qm_idx = divmod(total_q, 4)
+        qn = qm_idx + 1
+        available_quarters.append({
+            "value": f"{qy:04d}-Q{qn}",
+            "label": f"Q{qn} {qy} ({q_month_span[qn]})",
+        })
+
+    start_date: date | None = None
+    end_date: date | None = None
+    granularity = "day"
+    period_label = "Last 7 Days"
+    file_tag = "last-7d"
+    selected_month = ""
+    selected_quarter = ""
+
     buckets: dict[str, dict] = {}
     bucket_order: list[str] = []
-    if days_int == 1:
+
+    def _add_bucket(key: str, label: str) -> None:
+        if key not in buckets:
+            bucket_order.append(key)
+            buckets[key] = {
+                "key": key,
+                "label": label,
+                "revenue": 0.0,
+                "paid_count": 0,
+                "void_count": 0,
+                "open_count": 0,
+                "total_count": 0,
+            }
+
+    if p_norm == "today":
+        days_int = 1
+        start_date = today_date
+        end_date = today_date
+        granularity = "hour"
+        period_label = "Today (Hourly)"
+        file_tag = "today"
         for h in range(24):
-            key = f"{h:02d}:00"
-            bucket_order.append(key)
-            buckets[key] = {
-                "key": key,
-                "label": key,
-                "revenue": 0.0,
-                "paid_count": 0,
-                "void_count": 0,
-                "open_count": 0,
-                "total_count": 0,
-            }
-    elif days_int > 1:
-        for i in range(days_int - 1, -1, -1):
+            lbl = f"{h:02d}:00"
+            _add_bucket(lbl, lbl)
+    elif p_norm == "7d":
+        days_int = 7
+        start_date = today_date - timedelta(days=6)
+        end_date = today_date
+        granularity = "day"
+        period_label = "Last 7 Days"
+        file_tag = "last-7d"
+        for i in range(6, -1, -1):
             d = today_date - timedelta(days=i)
-            key = d.isoformat()
-            bucket_order.append(key)
-            buckets[key] = {
-                "key": key,
-                "label": d.strftime("%d %b"),
-                "revenue": 0.0,
-                "paid_count": 0,
-                "void_count": 0,
-                "open_count": 0,
-                "total_count": 0,
-            }
+            _add_bucket(d.isoformat(), d.strftime("%d %b"))
+    elif p_norm == "30d":
+        days_int = 30
+        start_date = today_date - timedelta(days=29)
+        end_date = today_date
+        granularity = "day"
+        period_label = "Last 30 Days"
+        file_tag = "last-30d"
+        for i in range(29, -1, -1):
+            d = today_date - timedelta(days=i)
+            _add_bucket(d.isoformat(), d.strftime("%d %b"))
+    elif p_norm == "monthly":
+        days_int = 30
+        parsed_m = None
+        if len(month_str) == 7 and month_str[4] == "-":
+            try:
+                my = int(month_str[:4])
+                mm = int(month_str[5:7])
+                if 2000 <= my <= 2100 and 1 <= mm <= 12:
+                    parsed_m = (my, mm)
+            except ValueError:
+                parsed_m = None
+        if parsed_m:
+            my, mm = parsed_m
+            selected_month = f"{my:04d}-{mm:02d}"
+            last_day = calendar.monthrange(my, mm)[1]
+            start_date = date(my, mm, 1)
+            end_date = date(my, mm, last_day)
+            granularity = "day"
+            period_label = start_date.strftime("%B %Y")
+            file_tag = f"month-{selected_month}"
+            for day_num in range(1, last_day + 1):
+                d = date(my, mm, day_num)
+                _add_bucket(d.isoformat(), d.strftime("%d %b"))
+        else:
+            oy, om = _shift_year_month(today_date.year, today_date.month, -11)
+            start_date = date(oy, om, 1)
+            end_date = today_date
+            granularity = "month"
+            period_label = "Monthly (Last 12 Months)"
+            file_tag = "monthly-12m"
+            for delta in range(-11, 1):
+                ym_y, ym_m = _shift_year_month(today_date.year, today_date.month, delta)
+                m_key = f"{ym_y:04d}-{ym_m:02d}"
+                m_lbl = date(ym_y, ym_m, 1).strftime("%b %Y")
+                _add_bucket(m_key, m_lbl)
+    elif p_norm == "quarterly":
+        days_int = 90
+        parsed_q = None
+        if len(quarter_str) == 7 and quarter_str[4:6] == "-Q":
+            try:
+                qy = int(quarter_str[:4])
+                qn = int(quarter_str[6])
+                if 2000 <= qy <= 2100 and 1 <= qn <= 4:
+                    parsed_q = (qy, qn)
+            except ValueError:
+                parsed_q = None
+        if parsed_q:
+            qy, qn = parsed_q
+            selected_quarter = f"{qy:04d}-Q{qn}"
+            m_start = (qn - 1) * 3 + 1
+            m_end = qn * 3
+            start_date = date(qy, m_start, 1)
+            end_date = date(qy, m_end, calendar.monthrange(qy, m_end)[1])
+            granularity = "month"
+            period_label = f"Q{qn} {qy} ({q_month_span[qn]})"
+            file_tag = f"quarter-{selected_quarter}"
+            for mm in range(m_start, m_end + 1):
+                m_key = f"{qy:04d}-{mm:02d}"
+                m_lbl = date(qy, mm, 1).strftime("%b %Y")
+                _add_bucket(m_key, m_lbl)
+        else:
+            start_total_q = today_date.year * 4 + (cur_q - 1) - 3
+            sy, sqm_idx = divmod(start_total_q, 4)
+            sq = sqm_idx + 1
+            start_date = date(sy, (sq - 1) * 3 + 1, 1)
+            end_date = today_date
+            granularity = "quarter"
+            period_label = "Quarterly (Last 4 Quarters)"
+            file_tag = "quarterly-4q"
+            for q_idx in range(3, -1, -1):
+                tq = today_date.year * 4 + (cur_q - 1) - q_idx
+                by, bqm = divmod(tq, 4)
+                bn = bqm + 1
+                _add_bucket(f"{by:04d}-Q{bn}", f"Q{bn} {by:04d}")
+    else:
+        days_int = 0
+        start_date = None
+        end_date = None
+        granularity = "day"
+        period_label = "All Time"
+        file_tag = "all-time"
+
+    def _bucket_info(dt_local: datetime) -> tuple[str, str]:
+        if granularity == "hour":
+            lbl = f"{dt_local.hour:02d}:00"
+            return lbl, lbl
+        if granularity == "month":
+            return f"{dt_local.year:04d}-{dt_local.month:02d}", dt_local.strftime("%b %Y")
+        if granularity == "quarter":
+            qq = (dt_local.month - 1) // 3 + 1
+            return f"{dt_local.year:04d}-Q{qq}", f"Q{qq} {dt_local.year:04d}"
+        d_val = dt_local.date()
+        return d_val.isoformat(), d_val.strftime("%d %b")
+
+    def _in_date_range(d_val: date | None) -> bool:
+        if d_val is None:
+            return False
+        if start_date is not None and d_val < start_date:
+            return False
+        if end_date is not None and d_val > end_date:
+            return False
+        return True
 
     all_time_revenue = 0.0
     today_revenue = 0.0
@@ -1563,25 +1729,14 @@ def _compute_overview_data(
         elif is_void:
             void_count += 1
 
-        # Period inclusion for charts & export
-        in_period_created = cutoff_date is None or created_d >= cutoff_date
-        in_period_paid = (st == "paid") and (cutoff_date is None or (paid_d is not None and paid_d >= cutoff_date))
+        in_period_created = _in_date_range(created_d)
+        in_period_paid = (st == "paid") and _in_date_range(paid_d)
 
         if in_period_paid:
             period_revenue += bill_total
             period_paid += 1
-            pkey = f"{paid_local.hour:02d}:00" if days_int == 1 else paid_d.isoformat()
-            if pkey not in buckets:
-                buckets[pkey] = {
-                    "key": pkey,
-                    "label": pkey if days_int == 1 else paid_d.strftime("%d %b"),
-                    "revenue": 0.0,
-                    "paid_count": 0,
-                    "void_count": 0,
-                    "open_count": 0,
-                    "total_count": 0,
-                }
-                bucket_order.append(pkey)
+            pkey, plbl = _bucket_info(paid_local)
+            _add_bucket(pkey, plbl)
             buckets[pkey]["revenue"] = round(buckets[pkey]["revenue"] + bill_total, 2)
             buckets[pkey]["paid_count"] += 1
             buckets[pkey]["total_count"] += 1
@@ -1594,18 +1749,8 @@ def _compute_overview_data(
                 entry["revenue"] += sub
 
         if in_period_created:
-            ckey = f"{created_local.hour:02d}:00" if days_int == 1 else created_d.isoformat()
-            if ckey not in buckets:
-                buckets[ckey] = {
-                    "key": ckey,
-                    "label": ckey if days_int == 1 else created_d.strftime("%d %b"),
-                    "revenue": 0.0,
-                    "paid_count": 0,
-                    "void_count": 0,
-                    "open_count": 0,
-                    "total_count": 0,
-                }
-                bucket_order.append(ckey)
+            ckey, clbl = _bucket_info(created_local)
+            _add_bucket(ckey, clbl)
             if is_void:
                 period_void += 1
                 period_void_value += bill_total
@@ -1636,7 +1781,7 @@ def _compute_overview_data(
                 "curlec_payment_id": curlec_payment_id or "",
             })
 
-    if days_int == 0:
+    if p_norm == "all":
         bucket_order = sorted(buckets.keys())
 
     series = [buckets[k] for k in bucket_order]
@@ -1679,10 +1824,16 @@ def _compute_overview_data(
         "void_count": void_count,
     }
     analytics = {
+        "period": p_norm,
+        "month": selected_month,
+        "quarter": selected_quarter,
         "days": days_int,
-        "period_label": "Today (Hourly)" if days_int == 1 else (f"Last {days_int} Days" if days_int > 0 else "All Time"),
+        "period_label": period_label,
+        "file_tag": file_tag,
         "generated_at_local": now_local.strftime("%Y-%m-%d %H:%M:%S MYT"),
-        "granularity": "hour" if days_int == 1 else "day",
+        "granularity": granularity,
+        "available_months": available_months,
+        "available_quarters": available_quarters,
         "period_totals": {
             "revenue": round(period_revenue, 2),
             "paid_count": period_paid,
@@ -1708,6 +1859,9 @@ def list_admin_bills(
     q: str = "",
     include_summary: bool = True,
     analytics_days: int = 7,
+    period: str = "",
+    month: str = "",
+    quarter: str = "",
     db: Session = Depends(get_db),
 ):
     _expire_stale_bills(db)
@@ -1763,20 +1917,52 @@ def list_admin_bills(
         },
     }
     if include_summary:
-        overview = _compute_overview_data(db, days=analytics_days)
+        overview = _compute_overview_data(
+            db,
+            days=analytics_days,
+            period=period,
+            month=month,
+            quarter=quarter,
+        )
         payload["summary"] = overview["summary"]
         payload["analytics"] = overview["analytics"]
-    return payload
+    return JSONResponse(content=payload, headers=NO_CACHE_HEADERS)
 
 @app.get("/api/admin/analytics")
-def get_admin_analytics(days: int = 7, db: Session = Depends(get_db)):
+def get_admin_analytics(
+    days: int = 7,
+    period: str = "",
+    month: str = "",
+    quarter: str = "",
+    db: Session = Depends(get_db),
+):
     _expire_stale_bills(db)
-    return _compute_overview_data(db, days=days)
+    data = _compute_overview_data(
+        db,
+        days=days,
+        period=period,
+        month=month,
+        quarter=quarter,
+    )
+    return JSONResponse(content=data, headers=NO_CACHE_HEADERS)
 
 @app.get("/api/admin/export")
-def export_admin_sales_csv(days: int = 7, db: Session = Depends(get_db)):
+def export_admin_sales_csv(
+    days: int = 7,
+    period: str = "",
+    month: str = "",
+    quarter: str = "",
+    db: Session = Depends(get_db),
+):
     _expire_stale_bills(db)
-    data = _compute_overview_data(db, days=days, include_export_bills=True)
+    data = _compute_overview_data(
+        db,
+        days=days,
+        period=period,
+        month=month,
+        quarter=quarter,
+        include_export_bills=True,
+    )
     summary = data["summary"]
     analytics = data["analytics"]
     pt = analytics["period_totals"]
@@ -1807,7 +1993,8 @@ def export_admin_sales_csv(days: int = 7, db: Session = Depends(get_db)):
     writer.writerow([])
 
     writer.writerow(["SALES TIMELINE BREAKDOWN"])
-    writer.writerow(["Date / Hour", "Paid Revenue (RM)", "Paid Bills", "Open / Pending Bills", "Voided Bills", "Total Bills"])
+    time_col = "Hour" if analytics["granularity"] == "hour" else ("Month" if analytics["granularity"] == "month" else ("Quarter" if analytics["granularity"] == "quarter" else "Date"))
+    writer.writerow([time_col, "Paid Revenue (RM)", "Paid Bills", "Open / Pending Bills", "Voided Bills", "Total Bills"])
     for row in analytics["series"]:
         writer.writerow([
             row["label"] if analytics["granularity"] == "hour" else row["key"],
@@ -1847,7 +2034,7 @@ def export_admin_sales_csv(days: int = 7, db: Session = Depends(get_db)):
         ])
 
     csv_bytes = ("\ufeff" + buf.getvalue()).encode("utf-8")
-    day_tag = "today" if analytics["days"] == 1 else ("all-time" if analytics["days"] == 0 else f"last-{analytics['days']}d")
+    day_tag = analytics.get("file_tag") or "report"
     date_tag = (datetime.utcnow() + _local_tz_offset()).strftime("%Y-%m-%d")
     filename = f"afrc-sales-report-{day_tag}-{date_tag}.csv"
     return Response(
