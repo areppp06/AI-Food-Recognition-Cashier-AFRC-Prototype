@@ -151,8 +151,8 @@ def init_db():
             "WHERE status = 'void' AND (void_reason IS NULL OR void_reason = '') AND retake_count >= 4"
         )
         conn.exec_driver_sql(
-            "UPDATE sessions SET void_reason = 'Ghosted / Stale Bill (15m Timeout)' "
-            "WHERE status = 'void' AND (void_reason IS NULL OR void_reason = '')"
+            "UPDATE sessions SET void_reason = 'Bill timed out' "
+            "WHERE status = 'void' AND (void_reason IS NULL OR void_reason = '' OR void_reason LIKE 'Ghosted / Stale Bill%')"
         )
     db = SessionLocal()
     # Backfill bill_number for any existing sessions missing one

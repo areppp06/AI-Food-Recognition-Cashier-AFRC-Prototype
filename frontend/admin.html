@@ -509,6 +509,152 @@
     background: #ffffff;
   }
 
+  /* Photo Thumbnail Button */
+  .photo-thumb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 9px;
+    background: #0f172a;
+    overflow: hidden;
+    cursor: zoom-in;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .photo-thumb-btn:hover,
+  .photo-thumb-btn:focus-visible {
+    outline: none;
+    border-color: #ff5e36;
+    transform: scale(1.06);
+    box-shadow: 0 4px 12px rgba(255, 94, 54, 0.25);
+  }
+  .photo-thumb-btn img {
+    display: block;
+    width: 56px;
+    height: 40px;
+    object-fit: cover;
+  }
+
+  /* Dashboard Analytics & Export */
+  .overview-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .range-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+  .range-pill {
+    padding: 0.45rem 0.9rem;
+    border-radius: 9999px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .range-pill:hover {
+    border-color: #94a3b8;
+    color: #0f172a;
+  }
+  .range-pill.active {
+    background: #0f172a;
+    border-color: #0f172a;
+    color: #ffffff;
+  }
+  .export-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+  }
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .analytics-side {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .chart-wrap {
+    position: relative;
+    height: 310px;
+    width: 100%;
+  }
+  .chart-wrap-sm {
+    position: relative;
+    height: 210px;
+    width: 100%;
+  }
+  .breakdown-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  .breakdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .breakdown-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.83rem;
+    margin-bottom: 0.3rem;
+  }
+  .breakdown-name {
+    font-weight: 600;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .breakdown-meta {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #475569;
+    white-space: nowrap;
+  }
+  .breakdown-track {
+    height: 7px;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    overflow: hidden;
+  }
+  .breakdown-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background: #ff5e36;
+  }
+  .breakdown-fill.void {
+    background: #ef4444;
+  }
+  .empty-state-sm {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.84rem;
+    padding: 1.5rem 0.5rem;
+  }
+
+  @media (max-width: 1080px) {
+    .analytics-grid { grid-template-columns: 1fr; }
+    .breakdown-grid { grid-template-columns: 1fr; }
+  }
   @media (max-width: 960px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
@@ -611,45 +757,101 @@
         <div class="stat-card">
           <div class="stat-label">Today's Paid Revenue</div>
           <div class="stat-value orange" id="statTodayRev">RM 0.00</div>
-          <div class="stat-sub">Completed payments today</div>
+          <div class="stat-sub" id="statTodayPaidSub">0 paid bills today</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Total All-Time Revenue</div>
-          <div class="stat-value green" id="statTotalRev">RM 0.00</div>
-          <div class="stat-sub" id="statPaidCount">0 paid bills</div>
+          <div class="stat-label">Weekly Revenue</div>
+          <div class="stat-value green" id="statWeeklyRev">RM 0.00</div>
+          <div class="stat-sub" id="statWeeklyPaidSub">Last 7 days · 0 paid bills</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Total Logged Bills</div>
-          <div class="stat-value" id="statTotalBills">0</div>
-          <div class="stat-sub">Sequential from #AAA-0001</div>
+          <div class="stat-label">Today's Bills</div>
+          <div class="stat-value" id="statTodayBills">0</div>
+          <div class="stat-sub" id="statTodayBillsSub">Logged today · 0 all-time</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Voided / Open Bills</div>
+          <div class="stat-label">Today's Voided / Open Bills</div>
           <div class="stat-value amber" id="statAttention">0</div>
-          <div class="stat-sub" id="statAttentionSub">0 open/pending · 0 voided</div>
+          <div class="stat-sub" id="statAttentionSub">0 voided · 0 open today</div>
         </div>
       </div>
 
-      <div class="panel-card">
-        <div class="panel-header">
-          <div class="panel-title">Recent Bills &amp; Transactions</div>
-          <button class="btn btn-outline btn-sm" onclick="switchTab('bills', 'Bills & Transactions Log')">View All Bills →</button>
+      <div class="overview-toolbar">
+        <div class="range-pills">
+          <button class="range-pill" data-days="1" type="button" onclick="setAnalyticsRange(1, this)">Today (Hourly)</button>
+          <button class="range-pill active" data-days="7" type="button" onclick="setAnalyticsRange(7, this)">Last 7 Days</button>
+          <button class="range-pill" data-days="30" type="button" onclick="setAnalyticsRange(30, this)">Last 30 Days</button>
+          <button class="range-pill" data-days="0" type="button" onclick="setAnalyticsRange(0, this)">All Time</button>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Bill #</th>
-                <th>Date / Time</th>
-                <th>Ordered Items</th>
-                <th>Total</th>
-                <th>Status / Void Cause</th>
-                <th>Photo</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="recentBillsBody"></tbody>
-          </table>
+        <div class="export-actions">
+          <button class="btn btn-outline" type="button" onclick="exportOverviewCsv()">
+            <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Export Sales CSV</span>
+          </button>
+          <button class="btn btn-dark" type="button" onclick="exportOverviewPdf()">
+            <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M14 3v5h5M9 13h6M9 17h4" stroke-linecap="round"></path>
+            </svg>
+            <span>Export Overview PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="analytics-grid">
+        <div class="panel-card" style="margin-bottom:0;">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Sales Revenue &amp; Bill Activity</div>
+              <div class="stat-sub" id="salesChartSubtitle" style="margin-top:0.15rem;">Paid revenue (RM) vs paid &amp; voided bills</div>
+            </div>
+            <div style="font-size:0.84rem; font-weight:700; color:#0f172a;" id="periodRevenueBadge">Period Revenue: RM 0.00</div>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrap">
+              <canvas id="salesChartCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="analytics-side">
+          <div class="panel-card" style="margin-bottom:0;">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Bill Outcomes</div>
+                <div class="stat-sub" id="outcomeChartSub" style="margin-top:0.15rem;">Paid vs voided vs open</div>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="chart-wrap-sm">
+                <canvas id="outcomeChartCanvas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="breakdown-grid" style="margin-top:1.25rem;">
+        <div class="panel-card" style="margin-bottom:0;">
+          <div class="panel-header">
+            <div class="panel-title">Top Selling Dishes</div>
+            <span class="stat-sub" style="margin-top:0;">From paid bills in period</span>
+          </div>
+          <div class="panel-body" id="topDishesList">
+            <div class="empty-state-sm">Loading dish analytics...</div>
+          </div>
+        </div>
+
+        <div class="panel-card" style="margin-bottom:0;">
+          <div class="panel-header">
+            <div class="panel-title">Void Causes Breakdown</div>
+            <span class="stat-sub" style="margin-top:0;">Why bills were voided</span>
+          </div>
+          <div class="panel-body" id="voidCausesList">
+            <div class="empty-state-sm">No voided bills in this period.</div>
+          </div>
         </div>
       </div>
     </section>
@@ -783,10 +985,15 @@
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 let pageBills = [];
-let recentBills = [];
+let latestSummary = null;
+let latestAnalytics = null;
+let analyticsDays = 7;
+let salesChartInstance = null;
+let outcomeChartInstance = null;
 let statusFilter = "all";
 let currentPage = 1;
 let pageSize = 20;
@@ -833,16 +1040,25 @@ function statusBadge(status, voidReason) {
   return '<span class="badge badge-open">Open</span>';
 }
 
+function hideBrokenThumb(img) {
+  const btn = img && img.closest(".photo-thumb-btn");
+  if (btn) {
+    const span = document.createElement("span");
+    span.style.cssText = "color:#94a3b8; font-size:0.78rem;";
+    span.textContent = "No photo";
+    btn.replaceWith(span);
+  }
+}
+
 function renderPhotoCell(b) {
   if (!b.has_image) {
     return `<span style="color:#94a3b8; font-size:0.78rem;">No photo</span>`;
   }
   const imgUrl = `/api/sessions/${encodeURIComponent(b.session_id)}/image?v=${encodeURIComponent(b.retake_count || 0)}`;
   return `
-    <div style="display:inline-flex; align-items:center; gap:0.45rem;">
-      <img src="${imgUrl}" alt="Plate" style="width:42px; height:32px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1; cursor:zoom-in; background:#0f172a;" onclick="viewPhoto('${imgUrl}')" onerror="this.style.display='none';">
-      <button class="btn btn-outline btn-sm" onclick="viewPhoto('${imgUrl}')">View Photo</button>
-    </div>`;
+    <button class="photo-thumb-btn" type="button" title="Click to view full photo" aria-label="View plate photo for Bill #${esc(b.bill_number || "")}" onclick="viewPhoto('${imgUrl}')">
+      <img src="${imgUrl}" alt="Plate preview" onerror="hideBrokenThumb(this)">
+    </button>`;
 }
 
 function formatDateTime(iso) {
@@ -865,7 +1081,6 @@ function formatItemsSummary(items) {
 
 async function loadBills(options = {}) {
   const includeSummary = options.includeSummary !== undefined ? options.includeSummary : true;
-  const includeRecent = options.includeRecent !== undefined ? options.includeRecent : true;
   const q = (document.getElementById("billSearch").value || "").trim();
   const params = new URLSearchParams({
     page: String(currentPage),
@@ -873,7 +1088,7 @@ async function loadBills(options = {}) {
     status: statusFilter,
     q,
     include_summary: includeSummary ? "true" : "false",
-    include_recent: includeRecent ? "true" : "false",
+    analytics_days: String(analyticsDays),
   });
   const res = await fetch("/api/admin/bills?" + params.toString());
   if (!res.ok) return;
@@ -887,56 +1102,376 @@ async function loadBills(options = {}) {
   totalItems = pag.total_items || 0;
 
   if (data.summary) {
-    const sum = data.summary;
-    document.getElementById("statTodayRev").textContent = "RM " + Number(sum.today_revenue || 0).toFixed(2);
-    document.getElementById("statTotalRev").textContent = "RM " + Number(sum.total_revenue || 0).toFixed(2);
-    document.getElementById("statPaidCount").textContent = `${sum.paid_count || 0} paid bills`;
-    document.getElementById("statTotalBills").textContent = String(sum.total_bills || 0);
-    const voidCount = sum.void_count || 0;
-    const pendingCount = sum.pending_count || 0;
-    document.getElementById("statAttention").textContent = String(voidCount);
-    document.getElementById("statAttentionSub").textContent = `${voidCount} voided · ${pendingCount} open/pending`;
-    document.getElementById("navBillsCount").textContent = String(sum.total_bills || 0);
+    latestSummary = data.summary;
+    applySummaryCards(data.summary);
   }
-
-  if (data.recent_bills) {
-    recentBills = data.recent_bills;
-    renderRecentBills();
+  if (data.analytics) {
+    latestAnalytics = data.analytics;
+    renderAnalytics(data.analytics);
   }
 
   renderBillsTable();
   renderPagination();
 }
 
-function renderRecentBills() {
-  const recentBody = document.getElementById("recentBillsBody");
-  if (!recentBills.length) {
-    recentBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:2rem;">No bills logged yet.</td></tr>';
+function applySummaryCards(sum) {
+  document.getElementById("statTodayRev").textContent = "RM " + Number(sum.today_revenue || 0).toFixed(2);
+  document.getElementById("statTodayPaidSub").textContent = `${sum.today_paid_count || 0} paid bills today`;
+
+  document.getElementById("statWeeklyRev").textContent = "RM " + Number(sum.weekly_revenue || 0).toFixed(2);
+  document.getElementById("statWeeklyPaidSub").textContent = `Last 7 days · ${sum.weekly_paid_count || 0} paid bills`;
+
+  document.getElementById("statTodayBills").textContent = String(sum.today_bills || 0);
+  document.getElementById("statTodayBillsSub").textContent = `Logged today · ${sum.total_bills || 0} all-time`;
+
+  const todayVoid = sum.today_void_count || 0;
+  const todayPending = sum.today_pending_count || 0;
+  document.getElementById("statAttention").textContent = String(todayVoid);
+  document.getElementById("statAttentionSub").textContent = `${todayVoid} voided today · ${todayPending} open today`;
+  document.getElementById("navBillsCount").textContent = String(sum.total_bills || 0);
+}
+
+async function setAnalyticsRange(days, btn) {
+  analyticsDays = Number(days);
+  document.querySelectorAll(".range-pill").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  const res = await fetch(`/api/admin/analytics?days=${encodeURIComponent(analyticsDays)}`);
+  if (!res.ok) return;
+  const data = await res.json();
+  if (data.summary) {
+    latestSummary = data.summary;
+    applySummaryCards(data.summary);
+  }
+  if (data.analytics) {
+    latestAnalytics = data.analytics;
+    renderAnalytics(data.analytics);
+  }
+}
+
+function renderAnalytics(analytics) {
+  if (!analytics) return;
+  const pt = analytics.period_totals || {};
+  document.getElementById("salesChartSubtitle").textContent =
+    `${analytics.period_label} — Paid revenue (RM) vs paid & voided bills`;
+  document.getElementById("periodRevenueBadge").textContent =
+    `Period Revenue: RM ${Number(pt.revenue || 0).toFixed(2)}`;
+  document.getElementById("outcomeChartSub").textContent =
+    `${pt.total_bills || 0} bills in ${analytics.period_label.toLowerCase()}`;
+
+  const series = analytics.series || [];
+  if (window.Chart) {
+    const salesCtx = document.getElementById("salesChartCanvas").getContext("2d");
+    if (salesChartInstance) salesChartInstance.destroy();
+    salesChartInstance = new Chart(salesCtx, {
+      data: {
+        labels: series.map(s => s.label),
+        datasets: [
+          {
+            type: "bar",
+            label: "Paid Revenue (RM)",
+            data: series.map(s => s.revenue),
+            backgroundColor: "rgba(255, 94, 54, 0.85)",
+            hoverBackgroundColor: "#ff5e36",
+            borderRadius: 6,
+            yAxisID: "yRev",
+            order: 2,
+          },
+          {
+            type: "line",
+            label: "Paid Bills",
+            data: series.map(s => s.paid_count),
+            borderColor: "#10b981",
+            backgroundColor: "#10b981",
+            tension: 0.3,
+            borderWidth: 2.5,
+            pointRadius: 3,
+            yAxisID: "yCnt",
+            order: 1,
+          },
+          {
+            type: "line",
+            label: "Voided Bills",
+            data: series.map(s => s.void_count),
+            borderColor: "#ef4444",
+            backgroundColor: "#ef4444",
+            borderDash: [5, 4],
+            tension: 0.3,
+            borderWidth: 2,
+            pointRadius: 2.5,
+            yAxisID: "yCnt",
+            order: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            position: "top",
+            align: "end",
+            labels: { boxWidth: 12, font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: "600" } },
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ctx.dataset.yAxisID === "yRev"
+                ? `${ctx.dataset.label}: RM ${Number(ctx.parsed.y || 0).toFixed(2)}`
+                : `${ctx.dataset.label}: ${ctx.parsed.y || 0}`,
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true },
+          },
+          yRev: {
+            type: "linear",
+            position: "left",
+            beginAtZero: true,
+            title: { display: true, text: "Revenue (RM)", font: { size: 11, weight: "600" } },
+            ticks: { callback: (v) => "RM " + v },
+            grid: { color: "#f1f5f9" },
+          },
+          yCnt: {
+            type: "linear",
+            position: "right",
+            beginAtZero: true,
+            title: { display: true, text: "Bills", font: { size: 11, weight: "600" } },
+            ticks: { precision: 0 },
+            grid: { drawOnChartArea: false },
+          },
+        },
+      },
+    });
+
+    const outcomeCtx = document.getElementById("outcomeChartCanvas").getContext("2d");
+    if (outcomeChartInstance) outcomeChartInstance.destroy();
+    const paidV = pt.paid_count || 0;
+    const voidV = pt.void_count || 0;
+    const openV = pt.open_count || 0;
+    const hasAny = (paidV + voidV + openV) > 0;
+    outcomeChartInstance = new Chart(outcomeCtx, {
+      type: "doughnut",
+      data: {
+        labels: hasAny ? ["Paid", "Voided", "Open / Pending"] : ["No Bills"],
+        datasets: [{
+          data: hasAny ? [paidV, voidV, openV] : [1],
+          backgroundColor: hasAny ? ["#10b981", "#ef4444", "#f59e0b"] : ["#e2e8f0"],
+          borderWidth: 2,
+          borderColor: "#ffffff",
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "62%",
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: { boxWidth: 12, padding: 12, font: { family: "'Plus Jakarta Sans', sans-serif", size: 11, weight: "600" } },
+          },
+          tooltip: { enabled: hasAny },
+        },
+      },
+    });
+  }
+
+  // Top Dishes
+  const topEl = document.getElementById("topDishesList");
+  const topDishes = analytics.top_dishes || [];
+  if (!topDishes.length) {
+    topEl.innerHTML = '<div class="empty-state-sm">No paid dish sales in this period yet.</div>';
+  } else {
+    const maxRev = Math.max(...topDishes.map(d => d.revenue), 1);
+    topEl.innerHTML = `<div class="breakdown-list">${topDishes.slice(0, 6).map(d => `
+      <div>
+        <div class="breakdown-item-head">
+          <span class="breakdown-name">${esc(d.name)}</span>
+          <span class="breakdown-meta">${esc(d.quantity)} sold · RM ${Number(d.revenue).toFixed(2)}</span>
+        </div>
+        <div class="breakdown-track">
+          <div class="breakdown-fill" style="width:${Math.max(6, Math.round((d.revenue / maxRev) * 100))}%"></div>
+        </div>
+      </div>
+    `).join("")}</div>`;
+  }
+
+  // Void Causes
+  const voidEl = document.getElementById("voidCausesList");
+  const voidCauses = analytics.void_causes || [];
+  if (!voidCauses.length) {
+    voidEl.innerHTML = '<div class="empty-state-sm">No voided bills in this period.</div>';
+  } else {
+    const maxCnt = Math.max(...voidCauses.map(v => v.count), 1);
+    voidEl.innerHTML = `<div class="breakdown-list">${voidCauses.map(v => `
+      <div>
+        <div class="breakdown-item-head">
+          <span class="breakdown-name">${esc(v.reason)}</span>
+          <span class="breakdown-meta">${esc(v.count)} bills · RM ${Number(v.lost_value).toFixed(2)}</span>
+        </div>
+        <div class="breakdown-track">
+          <div class="breakdown-fill void" style="width:${Math.max(8, Math.round((v.count / maxCnt) * 100))}%"></div>
+        </div>
+      </div>
+    `).join("")}</div>`;
+  }
+}
+
+function exportOverviewCsv() {
+  window.location.href = `/api/admin/export?days=${encodeURIComponent(analyticsDays)}`;
+}
+
+function exportOverviewPdf() {
+  if (!window.jspdf || !latestSummary || !latestAnalytics) {
+    showToast("Dashboard data is still loading.");
     return;
   }
-  recentBody.innerHTML = recentBills.slice(0, 8).map(b => `
-    <tr>
-      <td><span class="bill-code">#${esc(b.bill_number)}</span></td>
-      <td>${esc(formatDateTime(b.created_at))}</td>
-      <td>${formatItemsSummary(b.items)}</td>
-      <td style="font-weight:700;">RM ${Number(b.total).toFixed(2)}</td>
-      <td>${statusBadge(b.status, b.void_reason)}</td>
-      <td>${renderPhotoCell(b)}</td>
-      <td>
-        <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-          <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">Receipt PDF</button>
-          <a class="btn btn-outline btn-sm" href="/pay?session=${encodeURIComponent(b.session_id)}" target="_blank" style="text-decoration:none;">Open</a>
-        </div>
-      </td>
-    </tr>
-  `).join("");
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const sum = latestSummary;
+  const an = latestAnalytics;
+  const pt = an.period_totals || {};
+
+  let y = 16;
+  const checkPage = (needed = 12) => {
+    if (y + needed > 282) {
+      doc.addPage();
+      y = 16;
+    }
+  };
+
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, 210, 4, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.setTextColor(15, 23, 42);
+  doc.text("AFRC Dashboard & Sales Overview Report", 14, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Period: ${an.period_label}   |   Generated: ${an.generated_at_local}`, 14, y);
+  y += 8;
+
+  // KPI Grid
+  doc.setDrawColor(226, 232, 240);
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(14, y, 182, 26, 2, 2, "FD");
+  const kpis = [
+    ["Today's Paid Revenue", `RM ${Number(sum.today_revenue || 0).toFixed(2)}`],
+    ["Weekly Revenue (7d)", `RM ${Number(sum.weekly_revenue || 0).toFixed(2)}`],
+    ["Today's Bills", String(sum.today_bills || 0)],
+    ["Today Voided / Open", `${sum.today_void_count || 0} void / ${sum.today_pending_count || 0} open`],
+  ];
+  kpis.forEach(([lbl, val], idx) => {
+    const x = 18 + idx * 45;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(lbl.toUpperCase(), x, y + 8);
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text(val, x, y + 17);
+  });
+  y += 34;
+
+  // Period Summary Line
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Period Totals (${an.period_label})`, 14, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(51, 65, 85);
+  doc.text(
+    `Paid Revenue: RM ${Number(pt.revenue || 0).toFixed(2)}  |  Paid Bills: ${pt.paid_count || 0}  |  Voided Bills: ${pt.void_count || 0} (RM ${Number(pt.void_value || 0).toFixed(2)})  |  Open: ${pt.open_count || 0}`,
+    14, y
+  );
+  y += 10;
+
+  // Timeline Table
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text("Sales Timeline Breakdown", 14, y);
+  y += 6;
+  doc.setFontSize(8.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text("Period", 14, y);
+  doc.text("Paid Rev (RM)", 72, y, { align: "right" });
+  doc.text("Paid", 104, y, { align: "right" });
+  doc.text("Open", 132, y, { align: "right" });
+  doc.text("Void", 160, y, { align: "right" });
+  doc.text("Total", 192, y, { align: "right" });
+  y += 2.5;
+  doc.line(14, y, 196, y);
+  y += 5;
+
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(15, 23, 42);
+  (an.series || []).forEach(row => {
+    checkPage(6);
+    doc.text(String(row.label), 14, y);
+    doc.text(Number(row.revenue || 0).toFixed(2), 72, y, { align: "right" });
+    doc.text(String(row.paid_count || 0), 104, y, { align: "right" });
+    doc.text(String(row.open_count || 0), 132, y, { align: "right" });
+    doc.text(String(row.void_count || 0), 160, y, { align: "right" });
+    doc.text(String(row.total_count || 0), 192, y, { align: "right" });
+    y += 5.2;
+  });
+  y += 5;
+
+  // Top Dishes
+  checkPage(18);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Top Selling Dishes (Paid Bills)", 14, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  if (!(an.top_dishes || []).length) {
+    doc.text("No dish sales recorded in this period.", 14, y);
+    y += 6;
+  } else {
+    an.top_dishes.forEach((d, idx) => {
+      checkPage(6);
+      doc.text(`${idx + 1}. ${d.name}`, 14, y);
+      doc.text(`${d.quantity} sold  ·  RM ${Number(d.revenue).toFixed(2)}`, 192, y, { align: "right" });
+      y += 5.5;
+    });
+  }
+  y += 5;
+
+  // Void Causes
+  checkPage(18);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Void Causes Breakdown", 14, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  if (!(an.void_causes || []).length) {
+    doc.text("No voided bills recorded in this period.", 14, y);
+  } else {
+    an.void_causes.forEach(v => {
+      checkPage(6);
+      doc.text(String(v.reason), 14, y);
+      doc.text(`${v.count} bills  ·  RM ${Number(v.lost_value).toFixed(2)}`, 192, y, { align: "right" });
+      y += 5.5;
+    });
+  }
+
+  doc.save(`AFRC-Sales-Overview-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
 function onBillSearchInput() {
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => {
     currentPage = 1;
-    loadBills({ includeSummary: false, includeRecent: false });
+    loadBills({ includeSummary: false });
   }, 250);
 }
 
@@ -945,20 +1480,20 @@ function setStatusFilter(status, btn) {
   currentPage = 1;
   document.querySelectorAll(".pill-filter").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  loadBills({ includeSummary: false, includeRecent: false });
+  loadBills({ includeSummary: false });
 }
 
 function goToBillsPage(page) {
   const next = Math.max(1, Math.min(totalPages, Number(page) || 1));
   if (next === currentPage) return;
   currentPage = next;
-  loadBills({ includeSummary: false, includeRecent: false });
+  loadBills({ includeSummary: false });
 }
 
 function changePageSize(newSize) {
   pageSize = Math.max(1, Math.min(100, Number(newSize) || 20));
   currentPage = 1;
-  loadBills({ includeSummary: false, includeRecent: false });
+  loadBills({ includeSummary: false });
 }
 
 function renderPagination() {
@@ -1046,12 +1581,12 @@ async function setBillStatus(sessionId, status) {
   });
   if (res.ok) {
     showToast(`Bill updated to ${status.toUpperCase()}`);
-    await loadBills({ includeSummary: true, includeRecent: true });
+    await loadBills({ includeSummary: true });
   }
 }
 
 function downloadBillPdf(sessionId) {
-  const billData = pageBills.find(b => b.session_id === sessionId) || recentBills.find(b => b.session_id === sessionId);
+  const billData = pageBills.find(b => b.session_id === sessionId);
   if (!billData || !window.jspdf) return;
   const { jsPDF } = window.jspdf;
   const items = billData.items || [];

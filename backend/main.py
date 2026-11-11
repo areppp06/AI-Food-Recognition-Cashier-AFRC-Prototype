@@ -5,6 +5,8 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from typing import Annotated, List
 import asyncio
+import csv
+import io
 import math
 import os
 import uuid
@@ -339,7 +341,7 @@ def _expire_stale_bills(db: Session) -> None:
         last_touch = bill.updated_at or bill.created_at
         if last_touch and last_touch < cutoff:
             bill.status = "void"
-            bill.void_reason = f"Ghosted / Stale Bill ({BILL_EXPIRY_MINUTES}m Timeout)"
+            bill.void_reason = "Bill timed out"
             bill.updated_at = datetime.utcnow()
             changed = True
     if changed:
@@ -982,7 +984,7 @@ def _bill_payload(session: SessionBill) -> dict:
         void_reason = (
             f"Exceeded {max_retakes} Retries Limit"
             if retakes_used >= max_retakes
-            else f"Ghosted / Stale Bill ({BILL_EXPIRY_MINUTES}m Timeout)"
+            else "Bill timed out"
         )
     return {
         "session_id": session.id,
@@ -1403,44 +1405,300 @@ def verify(req: VerifyRequest, request: Request, db: Session = Depends(get_db)):
 def list_cashiers(db: Session = Depends(get_db)):
     return [{"id": c.id, "name": c.name, "active": c.active} for c in db.query(Cashier).all()]
 
-def _bill_summary(db: Session) -> dict:
-    today_str = datetime.utcnow().strftime("%Y-%m-%d")
-    rows = db.query(
-        SessionBill.status,
-        SessionBill.final_bill,
-        SessionBill.paid_at,
-        SessionBill.created_at,
-    ).all()
-    total_revenue = 0.0
+def _local_tz_offset() -> timedelta:
+    try:
+        hours = float(os.getenv("TZ_OFFSET_HOURS", "8"))
+    except (TypeError, ValueError):
+        hours = 8.0
+    return timedelta(hours=hours)
+
+def _compute_overview_data(
+    db: Session,
+    days: int = 7,
+    include_export_bills: bool = False,
+) -> dict:
+    offset = _local_tz_offset()
+    now_local = datetime.utcnow() + offset
+    today_date = now_local.date()
+    week_start_date = today_date - timedelta(days=6)
+    max_retakes = _rate_limit_config()["max_retakes"]
+
+    rows = (
+        db.query(
+            SessionBill.id,
+            SessionBill.bill_number,
+            SessionBill.status,
+            SessionBill.void_reason,
+            SessionBill.final_bill,
+            SessionBill.receipt_email,
+            SessionBill.curlec_payment_id,
+            SessionBill.retake_count,
+            SessionBill.created_at,
+            SessionBill.updated_at,
+            SessionBill.paid_at,
+        )
+        .order_by(SessionBill.created_at.desc())
+        .all()
+    )
+
+    try:
+        days_int = int(days)
+    except (TypeError, ValueError):
+        days_int = 7
+    if days_int not in (0, 1, 7, 14, 30):
+        days_int = 7
+
+    cutoff_date = None if days_int == 0 else (today_date - timedelta(days=days_int - 1))
+
+    # Pre-initialize contiguous buckets for 1 (hourly) or 7/14/30 (daily)
+    buckets: dict[str, dict] = {}
+    bucket_order: list[str] = []
+    if days_int == 1:
+        for h in range(24):
+            key = f"{h:02d}:00"
+            bucket_order.append(key)
+            buckets[key] = {
+                "key": key,
+                "label": key,
+                "revenue": 0.0,
+                "paid_count": 0,
+                "void_count": 0,
+                "open_count": 0,
+                "total_count": 0,
+            }
+    elif days_int > 1:
+        for i in range(days_int - 1, -1, -1):
+            d = today_date - timedelta(days=i)
+            key = d.isoformat()
+            bucket_order.append(key)
+            buckets[key] = {
+                "key": key,
+                "label": d.strftime("%d %b"),
+                "revenue": 0.0,
+                "paid_count": 0,
+                "void_count": 0,
+                "open_count": 0,
+                "total_count": 0,
+            }
+
+    all_time_revenue = 0.0
     today_revenue = 0.0
+    weekly_revenue = 0.0
+    today_paid_count = 0
+    weekly_paid_count = 0
+    today_bills = 0
+    today_pending_count = 0
+    today_void_count = 0
     paid_count = 0
     pending_count = 0
     void_count = 0
-    for status, final_bill, paid_at, created_at in rows:
-        st = (status or "open").lower()
+
+    period_revenue = 0.0
+    period_paid = 0
+    period_open = 0
+    period_void = 0
+    period_void_value = 0.0
+    dish_agg: dict[str, dict] = {}
+    void_agg: dict[str, dict] = {}
+    export_bills: list[dict] = []
+
+    for row in rows:
+        (
+            sid,
+            bill_no,
+            raw_status,
+            raw_void_reason,
+            final_bill,
+            receipt_email,
+            curlec_payment_id,
+            retake_count,
+            created_at,
+            updated_at,
+            paid_at,
+        ) = row
+
+        st = (raw_status or "open").lower()
+        try:
+            items = json.loads(final_bill or "[]")
+            bill_total = round(sum(float(i.get("subtotal") or 0) for i in items), 2)
+        except Exception:
+            items = []
+            bill_total = 0.0
+
+        created_utc = created_at or updated_at or datetime.utcnow()
+        created_local = created_utc + offset
+        created_d = created_local.date()
+
+        paid_local = ((paid_at or created_utc) + offset) if st == "paid" else None
+        paid_d = paid_local.date() if paid_local else None
+
+        is_void = st in ("void", "cancelled")
+        is_open = st in ("open", "pending", "retaking")
+        void_reason = (raw_void_reason or "").strip()
+        if is_void and not void_reason:
+            void_reason = (
+                f"Exceeded {max_retakes} Retries Limit"
+                if int(retake_count or 0) >= max_retakes
+                else "Bill timed out"
+            )
+
+        if created_d == today_date:
+            today_bills += 1
+            if is_open:
+                today_pending_count += 1
+            elif is_void:
+                today_void_count += 1
+
         if st == "paid":
             paid_count += 1
-            try:
-                items = json.loads(final_bill or "[]")
-                bill_total = sum(float(i.get("subtotal") or 0) for i in items)
-            except Exception:
-                bill_total = 0.0
-            total_revenue += bill_total
-            ts_ref = paid_at or created_at
-            if ts_ref and ts_ref.strftime("%Y-%m-%d") == today_str:
+            all_time_revenue += bill_total
+            if paid_d == today_date:
                 today_revenue += bill_total
-        elif st in ("open", "pending", "retaking"):
+                today_paid_count += 1
+            if paid_d and week_start_date <= paid_d <= today_date:
+                weekly_revenue += bill_total
+                weekly_paid_count += 1
+        elif is_open:
             pending_count += 1
-        elif st in ("void", "cancelled"):
+        elif is_void:
             void_count += 1
-    return {
-        "total_revenue": round(total_revenue, 2),
+
+        # Period inclusion for charts & export
+        in_period_created = cutoff_date is None or created_d >= cutoff_date
+        in_period_paid = (st == "paid") and (cutoff_date is None or (paid_d is not None and paid_d >= cutoff_date))
+
+        if in_period_paid:
+            period_revenue += bill_total
+            period_paid += 1
+            pkey = f"{paid_local.hour:02d}:00" if days_int == 1 else paid_d.isoformat()
+            if pkey not in buckets:
+                buckets[pkey] = {
+                    "key": pkey,
+                    "label": pkey if days_int == 1 else paid_d.strftime("%d %b"),
+                    "revenue": 0.0,
+                    "paid_count": 0,
+                    "void_count": 0,
+                    "open_count": 0,
+                    "total_count": 0,
+                }
+                bucket_order.append(pkey)
+            buckets[pkey]["revenue"] = round(buckets[pkey]["revenue"] + bill_total, 2)
+            buckets[pkey]["paid_count"] += 1
+            buckets[pkey]["total_count"] += 1
+            for item in items:
+                d_name = str(item.get("name") or "Unknown").strip() or "Unknown"
+                qty = float(item.get("quantity") or 0)
+                sub = float(item.get("subtotal") or 0)
+                entry = dish_agg.setdefault(d_name, {"name": d_name, "quantity": 0.0, "revenue": 0.0})
+                entry["quantity"] += qty
+                entry["revenue"] += sub
+
+        if in_period_created:
+            ckey = f"{created_local.hour:02d}:00" if days_int == 1 else created_d.isoformat()
+            if ckey not in buckets:
+                buckets[ckey] = {
+                    "key": ckey,
+                    "label": ckey if days_int == 1 else created_d.strftime("%d %b"),
+                    "revenue": 0.0,
+                    "paid_count": 0,
+                    "void_count": 0,
+                    "open_count": 0,
+                    "total_count": 0,
+                }
+                bucket_order.append(ckey)
+            if is_void:
+                period_void += 1
+                period_void_value += bill_total
+                buckets[ckey]["void_count"] += 1
+                buckets[ckey]["total_count"] += 1
+                ventry = void_agg.setdefault(void_reason, {"reason": void_reason, "count": 0, "lost_value": 0.0})
+                ventry["count"] += 1
+                ventry["lost_value"] += bill_total
+            elif is_open:
+                period_open += 1
+                buckets[ckey]["open_count"] += 1
+                buckets[ckey]["total_count"] += 1
+
+        if include_export_bills and (in_period_created or in_period_paid):
+            item_desc = "; ".join(
+                f"{i.get('name', '')} x{i.get('quantity', 0)}"
+                for i in items
+            )
+            export_bills.append({
+                "bill_number": bill_no or "AAA-0001",
+                "created_at_local": created_local.strftime("%Y-%m-%d %H:%M:%S"),
+                "paid_at_local": paid_local.strftime("%Y-%m-%d %H:%M:%S") if paid_local else "",
+                "status": "void" if is_void else st,
+                "void_reason": void_reason if is_void else "",
+                "total": bill_total,
+                "items": item_desc,
+                "receipt_email": receipt_email or "",
+                "curlec_payment_id": curlec_payment_id or "",
+            })
+
+    if days_int == 0:
+        bucket_order = sorted(buckets.keys())
+
+    series = [buckets[k] for k in bucket_order]
+    top_dishes = sorted(
+        (
+            {
+                "name": v["name"],
+                "quantity": round(v["quantity"], 2),
+                "revenue": round(v["revenue"], 2),
+            }
+            for v in dish_agg.values()
+        ),
+        key=lambda x: (-x["revenue"], -x["quantity"], x["name"]),
+    )[:10]
+    void_causes = sorted(
+        (
+            {
+                "reason": v["reason"],
+                "count": v["count"],
+                "lost_value": round(v["lost_value"], 2),
+            }
+            for v in void_agg.values()
+        ),
+        key=lambda x: (-x["count"], -x["lost_value"], x["reason"]),
+    )
+
+    summary = {
         "today_revenue": round(today_revenue, 2),
+        "today_paid_count": today_paid_count,
+        "weekly_revenue": round(weekly_revenue, 2),
+        "weekly_paid_count": weekly_paid_count,
+        "today_bills": today_bills,
+        "today_pending_count": today_pending_count,
+        "today_void_count": today_void_count,
+        "all_time_revenue": round(all_time_revenue, 2),
+        "total_revenue": round(all_time_revenue, 2),
         "total_bills": len(rows),
         "paid_count": paid_count,
         "pending_count": pending_count,
         "void_count": void_count,
     }
+    analytics = {
+        "days": days_int,
+        "period_label": "Today (Hourly)" if days_int == 1 else (f"Last {days_int} Days" if days_int > 0 else "All Time"),
+        "generated_at_local": now_local.strftime("%Y-%m-%d %H:%M:%S MYT"),
+        "granularity": "hour" if days_int == 1 else "day",
+        "period_totals": {
+            "revenue": round(period_revenue, 2),
+            "paid_count": period_paid,
+            "open_count": period_open,
+            "void_count": period_void,
+            "void_value": round(period_void_value, 2),
+            "total_bills": period_paid + period_open + period_void,
+        },
+        "series": series,
+        "top_dishes": top_dishes,
+        "void_causes": void_causes,
+    }
+    res = {"summary": summary, "analytics": analytics}
+    if include_export_bills:
+        res["export_bills"] = export_bills
+    return res
 
 @app.get("/api/admin/bills")
 def list_admin_bills(
@@ -1449,7 +1707,7 @@ def list_admin_bills(
     status: str = "all",
     q: str = "",
     include_summary: bool = True,
-    include_recent: bool = False,
+    analytics_days: int = 7,
     db: Session = Depends(get_db),
 ):
     _expire_stale_bills(db)
@@ -1505,16 +1763,101 @@ def list_admin_bills(
         },
     }
     if include_summary:
-        payload["summary"] = _bill_summary(db)
-    if include_recent:
-        recent_rows = (
-            db.query(SessionBill)
-            .order_by(SessionBill.created_at.desc())
-            .limit(8)
-            .all()
-        )
-        payload["recent_bills"] = [_bill_payload(s) for s in recent_rows]
+        overview = _compute_overview_data(db, days=analytics_days)
+        payload["summary"] = overview["summary"]
+        payload["analytics"] = overview["analytics"]
     return payload
+
+@app.get("/api/admin/analytics")
+def get_admin_analytics(days: int = 7, db: Session = Depends(get_db)):
+    _expire_stale_bills(db)
+    return _compute_overview_data(db, days=days)
+
+@app.get("/api/admin/export")
+def export_admin_sales_csv(days: int = 7, db: Session = Depends(get_db)):
+    _expire_stale_bills(db)
+    data = _compute_overview_data(db, days=days, include_export_bills=True)
+    summary = data["summary"]
+    analytics = data["analytics"]
+    pt = analytics["period_totals"]
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+
+    writer.writerow(["AFRC SALES & DASHBOARD OVERVIEW REPORT"])
+    writer.writerow(["Period", analytics["period_label"]])
+    writer.writerow(["Generated At", analytics["generated_at_local"]])
+    writer.writerow([])
+
+    writer.writerow(["DASHBOARD OVERVIEW KPIs"])
+    writer.writerow(["Metric", "Value"])
+    writer.writerow(["Today's Paid Revenue (RM)", f"{summary['today_revenue']:.2f}"])
+    writer.writerow(["Today's Paid Bills", summary["today_paid_count"]])
+    writer.writerow(["Weekly Paid Revenue - Last 7 Days (RM)", f"{summary['weekly_revenue']:.2f}"])
+    writer.writerow(["Weekly Paid Bills - Last 7 Days", summary["weekly_paid_count"]])
+    writer.writerow(["Today's Bills Logged", summary["today_bills"]])
+    writer.writerow(["Today's Voided Bills", summary["today_void_count"]])
+    writer.writerow(["Today's Open/Pending Bills", summary["today_pending_count"]])
+    writer.writerow([f"Period Revenue - {analytics['period_label']} (RM)", f"{pt['revenue']:.2f}"])
+    writer.writerow([f"Period Paid Bills - {analytics['period_label']}", pt["paid_count"]])
+    writer.writerow([f"Period Voided Bills - {analytics['period_label']}", pt["void_count"]])
+    writer.writerow([f"Period Voided Value - {analytics['period_label']} (RM)", f"{pt['void_value']:.2f}"])
+    writer.writerow(["All-Time Revenue (RM)", f"{summary['all_time_revenue']:.2f}"])
+    writer.writerow(["All-Time Total Bills", summary["total_bills"]])
+    writer.writerow([])
+
+    writer.writerow(["SALES TIMELINE BREAKDOWN"])
+    writer.writerow(["Date / Hour", "Paid Revenue (RM)", "Paid Bills", "Open / Pending Bills", "Voided Bills", "Total Bills"])
+    for row in analytics["series"]:
+        writer.writerow([
+            row["label"] if analytics["granularity"] == "hour" else row["key"],
+            f"{row['revenue']:.2f}",
+            row["paid_count"],
+            row["open_count"],
+            row["void_count"],
+            row["total_count"],
+        ])
+    writer.writerow([])
+
+    writer.writerow(["TOP SELLING DISHES (PAID BILLS)"])
+    writer.writerow(["Rank", "Dish Name", "Quantity Sold", "Revenue (RM)"])
+    for idx, d in enumerate(analytics["top_dishes"], start=1):
+        writer.writerow([idx, d["name"], d["quantity"], f"{d['revenue']:.2f}"])
+    writer.writerow([])
+
+    writer.writerow(["VOID CAUSE BREAKDOWN"])
+    writer.writerow(["Void Cause", "Bill Count", "Voided Amount (RM)"])
+    for vc in analytics["void_causes"]:
+        writer.writerow([vc["reason"], vc["count"], f"{vc['lost_value']:.2f}"])
+    writer.writerow([])
+
+    writer.writerow(["ITEMIZED BILLS LOG"])
+    writer.writerow(["Bill #", "Created At (MYT)", "Paid At (MYT)", "Status", "Void Cause", "Total (RM)", "Items", "Customer Email", "Payment ID"])
+    for b in data["export_bills"]:
+        writer.writerow([
+            b["bill_number"],
+            b["created_at_local"],
+            b["paid_at_local"],
+            b["status"].upper(),
+            b["void_reason"],
+            f"{b['total']:.2f}",
+            b["items"],
+            b["receipt_email"],
+            b["curlec_payment_id"],
+        ])
+
+    csv_bytes = ("\ufeff" + buf.getvalue()).encode("utf-8")
+    day_tag = "today" if analytics["days"] == 1 else ("all-time" if analytics["days"] == 0 else f"last-{analytics['days']}d")
+    date_tag = (datetime.utcnow() + _local_tz_offset()).strftime("%Y-%m-%d")
+    filename = f"afrc-sales-report-{day_tag}-{date_tag}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            **NO_CACHE_HEADERS,
+        },
+    )
 
 @app.post("/api/admin/bills/{session_id}/status")
 def update_admin_bill_status(session_id: str, payload: dict, db: Session = Depends(get_db)):
