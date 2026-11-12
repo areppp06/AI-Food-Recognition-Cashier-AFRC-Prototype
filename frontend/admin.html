@@ -20,8 +20,9 @@
   /* Sidebar */
   .sidebar {
     width: 260px;
-    background: #0f172a;
-    color: #f8fafc;
+    background: #ffffff;
+    color: #0f172a;
+    border-right: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -52,7 +53,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #64748b;
+    color: #94a3b8;
     padding: 0 0.65rem 0.4rem;
   }
   .nav-btn {
@@ -64,7 +65,7 @@
     border-radius: 12px;
     border: none;
     background: transparent;
-    color: #cbd5e1;
+    color: #475569;
     font: inherit;
     font-size: 0.9rem;
     font-weight: 600;
@@ -78,8 +79,8 @@
     gap: 0.75rem;
   }
   .nav-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #ffffff;
+    background: #f1f5f9;
+    color: #0f172a;
   }
   .nav-btn.active {
     background: #ff5e36;
@@ -91,7 +92,7 @@
     font-weight: 700;
     padding: 0.15rem 0.5rem;
     border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.2);
     color: #ffffff;
   }
   .nav-badge.alert {
@@ -101,7 +102,7 @@
 
   .sidebar-footer {
     padding: 1rem 0.85rem 1.35rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
@@ -112,15 +113,15 @@
     gap: 0.65rem;
     padding: 0.6rem 0.85rem;
     border-radius: 10px;
-    color: #94a3b8;
+    color: #64748b;
     text-decoration: none;
     font-size: 0.85rem;
     font-weight: 600;
     transition: all 0.15s ease;
   }
   .ext-link:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #ffffff;
+    background: #f1f5f9;
+    color: #0f172a;
   }
 
   /* Main Layout */
@@ -1124,19 +1125,19 @@
     </a>
   </div>
 
-  <div style="margin-top:auto; padding:1.25rem 1rem 1rem; border-top:1px solid var(--border);">
+  <div style="margin-top:auto; padding:1.25rem 1rem 1rem; border-top:1px solid #e2e8f0;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
       <div style="display:flex; align-items:center; gap:0.5rem; overflow:hidden;">
-        <div style="width:28px; height:28px; border-radius:50%; background:rgba(245,158,11,0.2); border:1px solid rgba(245,158,11,0.4); display:flex; align-items:center; justify-content:center; color:#f59e0b; font-weight:700; font-size:0.75rem;">A</div>
-        <span id="currentAdminUsername" style="font-size:0.825rem; font-weight:700; color:#f8fafc; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">Admin</span>
+        <div style="width:28px; height:28px; border-radius:50%; background:rgba(255,94,54,0.12); border:1px solid rgba(255,94,54,0.3); display:flex; align-items:center; justify-content:center; color:#ff5e36; font-weight:700; font-size:0.75rem;">A</div>
+        <span id="currentAdminUsername" style="font-size:0.825rem; font-weight:700; color:#0f172a; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">Admin</span>
       </div>
-      <button type="button" onclick="openChangePasswordModal()" title="Change Admin Password" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; padding:0.25rem;" aria-label="Change Password">
+      <button type="button" onclick="openChangePasswordModal()" title="Change Admin Password" style="background:transparent; border:none; color:#64748b; cursor:pointer; padding:0.25rem;" aria-label="Change Password">
         <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
       </button>
     </div>
-    <button type="button" class="btn btn-outline btn-sm" onclick="logoutAdmin()" style="width:100%; justify-content:center; font-size:0.8rem; color:#ef4444; border-color:rgba(239,68,68,0.25);">
+    <button type="button" class="btn btn-outline btn-sm" onclick="logoutAdmin()" style="width:100%; justify-content:center; font-size:0.8rem; color:#ef4444; border-color:rgba(239,68,68,0.25); background:#ffffff;">
       <svg style="width:14px; height:14px; margin-right:0.35rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round"></path>
       </svg>

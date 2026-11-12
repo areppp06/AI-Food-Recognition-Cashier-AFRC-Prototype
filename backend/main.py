@@ -721,6 +721,7 @@ def auth_status(request: Request, db: Session = Depends(get_db)):
         "needs_setup": admin_count == 0,
         "is_authenticated": current_admin is not None,
         "username": current_admin.username if current_admin else None,
+        "restaurant_name": _restaurant_name() or "AFRC",
     }
 
 @app.post("/api/auth/setup")
@@ -1754,9 +1755,9 @@ def _compute_overview_data(
     month_str = (month or "").strip()
     quarter_str = (quarter or "").strip().upper()
 
-    # Available months (last 12) and quarters (last 8) for selectors
+    # Available months (last 24) and quarters (last 8) for selectors
     available_months = []
-    for delta in range(0, -12, -1):
+    for delta in range(0, -24, -1):
         ym_y, ym_m = _shift_year_month(today_date.year, today_date.month, delta)
         available_months.append({
             "value": f"{ym_y:04d}-{ym_m:02d}",

@@ -9,16 +9,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #09090b;
-      --input-bg: #141419;
-      --input-border: #22222b;
+      --bg: #ffffff;
+      --card-bg: #ffffff;
+      --input-bg: #f8fafc;
+      --input-border: #e2e8f0;
       --orange: #ff5e36;
-      --orange-focus: rgba(255, 94, 54, 0.4);
-      --text: #ffffff;
-      --text-muted: #94a3b8;
-      --text-label: #cbd5e1;
+      --orange-focus: rgba(255, 94, 54, 0.2);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-label: #334155;
       --danger: #ef4444;
-      --danger-bg: rgba(239, 68, 68, 0.12);
+      --danger-bg: rgba(239, 68, 68, 0.08);
     }
 
     * {
@@ -52,7 +53,7 @@
     .auth-title {
       font-size: 2.75rem;
       font-weight: 700;
-      color: #ffffff;
+      color: #0f172a;
       letter-spacing: -0.035em;
       line-height: 1.1;
       margin-bottom: 0.65rem;
@@ -79,7 +80,7 @@
 
     .form-label {
       font-size: 0.92rem;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text-label);
     }
 
@@ -88,7 +89,7 @@
       display: flex;
       align-items: center;
       background-color: var(--input-bg);
-      border: 1px solid var(--input-border);
+      border: 1.5px solid var(--input-border);
       border-radius: 14px;
       transition: all 0.2s ease;
     }
@@ -96,6 +97,7 @@
     .input-box:focus-within {
       border-color: var(--orange);
       box-shadow: 0 0 0 3px var(--orange-focus);
+      background-color: #ffffff;
     }
 
     .input-box input {
@@ -104,27 +106,27 @@
       border: none;
       outline: none;
       padding: 1rem 1.15rem;
-      color: #ffffff;
+      color: #0f172a;
       font-size: 0.98rem;
       font-family: inherit;
     }
 
     .input-box input::placeholder {
-      color: #555562;
+      color: #94a3b8;
     }
 
     .input-box input:-webkit-autofill,
     .input-box input:-webkit-autofill:hover, 
     .input-box input:-webkit-autofill:focus {
-      -webkit-text-fill-color: #ffffff;
-      -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset;
+      -webkit-text-fill-color: #0f172a;
+      -webkit-box-shadow: 0 0 0px 1000px #ffffff inset;
       transition: background-color 5000s ease-in-out 0s;
     }
 
     .toggle-pwd-btn {
       background: transparent;
       border: none;
-      color: #64748b;
+      color: #94a3b8;
       padding: 0 1rem;
       cursor: pointer;
       display: flex;
@@ -135,7 +137,7 @@
     }
 
     .toggle-pwd-btn:hover {
-      color: #cbd5e1;
+      color: #475569;
     }
 
     .toggle-pwd-btn svg {
@@ -156,7 +158,7 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      color: #94a3b8;
+      color: #64748b;
       cursor: pointer;
       user-select: none;
     }
@@ -166,9 +168,9 @@
       -webkit-appearance: none;
       width: 18px;
       height: 18px;
-      border: 1.5px solid #475569;
+      border: 1.5px solid #cbd5e1;
       border-radius: 50%;
-      background: transparent;
+      background: #ffffff;
       cursor: pointer;
       display: inline-grid;
       place-content: center;
@@ -193,8 +195,8 @@
       background: var(--orange);
       color: #ffffff;
       border: none;
-      border-radius: 14px;
-      padding: 0.95rem 1.25rem;
+      border-radius: 9999px;
+      padding: 1rem 1.25rem;
       font-size: 1.05rem;
       font-weight: 700;
       cursor: pointer;
@@ -208,7 +210,7 @@
     .btn-action:hover:not(:disabled) {
       background: #ff4a1d;
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px -3px rgba(255, 94, 54, 0.45);
+      box-shadow: 0 6px 20px -3px rgba(255, 94, 54, 0.35);
     }
 
     .btn-action:disabled {
@@ -229,24 +231,24 @@
     .msg-error {
       background: var(--danger-bg);
       border: 1px solid rgba(239, 68, 68, 0.25);
-      color: #fca5a5;
+      color: #dc2626;
     }
 
     .msg-success {
-      background: rgba(16, 185, 129, 0.12);
+      background: rgba(16, 185, 129, 0.1);
       border: 1px solid rgba(16, 185, 129, 0.25);
-      color: #6ee7b7;
+      color: #059669;
     }
 
     .bottom-return {
       margin-top: 2.5rem;
       text-align: center;
       font-size: 0.85rem;
-      color: #475569;
+      color: #94a3b8;
     }
 
     .bottom-return a {
-      color: #94a3b8;
+      color: #64748b;
       text-decoration: none;
       transition: color 0.15s ease;
     }
@@ -260,8 +262,8 @@
 
   <div class="auth-wrapper">
     <div class="auth-header">
-      <h1 class="auth-title">Welcome</h1>
-      <p class="auth-sub" id="authSub">Setup your admin account here</p>
+      <h1 class="auth-title" id="authTitle">Welcome Back</h1>
+      <p class="auth-sub" id="authSub">to E-Cashier Dashboard</p>
     </div>
 
     <div class="msg-banner msg-error" id="errorMsg"></div>
@@ -308,7 +310,7 @@
         </label>
       </div>
 
-      <button type="submit" class="btn-action" id="actionBtn">Setup</button>
+      <button type="submit" class="btn-action" id="actionBtn">Sign In</button>
     </form>
 
     <div class="bottom-return">
@@ -367,10 +369,12 @@
           return;
         }
 
+        const restaurantName = data.restaurant_name || "AFRC";
+
         if (data.needs_setup) {
           setSetupMode();
         } else {
-          setSignInMode();
+          setSignInMode(restaurantName);
         }
       } catch (e) {
         console.error("Auth init error:", e);
@@ -379,6 +383,7 @@
 
     function setSetupMode() {
       isSetupMode = true;
+      document.getElementById("authTitle").textContent = "Welcome";
       document.getElementById("authSub").textContent = "Setup your admin account here";
       document.getElementById("confirmGroup").style.display = "flex";
       document.getElementById("confirmPassword").setAttribute("required", "required");
@@ -388,9 +393,11 @@
       document.getElementById("password").setAttribute("autocomplete", "new-password");
     }
 
-    function setSignInMode() {
+    function setSignInMode(restaurantName) {
       isSetupMode = false;
-      document.getElementById("authSub").textContent = "Access your account and continue your journey with us";
+      const name = restaurantName || "AFRC";
+      document.getElementById("authTitle").textContent = "Welcome Back";
+      document.getElementById("authSub").textContent = `to ${name} E-Cashier Dashboard`;
       document.getElementById("confirmGroup").style.display = "none";
       document.getElementById("confirmPassword").removeAttribute("required");
       document.getElementById("optionsRow").style.display = "flex";

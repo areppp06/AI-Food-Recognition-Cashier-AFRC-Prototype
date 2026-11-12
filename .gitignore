@@ -4,12 +4,15 @@ __pycache__/
 .env
 curlec.env
 rate-limit.env
+restaurant.env
 env/.env
 env/curlec.env
 env/rate-limit.env
+env/restaurant.env
 *.db
 *.db-wal
 *.db-shm
 *.db-journal
+*.bak*
 .DS_Store
 uploads/
