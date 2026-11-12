@@ -300,14 +300,14 @@
       const dateStr = dt.toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" });
       const timeStr = dt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-      const customerDetails = [billData && billData.receipt_phone, billData && billData.receipt_email]
-        .filter(Boolean)
-        .join(" | ");
+      const custPhone = (billData && billData.receipt_phone) || "";
+      const custEmail = (billData && billData.receipt_email) || "";
+      const hasCustomer = Boolean(custPhone || custEmail);
+      const customerLines = (hasCustomer ? 1 : 0) + (custPhone ? 1 : 0) + (custEmail ? 1 : 0);
 
       const topInfoLines = (compName ? 1 : 0) + (compPhone ? 1 : 0) + (compEmail ? 1 : 0);
-      const customerLines = customerDetails ? (customerDetails.length > 36 ? 2 : 1) : 0;
       const itemsHeight = items.length * 8.8;
-      const pageHeight = Math.max(115, 92 + topInfoLines * 3.4 + customerLines * 4.5 + itemsHeight);
+      const pageHeight = Math.max(115, 92 + topInfoLines * 3.4 + customerLines * 3.6 + itemsHeight);
       const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
       // Restaurant Header
@@ -373,23 +373,23 @@
       doc.text("PAID", 74, curY + 14, { align: "right" });
 
       curY += 14;
-      if (customerDetails) {
-        curY += 4.2;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.8);
+      if (hasCustomer) {
+        curY += 4.5;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.0);
         doc.setTextColor(71, 85, 105);
         doc.text("Customer's Details:", 6, curY);
 
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.2);
+        doc.setFontSize(6.5);
         doc.setTextColor(51, 65, 85);
-        const labelWidth = doc.getTextWidth("Customer's Details:");
-        const valWidth = doc.getTextWidth(customerDetails);
-        if (6 + labelWidth + 3 + valWidth <= 74) {
-          doc.text(customerDetails, 74, curY, { align: "right" });
-        } else {
-          curY += 3.5;
-          doc.text(customerDetails, 74, curY, { align: "right" });
+        if (custPhone) {
+          curY += 3.4;
+          doc.text(custPhone, 6, curY);
+        }
+        if (custEmail) {
+          curY += 3.4;
+          doc.text(custEmail, 6, curY);
         }
       }
 
