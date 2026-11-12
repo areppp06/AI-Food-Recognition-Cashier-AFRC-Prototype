@@ -290,6 +290,9 @@
       const items = (billData && billData.items) || [];
       const billNo = (billData && billData.bill_number) || "AAA-0001";
       const restName = (billData && billData.restaurant_name) || "AFRC";
+      const compName = (billData && billData.company_name) || "";
+      const compPhone = (billData && billData.company_phone) || "";
+      const compEmail = (billData && billData.company_email) || "";
       const total = Number((billData && billData.total) || 0).toFixed(2);
       const dt = (billData && (billData.paid_at || billData.created_at))
         ? new Date(billData.paid_at || billData.created_at)
@@ -297,28 +300,44 @@
       const dateStr = dt.toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" });
       const timeStr = dt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-      const compName = (billData && billData.company_name) || "";
-      const compPhone = (billData && billData.company_phone) || "";
-      const compEmail = (billData && billData.company_email) || "";
-      const hasCompanyHeader = compName ? 1 : 0;
-      const hasCompanyFooter = (compPhone ? 1 : 0) + (compEmail ? 1 : 0);
-      const hasContactLines = (billData && billData.receipt_phone ? 1 : 0) + (billData && billData.receipt_email ? 1 : 0);
-      const pageHeight = Math.max(115, 92 + (hasCompanyHeader + hasCompanyFooter) * 4.2 + hasContactLines * 4.5 + items.length * 9);
+      const customerDetails = [billData && billData.receipt_phone, billData && billData.receipt_email]
+        .filter(Boolean)
+        .join(" | ");
+
+      const topInfoLines = (compName ? 1 : 0) + (compPhone ? 1 : 0) + (compEmail ? 1 : 0);
+      const customerLines = customerDetails ? 1 : 0;
+      const itemsHeight = items.length * 8.8;
+      const pageHeight = Math.max(120, 96 + topInfoLines * 4.2 + customerLines * 5 + itemsHeight);
       const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
-      // Brand header
+      // Restaurant Header
       let curY = 10;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.setTextColor(15, 23, 42);
       doc.text(restName, 40, curY, { align: "center" });
 
+      // Company Info & Support
       if (compName) {
         curY += 4.2;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7.5);
-        doc.setTextColor(71, 85, 105);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.8);
+        doc.setTextColor(51, 65, 85);
         doc.text(compName, 40, curY, { align: "center" });
+      }
+      if (compPhone) {
+        curY += 3.8;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.2);
+        doc.setTextColor(71, 85, 105);
+        doc.text("Tel: " + compPhone, 40, curY, { align: "center" });
+      }
+      if (compEmail) {
+        curY += 3.8;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.2);
+        doc.setTextColor(71, 85, 105);
+        doc.text(compEmail, 40, curY, { align: "center" });
       }
 
       curY += 4.5;
@@ -350,25 +369,33 @@
       doc.setTextColor(71, 85, 105);
       doc.text("STATUS:", 6, curY + 14);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(15, 23, 42);
+      doc.setTextColor(16, 185, 129);
       doc.text("PAID", 74, curY + 14, { align: "right" });
 
-      let headerBottomY = curY + 17.5;
-      doc.setTextColor(16, 185, 129);
-      doc.text("PAID", 74, 35.5, { align: "right" });
+      curY += 14;
+      if (customerDetails) {
+        curY += 4.5;
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(71, 85, 105);
+        doc.text("Customer's Details:", 6, curY);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(15, 23, 42);
+        doc.text(customerDetails.slice(0, 32), 74, curY, { align: "right" });
+      }
 
-      doc.line(6, 39, 74, 39);
+      curY += 4.5;
+      doc.line(6, curY, 74, curY);
 
       // Table column headers
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
-      doc.text("ITEM / QTY", 6, 43.5);
-      doc.text("AMOUNT (RM)", 74, 43.5, { align: "right" });
-      doc.line(6, 45.5, 74, 45.5);
+      doc.text("ITEM / QTY", 6, curY + 4.5);
+      doc.text("AMOUNT (RM)", 74, curY + 4.5, { align: "right" });
+      doc.line(6, curY + 6.5, 74, curY + 6.5);
 
       // Items
-      let y = 50.5;
+      let y = curY + 11.5;
       doc.setFontSize(8);
       items.forEach((item) => {
         const pcs = item.piece_count ? ` (${item.piece_count} pcs)` : "";
@@ -405,34 +432,6 @@
       doc.text("RM " + total, 71, y + 2.2, { align: "right" });
 
       y += 11;
-      if (compPhone) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.8);
-        doc.setTextColor(100, 116, 139);
-        doc.text("Support: " + compPhone, 40, y, { align: "center" });
-        y += 3.8;
-      }
-      if (compEmail) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.8);
-        doc.setTextColor(100, 116, 139);
-        doc.text("Email: " + compEmail, 40, y, { align: "center" });
-        y += 3.8;
-      }
-      if (billData && billData.receipt_phone) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.8);
-        doc.setTextColor(100, 116, 139);
-        doc.text("Customer Phone: " + billData.receipt_phone, 40, y, { align: "center" });
-        y += 3.8;
-      }
-      if (billData && billData.receipt_email) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(6.8);
-        doc.setTextColor(100, 116, 139);
-        doc.text("Customer Email: " + billData.receipt_email, 40, y, { align: "center" });
-        y += 3.8;
-      }
       if (billData && billData.curlec_payment_id) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(6.8);

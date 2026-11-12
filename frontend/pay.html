@@ -823,9 +823,15 @@ function downloadPayVoidReceiptPdf() {
   const compName = currentBillData.company_name || "";
   const compPhone = currentBillData.company_phone || "";
   const compEmail = currentBillData.company_email || "";
-  const hasCompHeader = compName ? 1 : 0;
-  const hasCompFooter = (compPhone ? 1 : 0) + (compEmail ? 1 : 0);
-  const pageHeight = Math.max(122, 100 + (hasCompHeader + hasCompFooter) * 4.2 + items.length * 9);
+  const customerDetails = [currentBillData.receipt_phone, currentBillData.receipt_email]
+    .filter(Boolean)
+    .join(" | ");
+
+  const topInfoLines = (compName ? 1 : 0) + (compPhone ? 1 : 0) + (compEmail ? 1 : 0);
+  const customerLines = customerDetails ? 1 : 0;
+  const extraVoidHeight = voidCause ? 5 : 0;
+  const itemsHeight = items.length * 8.8;
+  const pageHeight = Math.max(120, 96 + topInfoLines * 4.2 + customerLines * 5 + extraVoidHeight + itemsHeight);
   const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
   let curY = 10;
@@ -836,10 +842,24 @@ function downloadPayVoidReceiptPdf() {
 
   if (compName) {
     curY += 4.2;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-    doc.setTextColor(71, 85, 105);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.8);
+    doc.setTextColor(51, 65, 85);
     doc.text(compName, 40, curY, { align: "center" });
+  }
+  if (compPhone) {
+    curY += 3.8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.2);
+    doc.setTextColor(71, 85, 105);
+    doc.text("Tel: " + compPhone, 40, curY, { align: "center" });
+  }
+  if (compEmail) {
+    curY += 3.8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.2);
+    doc.setTextColor(71, 85, 105);
+    doc.text(compEmail, 40, curY, { align: "center" });
   }
 
   curY += 4.5;
@@ -872,14 +892,28 @@ function downloadPayVoidReceiptPdf() {
   doc.setTextColor(185, 28, 28);
   doc.text("VOID", 74, curY + 14, { align: "right" });
 
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(71, 85, 105);
-  doc.text("VOID CAUSE:", 6, curY + 18.5);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(185, 28, 28);
-  doc.text(String(voidCause).slice(0, 30), 74, curY + 18.5, { align: "right" });
+  curY += 14;
+  if (customerDetails) {
+    curY += 4.5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.2);
+    doc.setTextColor(71, 85, 105);
+    doc.text("Customer's Details:", 6, curY);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(customerDetails.slice(0, 32), 74, curY, { align: "right" });
+  }
+  if (voidCause) {
+    curY += 4.5;
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text("VOID CAUSE:", 6, curY);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(185, 28, 28);
+    doc.text(String(voidCause).slice(0, 30), 74, curY, { align: "right" });
+  }
 
-  curY += 22;
+  curY += 4.5;
   doc.line(6, curY, 74, curY);
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
@@ -897,7 +931,15 @@ function downloadPayVoidReceiptPdf() {
     doc.setTextColor(15, 23, 42);
     doc.text(label.slice(0, 32), 6, y);
     doc.text(sub, 74, y, { align: "right" });
-    y += 5;
+    if (item.unit_price !== undefined) {
+      y += 3.5;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`@ RM ${Number(item.unit_price).toFixed(2)} / unit`, 6, y);
+      doc.setFontSize(8);
+    }
+    y += 5.2;
   });
 
   doc.line(6, y - 1.5, 74, y - 1.5);
@@ -910,22 +952,6 @@ function downloadPayVoidReceiptPdf() {
   doc.setTextColor(153, 27, 27);
   doc.text("TOTAL (VOID)", 9, y + 2.2);
   doc.text("RM " + total, 71, y + 2.2, { align: "right" });
-
-  y += 11;
-  if (compPhone) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.8);
-    doc.setTextColor(100, 116, 139);
-    doc.text("Support: " + compPhone, 40, y, { align: "center" });
-    y += 3.8;
-  }
-  if (compEmail) {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.8);
-    doc.setTextColor(100, 116, 139);
-    doc.text("Email: " + compEmail, 40, y, { align: "center" });
-    y += 3.8;
-  }
 
   doc.save(`AFRC-Void-Receipt-${billNo}.pdf`);
 }
