@@ -711,12 +711,6 @@ async def pay_page():
 async def payment_success_page():
     return FileResponse("frontend/success.html", headers=NO_CACHE_HEADERS)
 
-@app.post("/api/clear-site-cache")
-async def clear_site_cache():
-    headers = dict(NO_CACHE_HEADERS)
-    headers["Clear-Site-Data"] = '"cache"'
-    return JSONResponse(content={"status": "cleared"}, headers=headers)
-
 @app.get("/api/menu")
 def get_menu(db: Session = Depends(get_db)):
     dishes = db.query(Dish).all()
