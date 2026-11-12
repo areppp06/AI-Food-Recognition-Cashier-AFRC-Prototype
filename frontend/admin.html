@@ -414,8 +414,9 @@
   }
   .toast {
     position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
+    top: 1.25rem;
+    left: 50%;
+    transform: translateX(-50%);
     background: #0f172a;
     color: #ffffff;
     padding: 0.85rem 1.25rem;
@@ -2296,7 +2297,7 @@ function renderBillsTable() {
       : "";
     const refundBtn = b.status === "paid"
       ? (isFullyRefunded
-          ? `<button class="btn btn-outline btn-sm" onclick="openRefundModal('${esc(b.session_id)}')">Refunded</button>`
+          ? `<button class="btn btn-outline btn-sm" disabled style="opacity:0.55; cursor:not-allowed;" title="Fully refunded">Refunded</button>`
           : `<button class="btn btn-outline btn-sm" style="color:#dc2626; border-color:#fecaca;" onclick="openRefundModal('${esc(b.session_id)}')">Refund</button>`)
       : "";
     const refundedSub = refundedAmt > 0
@@ -2592,8 +2593,7 @@ async function submitRefund() {
       throw new Error(data.detail || "Refund failed");
     }
     showToast(`Refunded RM ${Number(data.refund?.refund_amount || total).toFixed(2)} for #${activeRefundInfo.bill_number}`);
-    activeRefundInfo = data.refund_info;
-    renderRefundModalContent(data.refund_info);
+    closeRefundModal();
     await loadBills({ includeSummary: true });
   } catch (err) {
     if (errBox) {
