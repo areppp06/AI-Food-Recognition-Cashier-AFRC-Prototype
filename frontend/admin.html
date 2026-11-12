@@ -825,12 +825,12 @@
     padding: 1.5rem 0.5rem;
   }
 
-  /* Refund Modal */
+  /* Modals */
   .modal-backdrop {
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 95;
+    z-index: 1000;
     background: rgba(15, 23, 42, 0.58);
     backdrop-filter: blur(3px);
     align-items: center;
@@ -1043,23 +1043,183 @@
     font-size: 0.82rem;
     font-weight: 600;
   }
-  @media (max-width: 680px) {
-    .refund-top-grid { grid-template-columns: 1fr; }
-    .refund-item-row { grid-template-columns: auto minmax(0, 1fr); }
+  /* Sidebar Backdrop Overlay on Mobile */
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 90;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .filter-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* Table Horizontal Scrolling & Sizing */
+  .table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-wrap::-webkit-scrollbar {
+    height: 6px;
+  }
+  .table-wrap::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  #tab-bills table {
+    min-width: 820px;
+  }
+  #tab-menu table {
+    min-width: 760px;
+  }
+  #tab-audit table {
+    min-width: 680px;
+  }
+  #tab-audit td:nth-child(5) {
+    max-width: 320px;
+    word-break: break-all;
+    white-space: normal;
   }
 
   @media (max-width: 1080px) {
     .analytics-grid { grid-template-columns: 1fr; }
     .breakdown-grid { grid-template-columns: 1fr; }
   }
+
   @media (max-width: 960px) {
-    .sidebar { transform: translateX(-100%); }
-    .sidebar.open { transform: translateX(0); }
-    .main-wrapper { margin-left: 0; }
-    .menu-toggle { display: inline-flex; }
-    .menu-form-grid { grid-template-columns: 1fr 1fr; }
-    .content { padding: 1.25rem 1rem 2.5rem; }
-    .topbar { padding: 0.9rem 1rem; }
+    .sidebar {
+      transform: translateX(-100%);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .sidebar-backdrop.open {
+      display: block;
+      opacity: 1;
+    }
+    .main-wrapper {
+      margin-left: 0;
+    }
+    .menu-toggle {
+      display: inline-flex;
+    }
+    .content {
+      padding: 1rem 0.85rem 2.5rem;
+    }
+    .topbar {
+      padding: 0.85rem 1rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .panel-header {
+      padding: 1rem;
+      gap: 0.75rem;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .filter-bar {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.6rem;
+    }
+    .search-input {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .filter-pills {
+      display: flex;
+      gap: 0.4rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+      -webkit-overflow-scrolling: touch;
+      width: 100%;
+    }
+    .filter-pills .pill-filter {
+      flex-shrink: 0;
+      padding: 0.45rem 0.8rem;
+      font-size: 0.78rem;
+    }
+    th {
+      padding: 0.65rem 0.85rem;
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.75rem 0.85rem;
+      font-size: 0.82rem;
+    }
+    .content {
+      padding: 0.75rem 0.6rem 2.5rem;
+    }
+    .panel-card {
+      border-radius: 12px;
+      margin-bottom: 1.25rem;
+    }
+    .topbar {
+      padding: 0.75rem 0.85rem;
+    }
+    .page-title {
+      font-size: 1.05rem;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .refund-top-grid { grid-template-columns: 1fr; }
+    .refund-item-row { grid-template-columns: auto minmax(0, 1fr); }
+    .topbar-actions .btn span {
+      display: none;
+    }
+    .topbar-actions .btn {
+      padding: 0.5rem 0.65rem;
+    }
+    .menu-form-grid {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+    .menu-form-grid .btn {
+      width: 100%;
+      height: 42px;
+      font-size: 0.9rem;
+    }
+    .pagination-bar {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.75rem 0.85rem;
+    }
+    .pagination-info {
+      font-size: 0.78rem;
+      text-align: center;
+    }
+    .pagination-controls {
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .page-select {
+      padding: 0.35rem 0.5rem;
+      font-size: 0.78rem;
+    }
+    .page-btn {
+      height: 30px;
+      min-width: 30px;
+      padding: 0 0.5rem;
+      font-size: 0.78rem;
+    }
   }
   @keyframes spin {
     from { transform: rotate(0deg); }
@@ -1149,11 +1309,12 @@
     </button>
   </div>
 </aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
 
 <div class="main-wrapper">
   <header class="topbar">
     <div class="topbar-left">
-      <button class="menu-toggle" aria-label="Toggle navigation" onclick="document.getElementById('sidebar').classList.toggle('open')">
+      <button class="menu-toggle" aria-label="Toggle navigation" onclick="toggleSidebar()">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"></path>
         </svg>
@@ -1306,10 +1467,12 @@
           <div class="panel-title">All Logged Bills</div>
           <div class="filter-bar">
             <input class="search-input" id="billSearch" oninput="onBillSearchInput()" placeholder="Search Bill #AAA-0001, dish, void cause..." type="text">
-            <button class="pill-filter active" data-status="all" onclick="setStatusFilter('all', this)">All</button>
-            <button class="pill-filter" data-status="paid" onclick="setStatusFilter('paid', this)">Paid</button>
-            <button class="pill-filter" data-status="open" onclick="setStatusFilter('open', this)">Pending</button>
-            <button class="pill-filter" data-status="void" onclick="setStatusFilter('void', this)">Void</button>
+            <div class="filter-pills">
+              <button class="pill-filter active" data-status="all" onclick="setStatusFilter('all', this)">All</button>
+              <button class="pill-filter" data-status="paid" onclick="setStatusFilter('paid', this)">Paid</button>
+              <button class="pill-filter" data-status="open" onclick="setStatusFilter('open', this)">Pending</button>
+              <button class="pill-filter" data-status="void" onclick="setStatusFilter('void', this)">Void</button>
+            </div>
           </div>
         </div>
         <div class="table-wrap">
@@ -1535,14 +1698,28 @@ function showToast(msg) {
   window._toastTimer = setTimeout(() => { t.style.display = "none"; }, 3000);
 }
 
+function toggleSidebar() {
+  const sb = document.getElementById("sidebar");
+  const bd = document.getElementById("sidebarBackdrop");
+  const isOpen = sb.classList.toggle("open");
+  if (bd) bd.classList.toggle("open", isOpen);
+}
+
+function closeSidebar() {
+  const sb = document.getElementById("sidebar");
+  const bd = document.getElementById("sidebarBackdrop");
+  if (sb) sb.classList.remove("open");
+  if (bd) bd.classList.remove("open");
+}
+
 function switchTab(tabId, title) {
+  closeSidebar();
   document.querySelectorAll(".section-pane").forEach(el => el.classList.remove("active"));
   document.getElementById("tab-" + tabId).classList.add("active");
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.tab === tabId);
   });
   document.getElementById("pageTitle").textContent = title;
-  document.getElementById("sidebar").classList.remove("open");
   if (tabId === "dashboard" && latestAnalytics) {
     renderSalesSvgChart(latestAnalytics.series || []);
   }
@@ -3234,6 +3411,7 @@ function openChangePasswordModal() {
   document.getElementById("changePasswordForm").reset();
   const errEl = document.getElementById("passwordError");
   if (errEl) errEl.style.display = "none";
+  closeSidebar();
   document.getElementById("passwordModal").classList.add("open");
 }
 
