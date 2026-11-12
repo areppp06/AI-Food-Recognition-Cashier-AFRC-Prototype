@@ -1294,7 +1294,7 @@
                 <th>Bill #</th>
                 <th>Created At</th>
                 <th>Items Ordered</th>
-                <th>Customer Email</th>
+                <th>Contacts</th>
                 <th>Total (RM)</th>
                 <th>Status</th>
                 <th>Photo</th>
@@ -2332,12 +2332,15 @@ function renderBillsTable() {
     const refundedSub = refundedAmt > 0
       ? `<div style="font-size:0.72rem; color:#dc2626; font-weight:700; margin-top:0.2rem;">Refunded RM ${refundedAmt.toFixed(2)}</div>`
       : "";
+    const contactsHtml = (b.receipt_phone || b.receipt_email)
+      ? `${b.receipt_phone ? `<div style="font-weight:700; color:#0f172a; font-size:0.82rem;">${esc(b.receipt_phone)}</div>` : ""}${b.receipt_email ? `<div style="color:#64748b; font-size:0.78rem;">${esc(b.receipt_email)}</div>` : ""}`
+      : "-";
     return `
       <tr>
         <td><span class="bill-code">#${esc(b.bill_number)}</span></td>
         <td>${esc(formatDateTime(b.created_at))}</td>
         <td>${formatItemsSummary(b.items)}</td>
-        <td>${esc(b.receipt_email || "-")}</td>
+        <td>${contactsHtml}</td>
         <td style="font-weight:700;">RM ${totalAmt.toFixed(2)}</td>
         <td>${statusBadge(b.status, b.void_reason)}${refundedSub}</td>
         <td>${renderPhotoCell(b)}</td>
@@ -2669,7 +2672,8 @@ function downloadBillPdf(sessionId) {
   const timeStr = dt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   const extraVoidHeight = isVoid ? 7 : 0;
-  const pageHeight = Math.max(118, 94 + extraVoidHeight + items.length * 9);
+  const extraContactHeight = (billData.receipt_phone ? 4.5 : 0) + (billData.receipt_email ? 4.5 : 0);
+  const pageHeight = Math.max(118, 94 + extraVoidHeight + extraContactHeight + items.length * 9);
   const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
   doc.setFillColor(isVoid ? 185 : 15, isVoid ? 28 : 23, isVoid ? 28 : 42);
@@ -2713,14 +2717,30 @@ function downloadBillPdf(sessionId) {
   }
 
   let headerBottomY = 39;
+  if (billData.receipt_phone) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text("PHONE:", 6, headerBottomY + 1);
+    doc.setTextColor(15, 23, 42);
+    doc.text(String(billData.receipt_phone).slice(0, 28), 74, headerBottomY + 1, { align: "right" });
+    headerBottomY += 4.5;
+  }
+  if (billData.receipt_email) {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text("EMAIL:", 6, headerBottomY + 1);
+    doc.setTextColor(15, 23, 42);
+    doc.text(String(billData.receipt_email).slice(0, 28), 74, headerBottomY + 1, { align: "right" });
+    headerBottomY += 4.5;
+  }
   if (isVoid && voidCause) {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(71, 85, 105);
-    doc.text("VOID CAUSE:", 6, 40);
+    doc.text("VOID CAUSE:", 6, headerBottomY + 1);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(185, 28, 28);
-    doc.text(String(voidCause).slice(0, 30), 74, 40, { align: "right" });
-    headerBottomY = 43.5;
+    doc.text(String(voidCause).slice(0, 30), 74, headerBottomY + 1, { align: "right" });
+    headerBottomY += 4.5;
   }
 
   doc.line(6, headerBottomY, 74, headerBottomY);

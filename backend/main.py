@@ -1370,6 +1370,22 @@ def _verify_and_capture(order_id: str, payment_id: str, signature: str, db: Sess
         return bill, "paid"
     return bill, "unpaid"
 
+def _normalize_my_phone(raw_phone: str) -> str:
+    raw = str(raw_phone or "").strip()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Phone number is required")
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if digits.startswith("60"):
+        digits = digits[2:]
+    elif digits.startswith("0"):
+        digits = digits[1:]
+    if len(digits) < 9 or len(digits) > 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Enter a valid Malaysian phone number (9 to 10 digits after +60)",
+        )
+    return f"+60{digits}"
+
 @app.post("/api/pay")
 def pay(payload: dict, request: Request, db: Session = Depends(get_db)):
     _require_turnstile(str(payload.get("cf-turnstile-response") or ""), "pay", request)
@@ -1384,9 +1400,11 @@ def pay(payload: dict, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="A cashier is checking this bill")
     if bill.status == "paid":
         return {"status": "paid", "session_id": bill.id}
+    phone = _normalize_my_phone(payload.get("phone") or "")
     email = str(payload.get("email") or "").strip()
     if email and ("@" not in email or "." not in email.split("@")[-1]):
         raise HTTPException(status_code=400, detail="Enter a valid email or leave it blank")
+    bill.receipt_phone = phone
     bill.receipt_email = email
     bill.updated_at = datetime.utcnow()
     db.commit()
@@ -1539,6 +1557,7 @@ def _compute_overview_data(
             SessionBill.void_reason,
             SessionBill.final_bill,
             SessionBill.receipt_email,
+            SessionBill.receipt_phone,
             SessionBill.curlec_payment_id,
             SessionBill.retake_count,
             SessionBill.created_at,
@@ -1775,6 +1794,7 @@ def _compute_overview_data(
             raw_void_reason,
             final_bill,
             receipt_email,
+            receipt_phone,
             curlec_payment_id,
             retake_count,
             created_at,
@@ -1877,6 +1897,7 @@ def _compute_overview_data(
                 "total": bill_total,
                 "items": item_desc,
                 "receipt_email": receipt_email or "",
+                "receipt_phone": receipt_phone or "",
                 "curlec_payment_id": curlec_payment_id or "",
             })
 
@@ -2132,7 +2153,7 @@ def export_admin_sales_csv(
     writer.writerow([])
 
     writer.writerow(["ITEMIZED BILLS LOG"])
-    writer.writerow(["Bill #", "Created At (MYT)", "Paid At (MYT)", "Status", "Void Cause", "Total (RM)", "Items", "Customer Email", "Payment ID"])
+    writer.writerow(["Bill #", "Created At (MYT)", "Paid At (MYT)", "Status", "Void Cause", "Total (RM)", "Items", "Phone Number", "Customer Email", "Payment ID"])
     for b in data["export_bills"]:
         writer.writerow([
             b["bill_number"],
@@ -2142,6 +2163,7 @@ def export_admin_sales_csv(
             b["void_reason"],
             f"{b['total']:.2f}",
             b["items"],
+            b.get("receipt_phone", ""),
             b["receipt_email"],
             b["curlec_payment_id"],
         ])

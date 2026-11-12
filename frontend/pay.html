@@ -216,9 +216,9 @@ label {
   font-weight: 600;
   color: #334155;
 }
-input[type="email"] {
+input[type="email"],
+.phone-field-wrap {
   width: 100%;
-  padding: 0.9rem 1.15rem;
   border: 1.5px solid #e2e8f0;
   border-radius: 14px;
   font: inherit;
@@ -228,7 +228,35 @@ input[type="email"] {
   outline: none;
   transition: all 0.2s ease;
 }
-input[type="email"]:focus {
+input[type="email"] {
+  padding: 0.9rem 1.15rem;
+}
+.phone-field-wrap {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+.phone-prefix {
+  padding: 0.9rem 0.85rem 0.9rem 1.05rem;
+  font-weight: 700;
+  color: #334155;
+  background: #eef2f7;
+  border-right: 1.5px solid #e2e8f0;
+  user-select: none;
+  flex-shrink: 0;
+}
+.phone-field-wrap input[type="tel"] {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.9rem 1rem;
+  font: inherit;
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+}
+input[type="email"]:focus,
+.phone-field-wrap:focus-within {
   border-color: #ff5e36;
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(255, 94, 54, 0.1);
@@ -502,6 +530,14 @@ input[type="email"]:focus {
 </div>
 </div>
 <form id="payForm" hidden>
+<div class="input-group">
+<label for="phoneLocal">Phone number <span style="color:#ef4444;">*</span></label>
+<div class="phone-field-wrap">
+  <span class="phone-prefix">+60</span>
+  <input autocomplete="tel-national" id="phoneLocal" inputmode="numeric" maxlength="11" placeholder="12 345 6789" required type="tel">
+</div>
+<p class="note">Required. Enter 9–10 digits after +60 (e.g. 123456789 or 1121815101).</p>
+</div>
 <div class="input-group">
 <label for="email">Email for receipt (optional)</label>
 <input autocomplete="email" id="email" placeholder="name@domain.com" type="email">
@@ -985,10 +1021,36 @@ async function load() {
   }
 }
 
+function getNormalizedPhone() {
+  const inp = document.getElementById("phoneLocal");
+  if (!inp) return "";
+  let digits = String(inp.value || "").replace(/\D/g, "");
+  if (digits.startsWith("60")) digits = digits.slice(2);
+  if (digits.startsWith("0")) digits = digits.slice(1);
+  if (digits.length < 9 || digits.length > 10) return "";
+  return "+60" + digits;
+}
+
+const phoneInputEl = document.getElementById("phoneLocal");
+if (phoneInputEl) {
+  phoneInputEl.addEventListener("input", () => {
+    let digits = phoneInputEl.value.replace(/\D/g, "");
+    if (digits.startsWith("60")) digits = digits.slice(2);
+    if (digits.startsWith("0")) digits = digits.slice(1);
+    phoneInputEl.value = digits.slice(0, 10);
+  });
+}
+
 form.onsubmit = async (event) => {
   event.preventDefault();
   if (!confirmBox.checked) return;
   errorBox.textContent = "";
+  const normalizedPhone = getNormalizedPhone();
+  if (!normalizedPhone) {
+    errorBox.textContent = "Please enter a valid Malaysian phone number (9 to 10 digits after +60).";
+    if (phoneInputEl) phoneInputEl.focus();
+    return;
+  }
   const button = document.getElementById("payBtn");
   button.disabled = true;
   button.innerHTML = '<span class="spinner"></span> Processing...';
@@ -1010,6 +1072,7 @@ form.onsubmit = async (event) => {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         session_id: sessionId,
+        phone: normalizedPhone,
         email: document.getElementById("email").value,
         "cf-turnstile-response": token
       })
@@ -1035,7 +1098,9 @@ form.onsubmit = async (event) => {
       errorBox.textContent = "Payment checkout could not be loaded. Please refresh and try again.";
       return;
     }
-    const email = document.getElementById("email").value;
+    const email = String(document.getElementById("email").value || "").trim();
+    const prefill = { contact: normalizedPhone };
+    if (email) prefill.email = email;
     const checkout = new window.Razorpay({
       key: data.key_id,
       amount: data.amount,
@@ -1045,7 +1110,7 @@ form.onsubmit = async (event) => {
       order_id: data.order_id,
       callback_url: location.origin + "/api/pay/callback",
       redirect: true,
-      prefill: email ? { email } : {},
+      prefill,
       theme: { color: "#ff5e36" },
       config: {
         display: {

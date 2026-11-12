@@ -282,8 +282,15 @@
         if (data.total !== undefined) {
           document.getElementById("total").textContent = "RM " + Number(data.total).toFixed(2);
         }
-        if (data.receipt_email) {
-          document.getElementById("emailNote").innerHTML = "Receipt sent to: <span>" + data.receipt_email + "</span>";
+        const contactParts = [];
+        if (data.receipt_phone) contactParts.push(data.receipt_phone);
+        if (data.receipt_email) contactParts.push(data.receipt_email);
+        if (contactParts.length) {
+          const noteEl = document.getElementById("emailNote");
+          noteEl.textContent = "Contact: ";
+          const sp = document.createElement("span");
+          sp.textContent = contactParts.join(" · ");
+          noteEl.appendChild(sp);
         }
       } catch (e) {}
     }
@@ -299,7 +306,8 @@
       const dateStr = dt.toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" });
       const timeStr = dt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-      const pageHeight = Math.max(115, 92 + items.length * 9);
+      const hasContactLines = (billData && billData.receipt_phone ? 1 : 0) + (billData && billData.receipt_email ? 1 : 0);
+      const pageHeight = Math.max(115, 92 + hasContactLines * 4.5 + items.length * 9);
       const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
       // Top accent bar
@@ -391,6 +399,20 @@
       doc.text("RM " + total, 71, y + 2.2, { align: "right" });
 
       y += 11;
+      if (billData && billData.receipt_phone) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6.8);
+        doc.setTextColor(100, 116, 139);
+        doc.text("Phone: " + billData.receipt_phone, 40, y, { align: "center" });
+        y += 3.8;
+      }
+      if (billData && billData.receipt_email) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6.8);
+        doc.setTextColor(100, 116, 139);
+        doc.text("Email: " + billData.receipt_email, 40, y, { align: "center" });
+        y += 3.8;
+      }
       if (billData && billData.curlec_payment_id) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(6.8);
