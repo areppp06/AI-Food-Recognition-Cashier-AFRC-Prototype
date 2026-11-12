@@ -820,56 +820,74 @@ function downloadPayVoidReceiptPdf() {
   const timeStr = dt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   const restName = currentBillData.restaurant_name || "AFRC";
-  const pageHeight = Math.max(122, 100 + items.length * 9);
+  const compName = currentBillData.company_name || "";
+  const compPhone = currentBillData.company_phone || "";
+  const compEmail = currentBillData.company_email || "";
+  const hasCompHeader = compName ? 1 : 0;
+  const hasCompFooter = (compPhone ? 1 : 0) + (compEmail ? 1 : 0);
+  const pageHeight = Math.max(122, 100 + (hasCompHeader + hasCompFooter) * 4.2 + items.length * 9);
   const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
+  let curY = 10;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(15, 23, 42);
-  doc.text(restName, 40, 10, { align: "center" });
+  doc.text(restName, 40, curY, { align: "center" });
+
+  if (compName) {
+    curY += 4.2;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(compName, 40, curY, { align: "center" });
+  }
+
+  curY += 4.5;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text("VOIDED BILL RECEIPT", 40, 15, { align: "center" });
+  doc.text("VOIDED BILL RECEIPT", 40, curY, { align: "center" });
 
+  curY += 3.5;
   doc.setDrawColor(203, 213, 225);
   doc.setLineDashPattern([1, 1], 0);
-  doc.line(6, 18.5, 74, 18.5);
+  doc.line(6, curY, 74, curY);
 
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
-  doc.text("BILL NO:", 6, 23.5);
+  doc.text("BILL NO:", 6, curY + 5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(15, 23, 42);
-  doc.text("#" + billNo, 74, 23.5, { align: "right" });
+  doc.text("#" + billNo, 74, curY + 5, { align: "right" });
 
   doc.setFont("helvetica", "normal");
   doc.setTextColor(71, 85, 105);
-  doc.text("DATE:", 6, 28);
+  doc.text("DATE:", 6, curY + 9.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(dateStr + " " + timeStr, 74, 28, { align: "right" });
+  doc.text(dateStr + " " + timeStr, 74, curY + 9.5, { align: "right" });
 
   doc.setTextColor(71, 85, 105);
-  doc.text("STATUS:", 6, 32.5);
+  doc.text("STATUS:", 6, curY + 14);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(185, 28, 28);
-  doc.text("VOID", 74, 35.5, { align: "right" });
+  doc.text("VOID", 74, curY + 14, { align: "right" });
 
   doc.setFont("helvetica", "normal");
   doc.setTextColor(71, 85, 105);
-  doc.text("VOID CAUSE:", 6, 40);
+  doc.text("VOID CAUSE:", 6, curY + 18.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(185, 28, 28);
-  doc.text(String(voidCause).slice(0, 30), 74, 40, { align: "right" });
+  doc.text(String(voidCause).slice(0, 30), 74, curY + 18.5, { align: "right" });
 
-  doc.line(6, 43.5, 74, 43.5);
+  curY += 22;
+  doc.line(6, curY, 74, curY);
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139);
-  doc.text("ITEM / QTY", 6, 48);
-  doc.text("AMOUNT (RM)", 74, 48, { align: "right" });
-  doc.line(6, 50, 74, 50);
+  doc.text("ITEM / QTY", 6, curY + 4.5);
+  doc.text("AMOUNT (RM)", 74, curY + 4.5, { align: "right" });
+  doc.line(6, curY + 6.5, 74, curY + 6.5);
 
-  let y = 55;
+  let y = curY + 11.5;
   doc.setFontSize(8);
   items.forEach((item) => {
     const pcs = item.piece_count ? ` (${item.piece_count} pcs)` : "";
@@ -892,6 +910,22 @@ function downloadPayVoidReceiptPdf() {
   doc.setTextColor(153, 27, 27);
   doc.text("TOTAL (VOID)", 9, y + 2.2);
   doc.text("RM " + total, 71, y + 2.2, { align: "right" });
+
+  y += 11;
+  if (compPhone) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Support: " + compPhone, 40, y, { align: "center" });
+    y += 3.8;
+  }
+  if (compEmail) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Email: " + compEmail, 40, y, { align: "center" });
+    y += 3.8;
+  }
 
   doc.save(`AFRC-Void-Receipt-${billNo}.pdf`);
 }

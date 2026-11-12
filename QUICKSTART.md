@@ -43,11 +43,19 @@ bash install.sh
 
 During the interactive setup, `install.sh` walks through three files inside the `env/` directory:
 
+### `env/restaurant.env` (Restaurant & Company Profile)
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `RESTAURANT_NAME` | `AFRC` | Restaurant / outlet name shown on payment checkout & receipt headers |
+| `COMPANY_NAME` | `AFRC Technologies Sdn. Bhd.` | Registered company name printed under restaurant name on receipts |
+| `COMPANY_PHONE` | `+60 12-345 6789` | Company customer support phone number on receipts |
+| `COMPANY_EMAIL` | `support@afrc.example.com` | Company customer support email on receipts |
+
 ### `env/.env` (App, AI Provider & Cloudflare Turnstile)
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `RESTAURANT_NAME` | `AFRC` | Restaurant / store name displayed on receipts and payment checkout |
 | `OPENAI_API_KEY` | `sk-your-key-here` | OpenAI API key (if `AI_PROVIDER=openai`) |
 | `GEMINI_API_KEY` | `your-gemini-key-here` | Google Gemini API key (if `AI_PROVIDER=gemini`) |
 | `XAI_API_KEY` | `your-xai-key-here` | xAI Grok API key (if `AI_PROVIDER=grok`) |

@@ -8,6 +8,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ENV_DIR = ROOT / "env"
+load_dotenv(ENV_DIR / "restaurant.env")
+load_dotenv(ROOT / "restaurant.env")
 load_dotenv(ENV_DIR / "rate-limit.env")
 load_dotenv(ROOT / "rate-limit.env")
 load_dotenv(ENV_DIR / ".env")

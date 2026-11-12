@@ -776,6 +776,7 @@ def get_client_state(
     browser_session_id: str = "",
     db: Session = Depends(get_db),
 ):
+    prof = _restaurant_profile()
     _expire_stale_bills(db)
     c_token = _get_client_token(request, client_token)
     d_id = _get_device_id(request, explicit_device=device_id, explicit_client=c_token)
@@ -799,7 +800,10 @@ def get_client_state(
             "scans_used": usage["scans_used"],
             "scans_limit": usage["scans_limit"],
             "scans_remaining": usage["scans_remaining"],
-            "restaurant_name": _restaurant_name(),
+            "restaurant_name": prof["restaurant_name"],
+            "company_name": prof["company_name"],
+            "company_phone": prof["company_phone"],
+            "company_email": prof["company_email"],
             "active_bill": _bill_payload(active_bill) if active_bill else None,
         },
         headers=NO_CACHE_HEADERS,
@@ -1030,6 +1034,7 @@ async def recognize(
     return resp
 
 def _bill_payload(session: SessionBill, refunded_amount: float = 0.0) -> dict:
+    prof = _restaurant_profile()
     try:
         items = json.loads(session.final_bill or "[]")
     except Exception:
@@ -1066,7 +1071,10 @@ def _bill_payload(session: SessionBill, refunded_amount: float = 0.0) -> dict:
         "receipt_phone": session.receipt_phone or "",
         "curlec_order_id": session.curlec_order_id or "",
         "curlec_payment_id": session.curlec_payment_id or "",
-        "restaurant_name": _restaurant_name(),
+        "restaurant_name": prof["restaurant_name"],
+        "company_name": prof["company_name"],
+        "company_phone": prof["company_phone"],
+        "company_email": prof["company_email"],
         "refunded_amount": round(float(refunded_amount or 0.0), 2),
         "created_at": (session.created_at.isoformat() + "Z") if session.created_at else "",
         "updated_at": (session.updated_at.isoformat() + "Z") if session.updated_at else "",
@@ -1279,12 +1287,44 @@ def void_retake(session_id: str, request: Request, payload: dict = None, db: Ses
     resp.delete_cookie("afrc_active_session", path="/")
     return resp
 
+def _restaurant_profile() -> dict:
+    merged = {
+        **_read_env_file_cached(ENV_DIR / ".env"),
+        **_read_env_file_cached(ROOT / ".env"),
+        **_read_env_file_cached(ENV_DIR / "restaurant.env"),
+        **_read_env_file_cached(ROOT / "restaurant.env"),
+    }
+    rest_name = (
+        merged.get("RESTAURANT_NAME")
+        or merged.get("STORE_NAME")
+        or os.getenv("RESTAURANT_NAME")
+        or os.getenv("STORE_NAME")
+        or "AFRC"
+    ).strip() or "AFRC"
+    comp_name = (
+        merged.get("COMPANY_NAME")
+        or os.getenv("COMPANY_NAME")
+        or ""
+    ).strip()
+    comp_phone = (
+        merged.get("COMPANY_PHONE")
+        or os.getenv("COMPANY_PHONE")
+        or ""
+    ).strip()
+    comp_email = (
+        merged.get("COMPANY_EMAIL")
+        or os.getenv("COMPANY_EMAIL")
+        or ""
+    ).strip()
+    return {
+        "restaurant_name": rest_name,
+        "company_name": comp_name,
+        "company_phone": comp_phone,
+        "company_email": comp_email,
+    }
+
 def _restaurant_name() -> str:
-    merged = {**_read_env_file_cached(ENV_DIR / ".env"), **_read_env_file_cached(ROOT / ".env")}
-    val = merged.get("RESTAURANT_NAME") or merged.get("STORE_NAME")
-    if not val:
-        val = os.getenv("RESTAURANT_NAME") or os.getenv("STORE_NAME") or "AFRC"
-    return str(val).strip() or "AFRC"
+    return _restaurant_profile()["restaurant_name"]
 
 def _curlec_client():
     key_id = os.getenv("CURLEC_KEY_ID", "").strip()
@@ -1297,13 +1337,17 @@ def _amount_sen(bill: SessionBill) -> int:
     return int(round(float(_bill_payload(bill)["total"]) * 100))
 
 def _checkout_payload(bill: SessionBill, key_id: str) -> dict:
+    prof = _restaurant_profile()
     return {
         "key_id": key_id,
         "order_id": bill.curlec_order_id,
         "amount": _amount_sen(bill),
         "currency": "MYR",
         "session_id": bill.id,
-        "restaurant_name": _restaurant_name(),
+        "restaurant_name": prof["restaurant_name"],
+        "company_name": prof["company_name"],
+        "company_phone": prof["company_phone"],
+        "company_email": prof["company_email"],
     }
 
 def _create_curlec_order(bill: SessionBill, db: Session) -> dict:

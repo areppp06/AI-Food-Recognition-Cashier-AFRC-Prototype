@@ -11,6 +11,8 @@ CURLEC_ENV="$ENV_DIR/curlec.env"
 CURLEC_EXAMPLE="$ENV_DIR/curlec.env.example"
 RATELIMIT_ENV="$ENV_DIR/rate-limit.env"
 RATELIMIT_EXAMPLE="$ENV_DIR/rate-limit.env.example"
+RESTAURANT_ENV="$ENV_DIR/restaurant.env"
+RESTAURANT_EXAMPLE="$ENV_DIR/restaurant.env.example"
 
 FORCE_CONFIGURE=false
 START_SERVER=true
@@ -126,6 +128,7 @@ configure_env_file() {
 }
 
 configure_env_file "$MAIN_ENV" "$MAIN_EXAMPLE" "App & AI Environment (env/.env)"
+configure_env_file "$RESTAURANT_ENV" "$RESTAURANT_EXAMPLE" "Restaurant & Company Profile (env/restaurant.env)"
 configure_env_file "$CURLEC_ENV" "$CURLEC_EXAMPLE" "Curlec Payment Environment (env/curlec.env)"
 configure_env_file "$RATELIMIT_ENV" "$RATELIMIT_EXAMPLE" "Rate Limit Environment (env/rate-limit.env)"
 
