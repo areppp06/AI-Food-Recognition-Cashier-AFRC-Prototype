@@ -2608,18 +2608,52 @@ def refund_admin_bill(session_id: str, payload: dict, request: Request, db: Sess
     }
 
 @app.get("/api/admin/audit-logs")
-def list_audit_logs(request: Request, db: Session = Depends(get_db)):
+def list_audit_logs(
+    request: Request,
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+):
     require_admin_api(request, db)
+    page = max(1, int(page or 1))
+    page_size = max(1, min(100, int(page_size or 20)))
+
+    query = db.query(AuditLog)
+    total_items = query.count()
+    total_pages = max(1, math.ceil(total_items / page_size))
+    if page > total_pages:
+        page = total_pages
+
+    offset = (page - 1) * page_size
+    logs = query.order_by(AuditLog.timestamp.desc()).offset(offset).limit(page_size).all()
     cashier_map = {c.id: c.name for c in db.query(Cashier).all()}
-    logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(200).all()
-    return [
+
+    logs_payload = [
         {
             "id": l.id,
             "cashier_id": l.cashier_id,
-            "cashier_name": cashier_map.get(l.cashier_id, f"Cashier #{l.cashier_id}"),
+            "cashier_name": cashier_map.get(
+                l.cashier_id,
+                "System / Admin" if l.cashier_id == 0 else f"Cashier #{l.cashier_id}"
+            ),
             "action": l.action,
             "details": l.details or "",
             "timestamp": (l.timestamp.isoformat() + "Z") if l.timestamp else "",
         }
         for l in logs
     ]
+
+    return JSONResponse(
+        content={
+            "logs": logs_payload,
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total_items": total_items,
+                "total_pages": total_pages,
+                "has_prev": page > 1,
+                "has_next": page < total_pages,
+            },
+        },
+        headers=NO_CACHE_HEADERS,
+    )
