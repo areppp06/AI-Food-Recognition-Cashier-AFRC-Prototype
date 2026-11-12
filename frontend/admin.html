@@ -1032,7 +1032,7 @@
         <div class="panel-card" style="margin-bottom:0;">
           <div class="panel-header">
             <div class="panel-title">Top Selling Dishes</div>
-            <span class="stat-sub" style="margin-top:0;">From paid bills in period</span>
+            <span class="stat-sub" style="margin-top:0;">From paid bills · By quantities sold</span>
           </div>
           <div class="panel-body" id="topDishesList">
             <div class="empty-state-sm">Loading dish analytics...</div>
@@ -1772,18 +1772,26 @@ function renderAnalytics(analytics) {
   if (!topDishes.length) {
     topEl.innerHTML = '<div class="empty-state-sm">No paid dish sales in this period yet.</div>';
   } else {
-    const maxRev = Math.max(...topDishes.map(d => d.revenue), 1);
-    topEl.innerHTML = `<div class="breakdown-list">${topDishes.slice(0, 6).map(d => `
+    const sortedDishes = [...topDishes].sort((a, b) =>
+      (Number(b.quantity || 0) - Number(a.quantity || 0)) ||
+      (Number(b.revenue || 0) - Number(a.revenue || 0))
+    );
+    const maxQty = Math.max(...sortedDishes.map(d => Number(d.quantity || 0)), 1);
+    topEl.innerHTML = `<div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.65rem;">Note: Orange bars show quantities sold.</div><div class="breakdown-list">${sortedDishes.slice(0, 6).map(d => {
+      const qty = Number(d.quantity || 0);
+      const pct = qty > 0 ? Math.max(6, Math.round((qty / maxQty) * 100)) : 0;
+      return `
       <div>
         <div class="breakdown-item-head">
           <span class="breakdown-name">${esc(d.name)}</span>
           <span class="breakdown-meta">${esc(d.quantity)} sold · RM ${Number(d.revenue).toFixed(2)}</span>
         </div>
         <div class="breakdown-track">
-          <div class="breakdown-fill" style="width:${Math.max(6, Math.round((d.revenue / maxRev) * 100))}%"></div>
+          <div class="breakdown-fill" style="width:${pct}%"></div>
         </div>
       </div>
-    `).join("")}</div>`;
+    `;
+    }).join("")}</div>`;
   }
 
   // Void Causes

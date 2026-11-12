@@ -1882,7 +1882,7 @@ def _compute_overview_data(
             }
             for v in dish_agg.values()
         ),
-        key=lambda x: (-x["revenue"], -x["quantity"], x["name"]),
+        key=lambda x: (-x["quantity"], -x["revenue"], x["name"]),
     )[:10]
     void_causes = sorted(
         (
