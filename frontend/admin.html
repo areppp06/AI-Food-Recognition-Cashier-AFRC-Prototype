@@ -1176,6 +1176,313 @@
     }
   }
 
+  /* Switch Toggle & Switch Wrap */
+  .switch-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .switch-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #94a3b8;
+    transition: color 0.2s ease;
+  }
+  .switch-label.active {
+    color: #10b981;
+  }
+  .switch-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .switch-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .switch-slider {
+    width: 44px;
+    height: 24px;
+    background-color: #cbd5e1;
+    border-radius: 999px;
+    transition: all 0.25s ease;
+    position: relative;
+    display: inline-block;
+  }
+  .switch-slider::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    transition: all 0.25s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+  }
+  .switch-input:checked + .switch-slider {
+    background-color: #10b981;
+  }
+  .switch-input:checked + .switch-slider::before {
+    transform: translateX(20px);
+  }
+
+  /* Default hiding for mobile lists & mobile controls on tablet/desktop */
+  .bills-mobile-list,
+  .menu-mobile-list,
+  .audit-mobile-list {
+    display: none;
+  }
+  .mobile-only-badge,
+  .mobile-add-toggle-btn {
+    display: none;
+  }
+
+  /* Mobile Phone Breakpoint (< 768px) */
+  @media (max-width: 767px) {
+    /* Hide wide table containers on mobile phones */
+    #tab-bills .table-wrap,
+    #tab-menu .table-wrap,
+    #tab-audit .table-wrap {
+      display: none !important;
+    }
+
+    /* Show mobile card lists */
+    .bills-mobile-list,
+    .menu-mobile-list,
+    .audit-mobile-list {
+      display: flex !important;
+      flex-direction: column;
+      gap: 0.85rem;
+      padding: 0.85rem;
+    }
+
+    /* Bills Mobile Card */
+    .bill-mobile-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      transition: border-color 0.15s ease;
+    }
+    .bill-mobile-card:hover {
+      border-color: #cbd5e1;
+    }
+    .bmc-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .bmc-date {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.15rem;
+    }
+    .bmc-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .bmc-amount-box {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #f1f5f9;
+    }
+    .bmc-amount-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .bmc-amount-val {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .bmc-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .bmc-section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .bmc-items-val {
+      font-size: 0.85rem;
+      color: #1e293b;
+      line-height: 1.4;
+      background: #ffffff;
+      padding: 0.4rem 0.5rem;
+      border: 1px dashed #e2e8f0;
+      border-radius: 6px;
+    }
+    .bmc-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid #f1f5f9;
+    }
+    .bmc-btn {
+      flex: 1;
+      justify-content: center;
+      height: 38px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    /* Menu Mobile Card */
+    .menu-mobile-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .mmc-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-bottom: 0.55rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .mmc-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: #0f172a;
+    }
+    .mmc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .card-input-label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #475569;
+    }
+    .card-input-label .input-box {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 0.9rem;
+      padding: 0.55rem 0.65rem;
+      border-radius: 8px;
+    }
+    .mmc-foot {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 0.5rem;
+      border-top: 1px solid #f8fafc;
+    }
+
+    /* Collapsible Add Dish Form on Mobile */
+    .mobile-only-badge {
+      display: inline-block !important;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      background: #ffedd5;
+      color: #c2410c;
+      border-radius: 999px;
+    }
+    .mobile-add-toggle-btn {
+      display: inline-flex !important;
+      padding: 0.35rem 0.55rem !important;
+      border-radius: 8px;
+    }
+    #addDishPanel .panel-header {
+      cursor: pointer !important;
+      user-select: none;
+    }
+    #addDishPanel:not(.open) #addDishBody {
+      display: none !important;
+    }
+    #addDishPanel:not(.open) .add-dish-subtext {
+      display: none !important;
+    }
+    #addDishPanel.open #addDishChevron {
+      transform: rotate(180deg);
+    }
+    #addDishPanel.open .mobile-only-badge {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    /* Audit Mobile Card */
+    .audit-mobile-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .amc-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .amc-time {
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+    .amc-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: #334155;
+    }
+    .amc-id {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    .amc-details {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.55rem 0.75rem;
+      font-family: monospace;
+      font-size: 0.78rem;
+      color: #1e293b;
+      word-break: break-all;
+      line-height: 1.45;
+    }
+  }
+
   @media (max-width: 680px) {
     .refund-top-grid { grid-template-columns: 1fr; }
     .refund-item-row { grid-template-columns: auto minmax(0, 1fr); }
@@ -1485,6 +1792,7 @@
             <tbody id="allBillsBody"></tbody>
           </table>
         </div>
+        <div class="bills-mobile-list" id="billsMobileList"></div>
         <div class="pagination-bar" id="billsPaginationBar">
           <div class="pagination-info" id="billsPaginationInfo">Showing 0 bills</div>
           <div class="pagination-controls" id="billsPaginationControls"></div>
@@ -1494,14 +1802,22 @@
 
     <!-- TAB 3: DAILY MENU -->
     <section class="section-pane" id="tab-menu">
-      <div class="panel-card">
-        <div class="panel-header">
+      <div class="panel-card" id="addDishPanel">
+        <div class="panel-header" onclick="toggleAddDishForm()">
           <div>
-            <div class="panel-title">Add New Dish to Menu</div>
-            <p style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Names added here are the exact names the AI vision model returns. Use Description to describe what 1 serving looks like.</p>
+            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+              <span>Add New Dish to Menu</span>
+              <span class="mobile-only-badge" id="addDishToggleBadge">Tap to open</span>
+            </div>
+            <p class="add-dish-subtext" style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Names added here are the exact names the AI vision model returns. Use Description to describe what 1 serving looks like.</p>
           </div>
+          <button type="button" class="btn btn-outline btn-sm mobile-add-toggle-btn" id="addDishToggleBtn" aria-label="Toggle add dish form">
+            <svg style="width:16px; height:16px; transition:transform 0.2s ease;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" id="addDishChevron">
+              <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </button>
         </div>
-        <div class="panel-body">
+        <div class="panel-body" id="addDishBody">
           <form class="menu-form-grid" onsubmit="addDish(event)">
             <label class="field-label">Dish Name
               <input class="input-box" id="newName" placeholder="e.g. Ayam goreng" required type="text">
@@ -1557,6 +1873,7 @@
             <tbody id="menuBody"></tbody>
           </table>
         </div>
+        <div class="menu-mobile-list" id="menuMobileList"></div>
       </div>
     </section>
 
@@ -1580,6 +1897,7 @@
             <tbody id="auditBody"></tbody>
           </table>
         </div>
+        <div class="audit-mobile-list" id="auditMobileList"></div>
         <div class="pagination-bar" id="auditPaginationBar">
           <div class="pagination-info" id="auditPaginationInfo">Showing 0 logs</div>
           <div class="pagination-controls" id="auditPaginationControls"></div>
@@ -2566,48 +2884,113 @@ function renderPagination() {
 
 function renderBillsTable() {
   const tbody = document.getElementById("allBillsBody");
+  const mobileList = document.getElementById("billsMobileList");
+
   if (!pageBills.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#94a3b8; padding:2rem;">No matching bills found.</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:#94a3b8; padding:2rem;">No matching bills found.</td></tr>';
+    if (mobileList) mobileList.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:2rem;">No matching bills found.</div>';
     return;
   }
 
-  tbody.innerHTML = pageBills.map(b => {
-    const refundedAmt = Number(b.refunded_amount || 0);
-    const totalAmt = Number(b.total || 0);
-    const isFullyRefunded = b.status === "paid" && totalAmt > 0 && refundedAmt >= totalAmt - 0.005;
-    const markPaidBtn = b.status !== "paid"
-      ? `<button class="btn btn-sm" onclick="setBillStatus('${esc(b.session_id)}', 'paid')">Mark Paid</button>`
-      : "";
-    const refundBtn = b.status === "paid"
-      ? (isFullyRefunded
-          ? `<button class="btn btn-outline btn-sm" onclick="openRefundModal('${esc(b.session_id)}')" title="View refund details">Refunded</button>`
-          : `<button class="btn btn-outline btn-sm" style="color:#dc2626; border-color:#fecaca;" onclick="openRefundModal('${esc(b.session_id)}')">Refund</button>`)
-      : "";
-    const refundedSub = refundedAmt > 0
-      ? `<div style="font-size:0.72rem; color:#dc2626; font-weight:700; margin-top:0.2rem;">Refunded RM ${refundedAmt.toFixed(2)}</div>`
-      : "";
-    const contactsHtml = (b.receipt_phone || b.receipt_email)
-      ? `${b.receipt_phone ? `<div style="font-weight:700; color:#0f172a; font-size:0.82rem;">${esc(b.receipt_phone)}</div>` : ""}${b.receipt_email ? `<div style="color:#64748b; font-size:0.78rem;">${esc(b.receipt_email)}</div>` : ""}`
-      : "-";
-    return `
-      <tr>
-        <td><span class="bill-code">#${esc(b.bill_number)}</span></td>
-        <td>${esc(formatDateTime(b.created_at))}</td>
-        <td>${formatItemsSummary(b.items)}</td>
-        <td>${contactsHtml}</td>
-        <td style="font-weight:700;">RM ${totalAmt.toFixed(2)}</td>
-        <td>${statusBadge(b.status, b.void_reason)}${refundedSub}</td>
-        <td>${renderPhotoCell(b)}</td>
-        <td>
-          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-            <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">PDF</button>
+  if (tbody) {
+    tbody.innerHTML = pageBills.map(b => {
+      const refundedAmt = Number(b.refunded_amount || 0);
+      const totalAmt = Number(b.total || 0);
+      const isFullyRefunded = b.status === "paid" && totalAmt > 0 && refundedAmt >= totalAmt - 0.005;
+      const markPaidBtn = b.status !== "paid"
+        ? `<button class="btn btn-sm" onclick="setBillStatus('${esc(b.session_id)}', 'paid')">Mark Paid</button>`
+        : "";
+      const refundBtn = b.status === "paid"
+        ? (isFullyRefunded
+            ? `<button class="btn btn-outline btn-sm" onclick="openRefundModal('${esc(b.session_id)}')" title="View refund details">Refunded</button>`
+            : `<button class="btn btn-outline btn-sm" style="color:#dc2626; border-color:#fecaca;" onclick="openRefundModal('${esc(b.session_id)}')">Refund</button>`)
+        : "";
+      const refundedSub = refundedAmt > 0
+        ? `<div style="font-size:0.72rem; color:#dc2626; font-weight:700; margin-top:0.2rem;">Refunded RM ${refundedAmt.toFixed(2)}</div>`
+        : "";
+      const contactsHtml = (b.receipt_phone || b.receipt_email)
+        ? `${b.receipt_phone ? `<div style="font-weight:700; color:#0f172a; font-size:0.82rem;">${esc(b.receipt_phone)}</div>` : ""}${b.receipt_email ? `<div style="color:#64748b; font-size:0.78rem;">${esc(b.receipt_email)}</div>` : ""}`
+        : "-";
+      return `
+        <tr>
+          <td><span class="bill-code">#${esc(b.bill_number)}</span></td>
+          <td>${esc(formatDateTime(b.created_at))}</td>
+          <td>${formatItemsSummary(b.items)}</td>
+          <td>${contactsHtml}</td>
+          <td style="font-weight:700;">RM ${totalAmt.toFixed(2)}</td>
+          <td>${statusBadge(b.status, b.void_reason)}${refundedSub}</td>
+          <td>${renderPhotoCell(b)}</td>
+          <td>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+              <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">PDF</button>
+              ${refundBtn}
+              ${markPaidBtn}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  if (mobileList) {
+    mobileList.innerHTML = pageBills.map(b => {
+      const refundedAmt = Number(b.refunded_amount || 0);
+      const totalAmt = Number(b.total || 0);
+      const isFullyRefunded = b.status === "paid" && totalAmt > 0 && refundedAmt >= totalAmt - 0.005;
+      const markPaidBtn = b.status !== "paid"
+        ? `<button class="btn btn-sm bmc-btn" onclick="setBillStatus('${esc(b.session_id)}', 'paid')">Mark Paid</button>`
+        : "";
+      const refundBtn = b.status === "paid"
+        ? (isFullyRefunded
+            ? `<button class="btn btn-outline btn-sm bmc-btn" onclick="openRefundModal('${esc(b.session_id)}')" title="View refund details">Refunded</button>`
+            : `<button class="btn btn-outline btn-sm bmc-btn" style="color:#dc2626; border-color:#fecaca;" onclick="openRefundModal('${esc(b.session_id)}')">Refund</button>`)
+        : "";
+      const refundedSub = refundedAmt > 0
+        ? `<div style="font-size:0.75rem; color:#dc2626; font-weight:700; margin-top:0.25rem;">Refunded: RM ${refundedAmt.toFixed(2)}</div>`
+        : "";
+      const contactsHtml = (b.receipt_phone || b.receipt_email)
+        ? `<div class="bmc-section"><span class="bmc-section-label">Customer Contact</span><div style="font-size:0.82rem; color:#1e293b;">${b.receipt_phone ? `<strong>${esc(b.receipt_phone)}</strong>` : ""}${b.receipt_phone && b.receipt_email ? " • " : ""}${b.receipt_email ? `<span>${esc(b.receipt_email)}</span>` : ""}</div></div>`
+        : "";
+      const photoSection = b.has_image ? `
+        <div class="bmc-section">
+          <span class="bmc-section-label">Plate Photo</span>
+          <div>${renderPhotoCell(b)}</div>
+        </div>
+      ` : "";
+      return `
+        <div class="bill-mobile-card">
+          <div class="bmc-header">
+            <div>
+              <div class="bill-code" style="font-size:0.95rem;">#${esc(b.bill_number)}</div>
+              <div class="bmc-date">${esc(formatDateTime(b.created_at))}</div>
+            </div>
+            <div>${statusBadge(b.status, b.void_reason)}</div>
+          </div>
+          <div class="bmc-body">
+            <div class="bmc-amount-box">
+              <span class="bmc-amount-label">Total Amount</span>
+              <span class="bmc-amount-val">RM ${totalAmt.toFixed(2)}</span>
+            </div>
+            ${refundedSub}
+            <div class="bmc-section">
+              <span class="bmc-section-label">Ordered Items</span>
+              <div class="bmc-items-val">${formatItemsSummary(b.items)}</div>
+            </div>
+            ${contactsHtml}
+            ${photoSection}
+          </div>
+          <div class="bmc-actions">
+            <button class="btn btn-outline btn-sm bmc-btn" onclick="downloadBillPdf('${esc(b.session_id)}')">
+              <svg style="width:13px; height:13px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              <span>PDF Receipt</span>
+            </button>
             ${refundBtn}
             ${markPaidBtn}
           </div>
-        </td>
-      </tr>
-    `;
-  }).join("");
+        </div>
+      `;
+    }).join("");
+  }
 }
 
 let activeRefundInfo = null;
@@ -3116,20 +3499,88 @@ function showError(message) {
   document.getElementById("error").textContent = message || "";
 }
 
+function toggleAddDishForm() {
+  if (window.innerWidth > 767) return;
+  const panel = document.getElementById("addDishPanel");
+  if (!panel) return;
+  panel.classList.toggle("open");
+  const badge = document.getElementById("addDishToggleBadge");
+  if (badge) {
+    badge.textContent = panel.classList.contains("open") ? "Tap to close" : "Tap to open";
+  }
+}
+
+function onMobileSwitchToggle(dishId, checkbox) {
+  const wrap = checkbox.closest(".switch-wrap");
+  if (wrap) {
+    const lbl = wrap.querySelector(".switch-label");
+    if (lbl) {
+      lbl.textContent = checkbox.checked ? "Available" : "Unavailable";
+      lbl.classList.toggle("active", checkbox.checked);
+    }
+  }
+  flushAutoSaveDish(dishId);
+}
+
 async function loadMenu() {
   const res = await fetch("/api/menu");
   const menu = await res.json();
   const tbody = document.getElementById("menuBody");
-  tbody.innerHTML = menu.map(d => `
-    <tr data-dish-id="${d.id}">
-      <td style="font-weight:700;">${esc(d.name)}</td>
-      <td><textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">${esc(d.description || "")}</textarea></td>
-      <td style="width:120px;"><input type="number" min="1" max="100" step="1" class="input-box pieces" required value="${d.pieces_per_portion || 1}" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
-      <td style="width:130px;"><input type="number" step="0.01" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
-      <td style="width:110px; text-align:center;"><input type="checkbox" style="width:18px; height:18px;" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail" onchange="flushAutoSaveDish(${d.id})"></td>
-      <td style="width:90px;"><button type="button" class="btn btn-danger btn-sm" data-id="${d.id}" data-name="${esc(d.name)}" onclick="removeDish(this)">Remove</button></td>
-    </tr>
-  `).join("");
+  const mobileList = document.getElementById("menuMobileList");
+
+  if (tbody) {
+    tbody.innerHTML = menu.map(d => `
+      <tr data-dish-id="${d.id}">
+        <td style="font-weight:700;">${esc(d.name)}</td>
+        <td><textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">${esc(d.description || "")}</textarea></td>
+        <td style="width:120px;"><input type="number" min="1" max="100" step="1" class="input-box pieces" required value="${d.pieces_per_portion || 1}" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
+        <td style="width:130px;"><input type="number" step="0.01" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
+        <td style="width:110px; text-align:center;"><input type="checkbox" style="width:18px; height:18px;" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail" onchange="flushAutoSaveDish(${d.id})"></td>
+        <td style="width:90px;"><button type="button" class="btn btn-danger btn-sm" data-id="${d.id}" data-name="${esc(d.name)}" onclick="removeDish(this)">Remove</button></td>
+      </tr>
+    `).join("");
+  }
+
+  if (mobileList) {
+    if (!menu.length) {
+      mobileList.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:2rem;">No menu items added yet.</div>';
+    } else {
+      mobileList.innerHTML = menu.map(d => `
+        <div class="menu-mobile-card" data-dish-id="${d.id}">
+          <div class="mmc-head">
+            <div class="mmc-name">${esc(d.name)}</div>
+            <label class="switch-wrap" title="Toggle availability">
+              <span class="switch-label ${d.available ? 'active' : ''}">${d.available ? 'Available' : 'Unavailable'}</span>
+              <span class="switch-toggle">
+                <input type="checkbox" class="avail switch-input" ${d.available ? "checked" : ""} data-id="${d.id}" onchange="onMobileSwitchToggle(${d.id}, this)">
+                <span class="switch-slider"></span>
+              </span>
+            </label>
+          </div>
+          <div class="mmc-grid">
+            <label class="card-input-label">
+              <span>Price (RM)</span>
+              <input type="number" step="0.01" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">
+            </label>
+            <label class="card-input-label">
+              <span>Pieces / Portion</span>
+              <input type="number" min="1" max="100" step="1" value="${d.pieces_per_portion || 1}" data-id="${d.id}" class="input-box pieces" required oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">
+            </label>
+          </div>
+          <label class="card-input-label" style="margin-top:0.35rem;">
+            <span>Description for AI Vision</span>
+            <textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like..." data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">${esc(d.description || "")}</textarea>
+          </label>
+          <div class="mmc-foot">
+            <button type="button" class="btn btn-outline btn-sm" style="color:#dc2626; border-color:#fecaca;" data-id="${d.id}" data-name="${esc(d.name)}" onclick="removeDish(this)">
+              <svg style="width:13px; height:13px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              <span>Delete Dish</span>
+            </button>
+          </div>
+        </div>
+      `).join("");
+    }
+  }
 }
 
 const _menuDebounceTimers = {};
@@ -3178,12 +3629,30 @@ function flushAutoSaveDish(dishId) {
 
 async function saveDishById(dishId) {
   const row = document.querySelector(`tr[data-dish-id="${dishId}"]`);
-  if (!row) return;
+  const card = document.querySelector(`.menu-mobile-card[data-dish-id="${dishId}"]`);
+  const container = (window.innerWidth <= 767 && card) ? card : (row || card);
+  if (!container) return;
 
-  const priceInput = row.querySelector(".price");
-  const descInput = row.querySelector(".desc");
-  const piecesInput = row.querySelector(".pieces");
-  const availInput = row.querySelector(".avail");
+  const priceInput = container.querySelector(".price");
+  const descInput = container.querySelector(".desc");
+  const piecesInput = container.querySelector(".pieces");
+  const availInput = container.querySelector(".avail");
+
+  // Sync to other container if present
+  const other = container === card ? row : card;
+  if (other) {
+    const p = other.querySelector(".price"); if (p && priceInput) p.value = priceInput.value;
+    const d = other.querySelector(".desc"); if (d && descInput) d.value = descInput.value;
+    const pc = other.querySelector(".pieces"); if (pc && piecesInput) pc.value = piecesInput.value;
+    const av = other.querySelector(".avail"); if (av && availInput) av.checked = availInput.checked;
+    if (other === card && availInput) {
+      const lbl = card.querySelector(".switch-label");
+      if (lbl) {
+        lbl.textContent = availInput.checked ? "Available" : "Unavailable";
+        lbl.classList.toggle("active", availInput.checked);
+      }
+    }
+  }
 
   const dishPayload = [{
     id: parseInt(dishId),
@@ -3236,6 +3705,12 @@ async function addDish(event) {
   document.getElementById("newPieces").value = "1";
   document.getElementById("newAvailable").checked = true;
   showToast("Dish added to menu");
+  const panel = document.getElementById("addDishPanel");
+  if (panel && window.innerWidth <= 767) {
+    panel.classList.remove("open");
+    const badge = document.getElementById("addDishToggleBadge");
+    if (badge) badge.textContent = "Tap to open";
+  }
   await loadMenu();
 }
 
@@ -3256,15 +3731,20 @@ async function removeDish(button) {
 
 async function saveMenu() {
   showError("");
+  const isMobile = window.innerWidth <= 767;
+  const cards = [...document.querySelectorAll("#menuMobileList .menu-mobile-card")];
   const rows = [...document.querySelectorAll("#menuBody tr")];
-  const dishes = rows.map(r => {
-    const id = r.querySelector(".price").dataset.id;
+  const items = (isMobile && cards.length) ? cards : rows;
+
+  const dishes = items.map(r => {
+    const priceEl = r.querySelector(".price");
+    const id = r.dataset.dishId || (priceEl ? priceEl.dataset.id : 0);
     return {
       id: parseInt(id),
-      price: parseFloat(r.querySelector(".price").value),
-      description: r.querySelector(".desc").value,
-      pieces_per_portion: r.querySelector(".pieces").value,
-      available: r.querySelector(".avail").checked
+      price: parseFloat(priceEl ? priceEl.value : 0) || 0,
+      description: r.querySelector(".desc") ? r.querySelector(".desc").value : "",
+      pieces_per_portion: r.querySelector(".pieces") ? r.querySelector(".pieces").value : "1",
+      available: r.querySelector(".avail") ? r.querySelector(".avail").checked : true
     };
   });
   setAutoSaveIndicator("saving");
@@ -3300,20 +3780,40 @@ async function loadAuditLogs(page = auditCurrentPage, pageSize = auditPageSize) 
     auditTotalPages = pag.total_pages || 1;
 
     const tbody = document.getElementById("auditBody");
+    const mobileList = document.getElementById("auditMobileList");
+
     if (!logs.length) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:2rem;">No audit logs found.</td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8; padding:2rem;">No audit logs found.</td></tr>';
+      if (mobileList) mobileList.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:2rem;">No audit logs found.</div>';
       renderAuditPagination();
       return;
     }
-    tbody.innerHTML = logs.map(l => `
-      <tr>
-        <td>#${esc(l.id)}</td>
-        <td>${esc(formatDateTime(l.timestamp))}</td>
-        <td style="font-weight:600;">${esc(l.cashier_name)}</td>
-        <td><span class="badge badge-pending">${esc(l.action)}</span></td>
-        <td style="font-family:monospace; font-size:0.82rem;">${esc(l.details)}</td>
-      </tr>
-    `).join("");
+    if (tbody) {
+      tbody.innerHTML = logs.map(l => `
+        <tr>
+          <td>#${esc(l.id)}</td>
+          <td>${esc(formatDateTime(l.timestamp))}</td>
+          <td style="font-weight:600;">${esc(l.cashier_name)}</td>
+          <td><span class="badge badge-pending">${esc(l.action)}</span></td>
+          <td style="font-family:monospace; font-size:0.82rem;">${esc(l.details)}</td>
+        </tr>
+      `).join("");
+    }
+    if (mobileList) {
+      mobileList.innerHTML = logs.map(l => `
+        <div class="audit-mobile-card">
+          <div class="amc-head">
+            <span class="badge badge-pending">${esc(l.action)}</span>
+            <span class="amc-time">${esc(formatDateTime(l.timestamp))}</span>
+          </div>
+          <div class="amc-meta">
+            <span class="amc-user">User: <strong>${esc(l.cashier_name)}</strong></span>
+            <span class="amc-id">#${esc(l.id)}</span>
+          </div>
+          <div class="amc-details">${esc(l.details)}</div>
+        </div>
+      `).join("");
+    }
     renderAuditPagination();
   } catch (err) {
     console.error("Failed to load audit logs:", err);
