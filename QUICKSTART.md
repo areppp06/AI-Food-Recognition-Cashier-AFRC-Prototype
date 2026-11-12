@@ -47,6 +47,7 @@ During the interactive setup, `install.sh` walks through three files inside the 
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
+| `RESTAURANT_NAME` | `AFRC` | Restaurant / store name displayed on receipts and payment checkout |
 | `OPENAI_API_KEY` | `sk-your-key-here` | OpenAI API key (if `AI_PROVIDER=openai`) |
 | `GEMINI_API_KEY` | `your-gemini-key-here` | Google Gemini API key (if `AI_PROVIDER=gemini`) |
 | `XAI_API_KEY` | `your-xai-key-here` | xAI Grok API key (if `AI_PROVIDER=grok`) |
