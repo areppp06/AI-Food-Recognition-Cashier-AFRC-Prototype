@@ -990,6 +990,28 @@
     -webkit-appearance: none;
     margin: 0;
   }
+  .refund-reason-input {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #0f172a;
+    font: inherit;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .refund-reason-input::placeholder { color: #94a3b8; }
+  .refund-reason-input:focus {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.14);
+  }
+  .refund-reason-input:disabled {
+    background: #f8fafc;
+    color: #94a3b8;
+    cursor: not-allowed;
+  }
   .refund-summary-bar {
     display: flex;
     align-items: center;
@@ -2462,7 +2484,7 @@ function renderRefundModalContent(info) {
 
     <div>
       <label for="refundReasonInput" style="display:block;font-size:0.8rem;font-weight:700;color:#334155;margin-bottom:0.35rem;">Refund Reason (Optional)</label>
-      <input type="text" id="refundReasonInput" class="form-input" style="width:100%;" placeholder="e.g. Wrong item, customer request, overcharged" ${!hasRefundableItems ? "disabled" : ""}>
+      <input type="text" id="refundReasonInput" class="refund-reason-input" placeholder="e.g. Wrong item, customer request, overcharged" ${!hasRefundableItems ? "disabled" : ""}>
     </div>
 
     <div class="refund-summary-bar">
