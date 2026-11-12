@@ -189,6 +189,11 @@ if [[ -t 0 ]]; then
     echo "============================================================"
     echo " Web Server & Reverse Proxy Configuration"
     echo "============================================================"
+    echo " NOTE: Automated Caddy HTTPS setup is intended for dedicated / single-app servers."
+    echo " If you're already using a Proxy Manager (Nginx, Caddy with other apps,"
+    echo " Nginx Proxy Manager, Traefik, Cloudflare Tunnel) for another purpose,"
+    echo " or you know what you are cooking, select 'N' and point your proxy to AFRC's port."
+    echo "============================================================"
     read -r -p "Would you like to setup Caddy reverse proxy with automatic HTTPS? [y/N]: " setup_caddy </dev/tty || setup_caddy="n"
     setup_caddy="$(echo "$setup_caddy" | tr '[:upper:]' '[:lower:]')"
 
