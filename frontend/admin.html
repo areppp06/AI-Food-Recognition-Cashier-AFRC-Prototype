@@ -982,6 +982,13 @@
     font: inherit;
     font-weight: 700;
     font-size: 0.83rem;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .refund-qty-input::-webkit-outer-spin-button,
+  .refund-qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
   .refund-summary-bar {
     display: flex;
@@ -2297,7 +2304,7 @@ function renderBillsTable() {
       : "";
     const refundBtn = b.status === "paid"
       ? (isFullyRefunded
-          ? `<button class="btn btn-outline btn-sm" disabled style="opacity:0.55; cursor:not-allowed;" title="Fully refunded">Refunded</button>`
+          ? `<button class="btn btn-outline btn-sm" onclick="openRefundModal('${esc(b.session_id)}')" title="View refund details">Refunded</button>`
           : `<button class="btn btn-outline btn-sm" style="color:#dc2626; border-color:#fecaca;" onclick="openRefundModal('${esc(b.session_id)}')">Refund</button>`)
       : "";
     const refundedSub = refundedAmt > 0
@@ -2393,7 +2400,7 @@ function renderRefundModalContent(info) {
         </div>
         <div class="refund-qty-ctrl">
           <button type="button" class="refund-qty-btn" ${disabled ? "disabled" : ""} onclick="stepRefundQty(${idx}, -1)">-</button>
-          <input type="number" class="refund-qty-input" id="refundQty_${idx}" min="0" max="${rem}" step="${step}" value="${disabled ? 0 : rem}" ${disabled ? "disabled" : ""} oninput="onRefundQtyInput(${idx})">
+          <input type="number" class="refund-qty-input" id="refundQty_${idx}" min="0" max="${rem}" step="${step}" value="0" ${disabled ? "disabled" : ""} oninput="onRefundQtyInput(${idx})">
           <button type="button" class="refund-qty-btn" ${disabled ? "disabled" : ""} onclick="stepRefundQty(${idx}, 1)">+</button>
         </div>
         <div style="font-weight:700;color:#0f172a;min-width:74px;text-align:right;" id="refundLineSub_${idx}">RM 0.00</div>
@@ -2480,7 +2487,9 @@ function onRefundItemToggle(idx) {
   if (!chk || !inp || !it) return;
   const maxQty = Number(it.remaining_qty || 0);
   if (chk.checked && Number(inp.value || 0) <= 0) {
-    inp.value = String(maxQty);
+    inp.value = String(Math.min(1, maxQty));
+  } else if (!chk.checked) {
+    inp.value = "0";
   }
   recalcRefundTotal();
 }
@@ -2522,9 +2531,7 @@ function toggleAllRefundItems(selectAll) {
     const inp = document.getElementById(`refundQty_${idx}`);
     if (!chk || !inp || chk.disabled) return;
     chk.checked = !!selectAll;
-    if (selectAll) {
-      inp.value = String(Number(it.remaining_qty || 0));
-    }
+    inp.value = selectAll ? String(Number(it.remaining_qty || 0)) : "0";
   });
   recalcRefundTotal();
 }
@@ -2557,10 +2564,13 @@ function recalcRefundTotal() {
   const { items, total } = getSelectedRefundPayload();
   const totalEl = document.getElementById("refundCalcTotal");
   const submitBtn = document.getElementById("refundSubmitBtn");
+  const isFullyRefunded = !activeRefundInfo || Number(activeRefundInfo.remaining_refundable || 0) <= 0;
   if (totalEl) totalEl.textContent = `RM ${total.toFixed(2)}`;
   if (submitBtn) {
-    submitBtn.disabled = !items.length || total <= 0;
-    submitBtn.textContent = total > 0 ? `Process Refund (RM ${total.toFixed(2)})` : "Process Refund";
+    submitBtn.disabled = isFullyRefunded || !items.length || total <= 0;
+    submitBtn.textContent = isFullyRefunded
+      ? "Fully Refunded"
+      : (total > 0 ? `Process Refund (RM ${total.toFixed(2)})` : "Process Refund");
   }
 }
 
