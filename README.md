@@ -93,10 +93,14 @@ What `bash install.sh` does automatically:
 ├── env/
 │   ├── examples/
 │   │   ├── .env.example
+│   │   ├── AI_model.env.example
+│   │   ├── cloudflare.env.example
 │   │   ├── curlec.env.example
 │   │   ├── rate-limit.env.example
 │   │   └── restaurant.env.example
-│   ├── .env                    # Secrets & keys (git-ignored)
+│   ├── .env                    # Host, port & database (git-ignored)
+│   ├── AI_model.env            # AI model & API keys (git-ignored)
+│   ├── cloudflare.env          # Cloudflare R2 & Turnstile (git-ignored)
 │   ├── curlec.env              # Curlec secrets (git-ignored)
 │   ├── rate-limit.env          # Rate limits (git-ignored)
 │   └── restaurant.env          # Restaurant profile (git-ignored)

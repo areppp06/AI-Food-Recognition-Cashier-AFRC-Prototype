@@ -52,19 +52,31 @@ During the interactive setup, `install.sh` walks through the templates inside `e
 | `COMPANY_PHONE` | `+60 12-345 6789` | Company customer support phone number on receipts |
 | `COMPANY_EMAIL` | `support@afrc.example.com` | Company customer support email on receipts |
 
-### `env/.env` (App, AI Provider & Cloudflare Turnstile)
+### `env/.env` (App & Server Settings)
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `OPENAI_API_KEY` | `sk-your-key-here` | OpenAI API key (if `AI_PROVIDER=openai`) |
-| `GEMINI_API_KEY` | `your-gemini-key-here` | Google Gemini API key (if `AI_PROVIDER=gemini`) |
+| `HOST` | `0.0.0.0` | Server bind IP (`0.0.0.0` for public access, `127.0.0.1` when behind Caddy) |
+| `PORT` | `8000` | Local port for FastAPI/Uvicorn server |
+| `DATABASE_URL` | `sqlite:///./afrc.db` | SQLAlchemy database connection URL |
+
+### `env/AI_model.env` (AI Model & API Keys)
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `AI_PROVIDER` | `grok` | Active AI backend: `grok`, `openrouter`, `gemini`, `openai`, or `mock` |
 | `XAI_API_KEY` | `your-xai-key-here` | xAI Grok API key (if `AI_PROVIDER=grok`) |
 | `XAI_MODEL` | `grok-4.7` | xAI vision model name |
 | `OPENROUTER_API_KEY` | `your-openrouter-key-here` | OpenRouter API key (if `AI_PROVIDER=openrouter`) |
 | `OPENROUTER_MODEL` | `x-ai/grok-4` | OpenRouter vision model ID |
 | `OPENROUTER_SITE_URL` | `http://localhost:8000` | Site URL header sent to OpenRouter |
-| `AI_PROVIDER` | `grok` | Active AI backend: `grok`, `openrouter`, `gemini`, `openai`, or `mock` |
-| `DATABASE_URL` | `sqlite:///./afrc.db` | SQLAlchemy database connection URL |
+| `OPENAI_API_KEY` | `sk-your-key-here` | OpenAI API key (if `AI_PROVIDER=openai`) |
+| `GEMINI_API_KEY` | `your-gemini-key-here` | Google Gemini API key (if `AI_PROVIDER=gemini`) |
+
+### `env/cloudflare.env` (Cloudflare R2 & Turnstile)
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
 | `CLOUDFLARE_API_TOKEN` | `your-cloudflare-api-token` | Cloudflare API token (with **Workers R2 Storage: Edit** permission for R2 plate image storage) |
 | `CLOUDFLARE_ACCOUNT_ID` | `your-cloudflare-account-id` | Cloudflare account ID |
 | `R2_BUCKET_NAME` | `afrc-plates` | Cloudflare R2 bucket name for plate photos (auto-created in `APAC` on startup if missing) |

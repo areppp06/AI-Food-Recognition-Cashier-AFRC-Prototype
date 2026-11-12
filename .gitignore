@@ -2,10 +2,14 @@ venv/
 __pycache__/
 *.pyc
 .env
+AI_model.env
+cloudflare.env
 curlec.env
 rate-limit.env
 restaurant.env
 env/.env
+env/AI_model.env
+env/cloudflare.env
 env/curlec.env
 env/rate-limit.env
 env/restaurant.env

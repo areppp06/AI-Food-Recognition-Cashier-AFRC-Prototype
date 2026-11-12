@@ -8,6 +8,10 @@ ENV_DIR="$ROOT_DIR/env"
 EXAMPLES_DIR="$ENV_DIR/examples"
 MAIN_ENV="$ENV_DIR/.env"
 MAIN_EXAMPLE="$EXAMPLES_DIR/.env.example"
+AI_MODEL_ENV="$ENV_DIR/AI_model.env"
+AI_MODEL_EXAMPLE="$EXAMPLES_DIR/AI_model.env.example"
+CLOUDFLARE_ENV="$ENV_DIR/cloudflare.env"
+CLOUDFLARE_EXAMPLE="$EXAMPLES_DIR/cloudflare.env.example"
 CURLEC_ENV="$ENV_DIR/curlec.env"
 CURLEC_EXAMPLE="$EXAMPLES_DIR/curlec.env.example"
 RATELIMIT_ENV="$ENV_DIR/rate-limit.env"
@@ -78,6 +82,23 @@ configure_env_file() {
     done < "$target_file"
   fi
 
+  # Auto-populate defaults from legacy .env if migrating to separate env files
+  if [[ "$target_file" != "$MAIN_ENV" && -f "$MAIN_ENV" ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      line="${line%$'\r'}"
+      [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+      if [[ "$line" == *"="* ]]; then
+        local k="${line%%=*}"
+        local v="${line#*=}"
+        v="${v%%#*}"
+        v="$(echo "$v" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        if [[ -z "${existing_values[$k]+_}" && -n "$v" ]]; then
+          existing_values["$k"]="$v"
+        fi
+      fi
+    done < "$MAIN_ENV"
+  fi
+
   local tmp_file="${target_file}.tmp"
   : > "$tmp_file"
 
@@ -128,7 +149,9 @@ configure_env_file() {
   echo "[✓] Saved $target_file"
 }
 
-configure_env_file "$MAIN_ENV" "$MAIN_EXAMPLE" "App & AI Environment (env/.env)"
+configure_env_file "$MAIN_ENV" "$MAIN_EXAMPLE" "App & Server Environment (env/.env)"
+configure_env_file "$AI_MODEL_ENV" "$AI_MODEL_EXAMPLE" "AI Model API Environment (env/AI_model.env)"
+configure_env_file "$CLOUDFLARE_ENV" "$CLOUDFLARE_EXAMPLE" "Cloudflare R2 & Turnstile Environment (env/cloudflare.env)"
 configure_env_file "$RESTAURANT_ENV" "$RESTAURANT_EXAMPLE" "Restaurant & Company Profile (env/restaurant.env)"
 configure_env_file "$CURLEC_ENV" "$CURLEC_EXAMPLE" "Curlec Payment Environment (env/curlec.env)"
 configure_env_file "$RATELIMIT_ENV" "$RATELIMIT_EXAMPLE" "Rate Limit Environment (env/rate-limit.env)"
@@ -177,6 +200,30 @@ HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
 SETUP_CADDY_DOMAIN=""
 
+if [[ -f "$MAIN_ENV" ]]; then
+  ENV_HOST="$(grep -E '^[[:space:]]*HOST=' "$MAIN_ENV" 2>/dev/null | cut -d= -f2- | tr -d ' "\r' || true)"
+  ENV_PORT="$(grep -E '^[[:space:]]*PORT=' "$MAIN_ENV" 2>/dev/null | cut -d= -f2- | tr -d ' "\r' || true)"
+  [[ -n "$ENV_HOST" ]] && HOST="$ENV_HOST"
+  [[ -n "$ENV_PORT" ]] && PORT="$ENV_PORT"
+fi
+
+sync_env_port_and_host() {
+  if [[ -f "$MAIN_ENV" ]]; then
+    if grep -q '^[[:space:]]*PORT=' "$MAIN_ENV" 2>/dev/null; then
+      sed -i.bak -e "s/^[[:space:]]*PORT=.*/PORT=${PORT}/" "$MAIN_ENV" 2>/dev/null || true
+      rm -f "${MAIN_ENV}.bak" 2>/dev/null || true
+    else
+      echo "PORT=${PORT}" >> "$MAIN_ENV"
+    fi
+    if grep -q '^[[:space:]]*HOST=' "$MAIN_ENV" 2>/dev/null; then
+      sed -i.bak -e "s/^[[:space:]]*HOST=.*/HOST=${HOST}/" "$MAIN_ENV" 2>/dev/null || true
+      rm -f "${MAIN_ENV}.bak" 2>/dev/null || true
+    else
+      echo "HOST=${HOST}" >> "$MAIN_ENV"
+    fi
+  fi
+}
+
 if [[ -t 0 ]]; then
   if [[ -f "/etc/caddy/Caddyfile" && "$FORCE_CONFIGURE" == "false" ]] && grep -q "reverse_proxy" /etc/caddy/Caddyfile 2>/dev/null; then
     EXISTING_DOMAIN="$(grep -E '^[a-zA-Z0-9.-]+\s*\{' /etc/caddy/Caddyfile 2>/dev/null | head -n1 | sed -e 's/[{[:space:]]//g' || true)"
@@ -184,6 +231,7 @@ if [[ -t 0 ]]; then
     SETUP_CADDY_DOMAIN="$EXISTING_DOMAIN"
     HOST="127.0.0.1"
     PORT="${PORT:-8000}"
+    sync_env_port_and_host
   else
     echo ""
     echo "============================================================"
@@ -203,14 +251,16 @@ if [[ -t 0 ]]; then
 
       if [[ -z "$domain_name" ]]; then
         echo "[!] No domain entered. Falling back to local port setup."
-        read -r -p "Enter local port to run the server on [8000]: " custom_port </dev/tty || custom_port=""
+        read -r -p "Enter local port to run the server on [${PORT}]: " custom_port </dev/tty || custom_port=""
         custom_port="$(echo "$custom_port" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-        PORT="${custom_port:-8000}"
-        HOST="${HOST:-0.0.0.0}"
+        PORT="${custom_port:-$PORT}"
+        HOST="0.0.0.0"
+        sync_env_port_and_host
       else
         SETUP_CADDY_DOMAIN="$domain_name"
         PORT="8000"
         HOST="127.0.0.1"
+        sync_env_port_and_host
 
         if ! command -v caddy >/dev/null 2>&1; then
           echo "[*] Installing Caddy web server..."
@@ -248,13 +298,15 @@ EOF
         else
           echo "[!] Caddy could not be installed automatically. Binding to 0.0.0.0:${PORT}"
           HOST="0.0.0.0"
+          sync_env_port_and_host
         fi
       fi
     else
-      read -r -p "Enter local port to run the server on [8000]: " custom_port </dev/tty || custom_port=""
+      read -r -p "Enter local port to run the server on [${PORT}]: " custom_port </dev/tty || custom_port=""
       custom_port="$(echo "$custom_port" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-      PORT="${custom_port:-8000}"
-      HOST="${HOST:-0.0.0.0}"
+      PORT="${custom_port:-$PORT}"
+      HOST="0.0.0.0"
+      sync_env_port_and_host
     fi
   fi
 fi

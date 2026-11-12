@@ -8,13 +8,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ENV_DIR = ROOT / "env"
+load_dotenv(ENV_DIR / ".env")
+load_dotenv(ROOT / ".env")
+load_dotenv(ENV_DIR / "AI_model.env")
+load_dotenv(ROOT / "AI_model.env")
+load_dotenv(ENV_DIR / "cloudflare.env")
+load_dotenv(ROOT / "cloudflare.env")
 load_dotenv(ENV_DIR / "restaurant.env")
 load_dotenv(ROOT / "restaurant.env")
 load_dotenv(ENV_DIR / "rate-limit.env")
 load_dotenv(ROOT / "rate-limit.env")
-load_dotenv(ENV_DIR / ".env")
 load_dotenv(ENV_DIR / "curlec.env")
-load_dotenv(ROOT / ".env")
 load_dotenv(ROOT / "curlec.env")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./afrc.db")
 
