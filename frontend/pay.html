@@ -831,7 +831,7 @@ function downloadPayVoidReceiptPdf() {
   const topInfoLines = (compName ? 1 : 0) + (compPhone ? 1 : 0) + (compEmail ? 1 : 0);
   const extraVoidHeight = voidCause ? 5 : 0;
   const itemsHeight = items.length * 8.8;
-  const pageHeight = Math.max(115, 92 + topInfoLines * 3.4 + customerLines * 3.6 + extraVoidHeight + itemsHeight);
+  const pageHeight = Math.max(120, 98 + topInfoLines * 3.4 + customerLines * 3.6 + extraVoidHeight + itemsHeight);
   const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
   let curY = 10;
@@ -961,6 +961,36 @@ function downloadPayVoidReceiptPdf() {
   doc.setTextColor(153, 27, 27);
   doc.text("TOTAL (VOID)", 9, y + 2.2);
   doc.text("RM " + total, 71, y + 2.2, { align: "right" });
+
+  y += 10;
+  if (currentBillData.curlec_payment_id) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Payment Ref: " + currentBillData.curlec_payment_id, 40, y, { align: "center" });
+    y += 3.5;
+  }
+  const paySessionId = currentBillData.session_id || activeSessionId;
+  if (paySessionId) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.2);
+    doc.setTextColor(148, 163, 184);
+    doc.text("Session ID: " + paySessionId.slice(0, 18), 40, y, { align: "center" });
+    y += 4.5;
+  } else {
+    y += 1.5;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Bill record retained for reference.", 40, y, { align: "center" });
+
+  y += 3.8;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.0);
+  doc.setTextColor(100, 116, 139);
+  doc.text("If you have any issue regarding this payment, please head to cashier for support", 40, y, { align: "center", maxWidth: 66 });
 
   doc.save(`AFRC-Void-Receipt-${billNo}.pdf`);
 }
