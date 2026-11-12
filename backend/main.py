@@ -2171,7 +2171,7 @@ def export_admin_sales_csv(
     writer.writerow(["Weekly Paid Bills - Last 7 Days", summary["weekly_paid_count"]])
     writer.writerow(["Today's Bills Logged", summary["today_bills"]])
     writer.writerow(["Today's Voided Bills", summary["today_void_count"]])
-    writer.writerow(["Today's Open/Pending Bills", summary["today_pending_count"]])
+    writer.writerow(["Today's Pending Bills", summary["today_pending_count"]])
     writer.writerow([f"Period Revenue - {analytics['period_label']} (RM)", f"{pt['revenue']:.2f}"])
     writer.writerow([f"Period Paid Bills - {analytics['period_label']}", pt["paid_count"]])
     writer.writerow([f"Period Voided Bills - {analytics['period_label']}", pt["void_count"]])
@@ -2182,7 +2182,7 @@ def export_admin_sales_csv(
 
     writer.writerow(["SALES TIMELINE BREAKDOWN"])
     time_col = "Hour" if analytics["granularity"] == "hour" else ("Month" if analytics["granularity"] == "month" else ("Quarter" if analytics["granularity"] == "quarter" else "Date"))
-    writer.writerow([time_col, "Paid Revenue (RM)", "Paid Bills", "Open / Pending Bills", "Voided Bills", "Total Bills"])
+    writer.writerow([time_col, "Paid Revenue (RM)", "Paid Bills", "Pending Bills", "Voided Bills", "Total Bills"])
     for row in analytics["series"]:
         writer.writerow([
             row["label"] if analytics["granularity"] == "hour" else row["key"],

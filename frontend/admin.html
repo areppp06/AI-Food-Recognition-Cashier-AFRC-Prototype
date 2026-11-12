@@ -323,8 +323,8 @@
     letter-spacing: 0.03em;
   }
   .badge-paid { background: #dcfce7; color: #15803d; }
-  .badge-pending { background: #e0f2fe; color: #0369a1; }
-  .badge-open { background: #f1f5f9; color: #475569; }
+  .badge-pending { background: #fef3c7; color: #b45309; }
+  .badge-open { background: #fef3c7; color: #b45309; }
   .badge-cashier { background: #fef3c7; color: #b45309; }
   .badge-cancelled { background: #fee2e2; color: #b91c1c; }
 
@@ -1165,9 +1165,9 @@
           <div class="stat-sub" id="statTodayBillsSub">Logged today · 0 all-time</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Today's Voided / Open Bills</div>
+          <div class="stat-label">Today's Voided / Pending Bills</div>
           <div class="stat-value amber" id="statAttention">0</div>
-          <div class="stat-sub" id="statAttentionSub">0 voided · 0 open today</div>
+          <div class="stat-sub" id="statAttentionSub">0 voided · 0 pending today</div>
         </div>
       </div>
 
@@ -1241,7 +1241,7 @@
             <div class="panel-header">
               <div>
                 <div class="panel-title">Bill Outcomes</div>
-                <div class="stat-sub" id="outcomeChartSub" style="margin-top:0.15rem;">Paid vs voided vs open</div>
+                <div class="stat-sub" id="outcomeChartSub" style="margin-top:0.15rem;">Paid vs voided vs pending</div>
               </div>
             </div>
             <div class="panel-body">
@@ -1283,7 +1283,7 @@
             <input class="search-input" id="billSearch" oninput="onBillSearchInput()" placeholder="Search Bill #AAA-0001, dish, void cause..." type="text">
             <button class="pill-filter active" data-status="all" onclick="setStatusFilter('all', this)">All</button>
             <button class="pill-filter" data-status="paid" onclick="setStatusFilter('paid', this)">Paid</button>
-            <button class="pill-filter" data-status="open" onclick="setStatusFilter('open', this)">Open / Pending</button>
+            <button class="pill-filter" data-status="open" onclick="setStatusFilter('open', this)">Pending</button>
             <button class="pill-filter" data-status="void" onclick="setStatusFilter('void', this)">Void</button>
           </div>
         </div>
@@ -1488,7 +1488,7 @@ function switchTab(tabId, title) {
 function statusBadge(status, voidReason) {
   const s = (status || "open").toLowerCase();
   if (s === "paid") return '<span class="badge badge-paid">Paid</span>';
-  if (s === "pending") return '<span class="badge badge-pending">Pending</span>';
+  if (s === "pending" || s === "open") return '<span class="badge badge-pending">Pending</span>';
   if (s === "void" || s === "cancelled") {
     const cause = voidReason || "Voided";
     return `
@@ -1497,7 +1497,7 @@ function statusBadge(status, voidReason) {
         <span style="font-size:0.72rem; font-weight:600; color:#b91c1c; line-height:1.25;">${esc(cause)}</span>
       </div>`;
   }
-  return '<span class="badge badge-open">Open</span>';
+  return '<span class="badge badge-pending">Pending</span>';
 }
 
 function hideBrokenThumb(img) {
@@ -1596,7 +1596,7 @@ function applySummaryCards(sum) {
   const todayVoid = sum.today_void_count || 0;
   const todayPending = sum.today_pending_count || 0;
   document.getElementById("statAttention").textContent = String(todayVoid);
-  document.getElementById("statAttentionSub").textContent = `${todayVoid} voided today · ${todayPending} open today`;
+  document.getElementById("statAttentionSub").textContent = `${todayVoid} voided today · ${todayPending} pending today`;
 }
 
 function syncPeriodSelectors(analytics) {
@@ -1970,7 +1970,7 @@ function renderOutcomeSvgChart(pt) {
     slices: [
       { label: "Paid", val: paidV, color: "#10b981" },
       { label: "Voided", val: voidV, color: "#ef4444" },
-      { label: "Open / Pending", val: openV, color: "#f59e0b" },
+      { label: "Pending", val: openV, color: "#f59e0b" },
     ],
   });
 
@@ -1979,7 +1979,7 @@ function renderOutcomeSvgChart(pt) {
     <div class="outcome-legend">
       <span class="outcome-legend-item"><span class="swatch-line green"></span>Paid (${paidV})</span>
       <span class="outcome-legend-item"><span class="swatch-line" style="background:#ef4444;"></span>Voided (${voidV})</span>
-      <span class="outcome-legend-item"><span class="swatch-line" style="background:#f59e0b;"></span>Open (${openV})</span>
+      <span class="outcome-legend-item"><span class="swatch-line" style="background:#f59e0b;"></span>Pending (${openV})</span>
     </div>
   `;
 }
@@ -2137,7 +2137,7 @@ function exportOverviewPdf() {
     ["Today's Paid Revenue", `RM ${Number(sum.today_revenue || 0).toFixed(2)}`],
     ["Weekly Revenue (7d)", `RM ${Number(sum.weekly_revenue || 0).toFixed(2)}`],
     ["Today's Bills", String(sum.today_bills || 0)],
-    ["Today Voided / Open", `${sum.today_void_count || 0} void / ${sum.today_pending_count || 0} open`],
+    ["Today Voided / Pending", `${sum.today_void_count || 0} void / ${sum.today_pending_count || 0} pending`],
   ];
   kpis.forEach(([lbl, val], idx) => {
     const x = 18 + idx * 45;
@@ -2161,7 +2161,7 @@ function exportOverviewPdf() {
   doc.setFontSize(9.5);
   doc.setTextColor(51, 65, 85);
   doc.text(
-    `Paid Revenue: RM ${Number(pt.revenue || 0).toFixed(2)}  |  Paid Bills: ${pt.paid_count || 0}  |  Voided Bills: ${pt.void_count || 0} (RM ${Number(pt.void_value || 0).toFixed(2)})  |  Open: ${pt.open_count || 0}`,
+    `Paid Revenue: RM ${Number(pt.revenue || 0).toFixed(2)}  |  Paid Bills: ${pt.paid_count || 0}  |  Voided Bills: ${pt.void_count || 0} (RM ${Number(pt.void_value || 0).toFixed(2)})  |  Pending: ${pt.open_count || 0}`,
     14, y
   );
   y += 10;
@@ -2177,7 +2177,7 @@ function exportOverviewPdf() {
   doc.text("Period", 14, y);
   doc.text("Paid Rev (RM)", 72, y, { align: "right" });
   doc.text("Paid", 104, y, { align: "right" });
-  doc.text("Open", 132, y, { align: "right" });
+  doc.text("Pending", 132, y, { align: "right" });
   doc.text("Void", 160, y, { align: "right" });
   doc.text("Total", 192, y, { align: "right" });
   y += 2.5;
@@ -2666,6 +2666,7 @@ function downloadBillPdf(sessionId) {
   const total = Number(billData.total || 0).toFixed(2);
   const statusUpper = String(billData.status || "open").toUpperCase();
   const isVoid = ["VOID", "CANCELLED"].includes(statusUpper);
+  const isPending = ["OPEN", "PENDING"].includes(statusUpper);
   const voidCause = billData.void_reason || (isVoid ? "Voided" : "");
   const dt = new Date(billData.paid_at || billData.updated_at || billData.created_at || Date.now());
   const dateStr = dt.toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" });
@@ -2718,7 +2719,7 @@ function downloadBillPdf(sessionId) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
   doc.setTextColor(100, 116, 139);
-  doc.text(isVoid ? "VOIDED BILL RECEIPT" : "OFFICIAL PAYMENT RECEIPT", 40, curY, { align: "center" });
+  doc.text(isVoid ? "VOIDED BILL RECEIPT" : (isPending ? "PENDING BILL RECEIPT" : "OFFICIAL PAYMENT RECEIPT"), 40, curY, { align: "center" });
 
   curY += 3.5;
   doc.setDrawColor(203, 213, 225);
@@ -2744,6 +2745,9 @@ function downloadBillPdf(sessionId) {
   if (isVoid) {
     doc.setTextColor(185, 28, 28);
     doc.text("VOID", 74, curY + 14, { align: "right" });
+  } else if (isPending) {
+    doc.setTextColor(217, 119, 6);
+    doc.text("PENDING", 74, curY + 14, { align: "right" });
   } else {
     doc.setTextColor(statusUpper === "PAID" ? 16 : 15, statusUpper === "PAID" ? 185 : 23, statusUpper === "PAID" ? 129 : 42);
     doc.text(statusUpper, 74, curY + 14, { align: "right" });
@@ -2809,14 +2813,14 @@ function downloadBillPdf(sessionId) {
 
   doc.line(6, y - 1.5, 74, y - 1.5);
   y += 4;
-  doc.setFillColor(isVoid ? 254 : 248, isVoid ? 242 : 250, isVoid ? 242 : 252);
+  doc.setFillColor(isVoid ? 254 : (isPending ? 254 : 248), isVoid ? 242 : (isPending ? 243 : 250), isVoid ? 242 : (isPending ? 199 : 252));
   doc.setLineDashPattern([], 0);
   doc.roundedRect(6, y - 4, 68, 10, 2, 2, "F");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
-  doc.setTextColor(isVoid ? 153 : 15, isVoid ? 27 : 23, isVoid ? 27 : 42);
-  doc.text(isVoid ? "TOTAL (VOID)" : "TOTAL", 9, y + 2.2);
-  doc.setTextColor(isVoid ? 185 : 255, isVoid ? 28 : 94, isVoid ? 28 : 54);
+  doc.setTextColor(isVoid ? 153 : (isPending ? 146 : 15), isVoid ? 27 : (isPending ? 64 : 23), isVoid ? 27 : (isPending ? 14 : 42));
+  doc.text(isVoid ? "TOTAL (VOID)" : (isPending ? "TOTAL (PENDING)" : "TOTAL PAID"), 9, y + 2.2);
+  doc.setTextColor(isVoid ? 185 : (isPending ? 217 : 255), isVoid ? 28 : (isPending ? 119 : 94), isVoid ? 28 : (isPending ? 6 : 54));
   doc.text("RM " + total, 71, y + 2.2, { align: "right" });
 
   y += 10;
@@ -2840,7 +2844,7 @@ function downloadBillPdf(sessionId) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7.5);
   doc.setTextColor(71, 85, 105);
-  doc.text(isVoid ? "Bill record retained for reference." : "Thank you for dining with us!", 40, y, { align: "center" });
+  doc.text(isVoid ? "Bill record retained for reference." : (isPending ? "Pending payment — please pay at cashier." : "Thank you for dining with us!"), 40, y, { align: "center" });
 
   if (!isVoid) {
     y += 3.8;
