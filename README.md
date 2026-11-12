@@ -72,15 +72,13 @@ What `bash install.sh` does automatically:
 5. Open http://localhost:8000
 
 ### Default Credentials
-- Admin / Cashier PIN: `1234` (change immediately in admin panel)
+- Admin Password: Set during initial onboarding
 
 ## Endpoints
 - `/` - Customer camera + recognition
 - `/admin` - Menu & cashier management
-- `/cashier` - Verification screen
 - `/api/recognize` - POST image + menu filter
 - `/api/menu` - Daily menu CRUD
-- `/api/verify` - Cashier correction (PIN required)
 
 ## Project Structure
 ```
@@ -107,7 +105,6 @@ What `bash install.sh` does automatically:
 ├── frontend/
 │   ├── index.html       # Customer flow
 │   ├── admin.html
-│   ├── cashier.html
 │   ├── pay.html
 │   └── success.html
 ├── install.sh           # One-command interactive setup & launcher

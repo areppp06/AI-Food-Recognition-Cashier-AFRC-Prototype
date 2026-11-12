@@ -22,7 +22,7 @@ from dotenv import dotenv_values
 
 from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, BillRefund, AdminUser, AdminSession, next_bill_number
 from .auth import hash_password, verify_password, create_admin_session, get_current_admin, require_admin_api, revoke_session, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS
-from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
+from .schemas import Dish as DishSchema, BillResponse, BillItem, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
@@ -809,10 +809,6 @@ def auth_change_password(payload: dict, request: Request, db: Session = Depends(
     current_admin.password_hash = hash_password(new_password)
     db.commit()
     return {"ok": True, "message": "Password updated successfully."}
-
-@app.get("/cashier")
-async def cashier():
-    return FileResponse("frontend/cashier.html", headers=NO_CACHE_HEADERS)
 
 @app.get("/pay")
 async def pay_page():
@@ -1646,50 +1642,6 @@ async def curlec_webhook(request: Request, db: Session = Depends(get_db)):
             _record_captured_payment(bill, payment, db)
     return {"status": "ok"}
 
-@app.post("/api/verify")
-def verify(req: VerifyRequest, request: Request, db: Session = Depends(get_db)):
-    _require_turnstile(req.cf_turnstile_response, "verify", request)
-    cashier = db.query(Cashier).filter(Cashier.pin == req.pin, Cashier.active == True).first()
-    if not cashier:
-        raise HTTPException(401, "Invalid PIN")
-
-    # Recalculate from corrections
-    dish_map = {d.name: d for d in db.query(Dish).all()}
-    bill_items = []
-    total = 0.0
-    for corr in req.corrections:
-        name = corr["name"]
-        qty = float(corr["quantity"])
-        dish = dish_map.get(name)
-        if dish and dish.available:
-            sub = dish.price * qty
-            total += sub
-            bill_items.append({
-                "name": name, "quantity": qty, "unit_price": dish.price,
-                "subtotal": round(sub, 2)
-            })
-
-    target_bill = (
-        db.query(SessionBill)
-        .filter((SessionBill.id == req.session_id) | (SessionBill.bill_number == req.session_id.strip().upper()))
-        .first()
-    )
-    if target_bill:
-        target_bill.final_bill = json.dumps(bill_items)
-        if target_bill.status == "needs_cashier":
-            target_bill.status = "open"
-
-    # Log
-    log = AuditLog(cashier_id=cashier.id, action="verify_bill",
-                   details=f"session={req.session_id} total={total:.2f}")
-    db.add(log)
-    db.commit()
-
-    return {"items": bill_items, "total": round(total, 2), "verified": True}
-
-@app.get("/api/cashiers")
-def list_cashiers(db: Session = Depends(get_db)):
-    return [{"id": c.id, "name": c.name, "active": c.active} for c in db.query(Cashier).all()]
 
 def _local_tz_offset() -> timedelta:
     try:
