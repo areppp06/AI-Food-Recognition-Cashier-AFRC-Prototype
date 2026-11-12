@@ -1391,7 +1391,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script>
 let pageBills = [];
 let latestSummary = null;
@@ -2343,7 +2343,12 @@ async function openRefundModal(sessionId) {
   modal.classList.add("open");
 
   try {
-    const res = await fetch(`/api/admin/bills/${encodeURIComponent(sessionId)}/refund-info`);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(`/api/admin/bills/${encodeURIComponent(sessionId)}/refund-info`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.detail || "Failed to load bill details");
@@ -2351,7 +2356,10 @@ async function openRefundModal(sessionId) {
     activeRefundInfo = data;
     renderRefundModalContent(data);
   } catch (err) {
-    body.innerHTML = `<div class="refund-err-box" style="display:block;">${esc(err.message || "Unable to load refund form.")}</div>`;
+    const msg = err && err.name === "AbortError"
+      ? "Timed out loading bill details. Please try again."
+      : (err.message || "Unable to load refund form.");
+    body.innerHTML = `<div class="refund-err-box" style="display:block;">${esc(msg)}</div>`;
   }
 }
 

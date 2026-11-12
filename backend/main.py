@@ -2188,7 +2188,7 @@ def _build_refund_info(bill: SessionBill, db: Session, sync_curlec_contact: bool
     ):
         try:
             client, _key_id = _curlec_client()
-            payment = client.payment.fetch(bill.curlec_payment_id)
+            payment = client.payment.fetch(bill.curlec_payment_id, timeout=6)
             contact = str(payment.get("contact") or "").strip()
             email = str(payment.get("email") or "").strip()
             changed = False
@@ -2365,6 +2365,7 @@ def refund_admin_bill(session_id: str, payload: dict, db: Session = Depends(get_
                     },
                     "receipt": receipt_ref,
                 },
+                timeout=15,
             )
             curlec_refund_id = str(rf_resp.get("id") or "")
             refund_status = str(rf_resp.get("status") or "processed")
