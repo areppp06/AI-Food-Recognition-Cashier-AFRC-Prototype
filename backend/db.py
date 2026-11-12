@@ -74,6 +74,7 @@ class SessionBill(Base):
     status = Column(String, default="open")
     void_reason = Column(String, default="")
     receipt_email = Column(String, default="")
+    receipt_phone = Column(String, default="")
     curlec_order_id = Column(String, default="")
     curlec_payment_id = Column(String, default="")
     image_key = Column(String, default="")
@@ -96,6 +97,19 @@ class ScanAttempt(Base):
     device_id = Column(String, default="", index=True)
     session_id = Column(String, default="", index=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+class BillRefund(Base):
+    __tablename__ = "bill_refunds"
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, index=True)
+    bill_number = Column(String, default="")
+    curlec_payment_id = Column(String, default="")
+    curlec_refund_id = Column(String, default="")
+    refund_amount = Column(Float, default=0.0)
+    refunded_items = Column(Text, default="[]")
+    reason = Column(String, default="")
+    status = Column(String, default="processed")
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 def format_bill_number(seq: int) -> str:
     seq = max(1, int(seq))
@@ -142,6 +156,8 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN void_reason TEXT DEFAULT ''")
         if session_columns and "receipt_email" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN receipt_email TEXT DEFAULT ''")
+        if session_columns and "receipt_phone" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN receipt_phone TEXT DEFAULT ''")
         if session_columns and "curlec_order_id" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN curlec_order_id TEXT DEFAULT ''")
         if session_columns and "curlec_payment_id" not in session_columns:

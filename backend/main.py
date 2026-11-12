@@ -20,7 +20,7 @@ from pathlib import Path
 from urllib.parse import quote
 from dotenv import dotenv_values
 
-from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, next_bill_number
+from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, BillRefund, next_bill_number
 from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
@@ -1028,8 +1028,11 @@ async def recognize(
     resp.set_cookie("afrc_active_session", session_id, max_age=3600, path="/", samesite="lax")
     return resp
 
-def _bill_payload(session: SessionBill) -> dict:
-    items = json.loads(session.final_bill or "[]")
+def _bill_payload(session: SessionBill, refunded_amount: float = 0.0) -> dict:
+    try:
+        items = json.loads(session.final_bill or "[]")
+    except Exception:
+        items = []
     total = round(sum(float(item.get("subtotal") or 0) for item in items), 2)
     img_path = UPLOAD_DIR / f"{session.id}.jpg"
     retakes_used = int(session.retake_count or 0)
@@ -1059,8 +1062,10 @@ def _bill_payload(session: SessionBill) -> dict:
         "retakes_left": max(0, max_retakes - retakes_used),
         "max_retakes": max_retakes,
         "receipt_email": session.receipt_email or "",
+        "receipt_phone": session.receipt_phone or "",
         "curlec_order_id": session.curlec_order_id or "",
         "curlec_payment_id": session.curlec_payment_id or "",
+        "refunded_amount": round(float(refunded_amount or 0.0), 2),
         "created_at": (session.created_at.isoformat() + "Z") if session.created_at else "",
         "updated_at": (session.updated_at.isoformat() + "Z") if session.updated_at else "",
         "paid_at": (session.paid_at.isoformat() + "Z") if session.paid_at else "",
@@ -1331,6 +1336,12 @@ def _record_captured_payment(bill: SessionBill, payment: dict, db: Session) -> b
     ):
         return False
     bill.curlec_payment_id = str(payment.get("id") or "")
+    contact = str(payment.get("contact") or "").strip()
+    if contact:
+        bill.receipt_phone = contact
+    p_email = str(payment.get("email") or "").strip()
+    if p_email and not (bill.receipt_email or "").strip():
+        bill.receipt_email = p_email
     bill.status = "paid"
     bill.paid_at = datetime.utcnow()
     db.commit()
@@ -1974,6 +1985,7 @@ def list_admin_bills(
                 SessionBill.bill_number.ilike(pat),
                 SessionBill.id.ilike(pat),
                 SessionBill.receipt_email.ilike(pat),
+                SessionBill.receipt_phone.ilike(pat),
                 SessionBill.void_reason.ilike(pat),
                 SessionBill.final_bill.ilike(pat),
             )
@@ -1991,7 +2003,20 @@ def list_admin_bills(
         .limit(page_size)
         .all()
     )
-    bills = [_bill_payload(s) for s in page_rows]
+    page_sids = [s.id for s in page_rows]
+    refunded_map: dict[str, float] = {}
+    if page_sids:
+        refund_rows = (
+            db.query(
+                BillRefund.session_id,
+                func.coalesce(func.sum(BillRefund.refund_amount), 0.0),
+            )
+            .filter(BillRefund.session_id.in_(page_sids))
+            .group_by(BillRefund.session_id)
+            .all()
+        )
+        refunded_map = {sid: float(amt or 0.0) for sid, amt in refund_rows}
+    bills = [_bill_payload(s, refunded_amount=refunded_map.get(s.id, 0.0)) for s in page_rows]
 
     payload = {
         "bills": bills,
@@ -2156,6 +2181,231 @@ def update_admin_bill_status(session_id: str, payload: dict, db: Session = Depen
         bill.paid_at = datetime.utcnow()
     db.commit()
     return _bill_payload(bill)
+
+def _build_refund_info(bill: SessionBill, db: Session, sync_curlec_contact: bool = False) -> dict:
+    if sync_curlec_contact and bill.curlec_payment_id and (
+        not (bill.receipt_phone or "").strip() or not (bill.receipt_email or "").strip()
+    ):
+        try:
+            client, _key_id = _curlec_client()
+            payment = client.payment.fetch(bill.curlec_payment_id)
+            contact = str(payment.get("contact") or "").strip()
+            email = str(payment.get("email") or "").strip()
+            changed = False
+            if contact and not (bill.receipt_phone or "").strip():
+                bill.receipt_phone = contact
+                changed = True
+            if email and not (bill.receipt_email or "").strip():
+                bill.receipt_email = email
+                changed = True
+            if changed:
+                db.commit()
+        except Exception:
+            pass
+
+    refund_rows = (
+        db.query(BillRefund)
+        .filter(BillRefund.session_id == bill.id)
+        .order_by(BillRefund.created_at.desc())
+        .all()
+    )
+    refunded_by_name: dict[str, float] = {}
+    refunded_total = 0.0
+    refunds_history = []
+    for rf in refund_rows:
+        amt = float(rf.refund_amount or 0.0)
+        refunded_total += amt
+        try:
+            rf_items = json.loads(rf.refunded_items or "[]")
+        except Exception:
+            rf_items = []
+        for it in rf_items:
+            nm = str(it.get("name") or "").strip().lower()
+            if nm:
+                refunded_by_name[nm] = refunded_by_name.get(nm, 0.0) + float(it.get("quantity") or 0.0)
+        refunds_history.append({
+            "id": rf.id,
+            "curlec_refund_id": rf.curlec_refund_id or "",
+            "refund_amount": round(amt, 2),
+            "reason": rf.reason or "",
+            "status": rf.status or "processed",
+            "items": rf_items,
+            "created_at": (rf.created_at.isoformat() + "Z") if rf.created_at else "",
+        })
+
+    base = _bill_payload(bill, refunded_amount=refunded_total)
+    item_rows = []
+    for idx, it in enumerate(base["items"]):
+        name = str(it.get("name") or f"Item {idx + 1}")
+        qty = float(it.get("quantity") or 0.0)
+        subtotal = float(it.get("subtotal") or 0.0)
+        unit_price = float(it.get("unit_price") or (subtotal / qty if qty > 0 else 0.0))
+        already_qty = refunded_by_name.get(name.strip().lower(), 0.0)
+        rem_qty = max(0.0, round(qty - already_qty, 4))
+        item_rows.append({
+            "index": idx,
+            "name": name,
+            "quantity": qty,
+            "unit_price": round(unit_price, 2),
+            "subtotal": round(subtotal, 2),
+            "refunded_qty": round(already_qty, 4),
+            "remaining_qty": rem_qty,
+        })
+
+    bill_total = float(base["total"] or 0.0)
+    remaining_refundable = max(0.0, round(bill_total - refunded_total, 2))
+    return {
+        "session_id": bill.id,
+        "bill_number": base["bill_number"],
+        "status": base["status"],
+        "total": bill_total,
+        "receipt_email": base["receipt_email"],
+        "receipt_phone": base["receipt_phone"],
+        "curlec_order_id": base["curlec_order_id"],
+        "curlec_payment_id": base["curlec_payment_id"],
+        "has_image": base["has_image"],
+        "image_url": (
+            f"/api/sessions/{quote(bill.id)}/image?v={int(bill.retake_count or 0)}"
+            if base["has_image"]
+            else ""
+        ),
+        "refunded_amount": round(refunded_total, 2),
+        "remaining_refundable": remaining_refundable,
+        "items": item_rows,
+        "refunds": refunds_history,
+    }
+
+@app.get("/api/admin/bills/{session_id}/refund-info")
+def get_admin_bill_refund_info(session_id: str, db: Session = Depends(get_db)):
+    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    return _build_refund_info(bill, db, sync_curlec_contact=True)
+
+@app.post("/api/admin/bills/{session_id}/refund")
+def refund_admin_bill(session_id: str, payload: dict, db: Session = Depends(get_db)):
+    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    if (bill.status or "").lower() != "paid":
+        raise HTTPException(status_code=409, detail="Only paid bills can be refunded")
+
+    info = _build_refund_info(bill, db, sync_curlec_contact=False)
+    remaining_refundable = float(info["remaining_refundable"] or 0.0)
+    if remaining_refundable <= 0:
+        raise HTTPException(status_code=409, detail="This bill has already been fully refunded")
+
+    req_items = payload.get("items") or []
+    if not isinstance(req_items, list) or not req_items:
+        raise HTTPException(status_code=400, detail="Select at least one item to refund")
+
+    by_name = {str(it["name"]).strip().lower(): it for it in info["items"]}
+    refund_items_payload = []
+    total_refund = 0.0
+    for req_it in req_items:
+        if not isinstance(req_it, dict):
+            continue
+        name = str(req_it.get("name") or "").strip()
+        try:
+            qty = float(req_it.get("quantity") or 0)
+        except (TypeError, ValueError):
+            qty = 0.0
+        if not name or qty <= 0:
+            continue
+        bill_item = by_name.get(name.lower())
+        if not bill_item:
+            raise HTTPException(status_code=400, detail=f"Item '{name}' is not on this bill")
+        rem_qty = float(bill_item["remaining_qty"] or 0.0)
+        if qty > rem_qty + 1e-6:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Refund quantity for {bill_item['name']} exceeds remaining bill quantity ({rem_qty})",
+            )
+        qty_clean = int(qty) if abs(qty - round(qty)) < 1e-6 else round(qty, 2)
+        unit_price = float(bill_item["unit_price"] or 0.0)
+        line_sub = round(unit_price * qty_clean, 2)
+        total_refund += line_sub
+        refund_items_payload.append({
+            "name": bill_item["name"],
+            "quantity": qty_clean,
+            "unit_price": unit_price,
+            "subtotal": line_sub,
+        })
+
+    if not refund_items_payload:
+        raise HTTPException(status_code=400, detail="Select at least one item with quantity greater than 0")
+
+    total_refund = round(total_refund, 2)
+    if total_refund > remaining_refundable + 0.01:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Refund amount RM {total_refund:.2f} exceeds remaining refundable RM {remaining_refundable:.2f}",
+        )
+    total_refund = min(total_refund, remaining_refundable)
+    amount_sen = int(round(total_refund * 100))
+    if amount_sen <= 0:
+        raise HTTPException(status_code=400, detail="Refund amount must be greater than RM 0.00")
+
+    reason = str(payload.get("reason") or "").strip()
+    curlec_refund_id = ""
+    refund_status = "manual"
+    if (bill.curlec_payment_id or "").strip():
+        client, _key_id = _curlec_client()
+        receipt_ref = f"rfnd-{bill.bill_number or bill.id}-{int(datetime.utcnow().timestamp())}"[:40]
+        try:
+            rf_resp = client.payment.refund(
+                bill.curlec_payment_id.strip(),
+                {
+                    "amount": amount_sen,
+                    "speed": "normal",
+                    "notes": {
+                        "bill_number": (bill.bill_number or "")[:255],
+                        "session_id": bill.id[:255],
+                        "reason": (reason or "Admin refund")[:255],
+                    },
+                    "receipt": receipt_ref,
+                },
+            )
+            curlec_refund_id = str(rf_resp.get("id") or "")
+            refund_status = str(rf_resp.get("status") or "processed")
+        except Exception as exc:
+            err_msg = str(exc)
+            raise HTTPException(status_code=400, detail=f"Curlec refund failed: {err_msg}")
+
+    rf_row = BillRefund(
+        session_id=bill.id,
+        bill_number=bill.bill_number or "",
+        curlec_payment_id=bill.curlec_payment_id or "",
+        curlec_refund_id=curlec_refund_id,
+        refund_amount=round(total_refund, 2),
+        refunded_items=json.dumps(refund_items_payload),
+        reason=reason,
+        status=refund_status,
+    )
+    db.add(rf_row)
+    db.add(AuditLog(
+        cashier_id=0,
+        action="REFUND_ISSUED",
+        details=(
+            f"Bill #{bill.bill_number or bill.id}: RM {total_refund:.2f} "
+            f"({', '.join(f'{i['quantity']}x {i['name']}' for i in refund_items_payload)})"
+            + (f" [Curlec {curlec_refund_id}]" if curlec_refund_id else " [Manual]")
+        ),
+    ))
+    bill.updated_at = datetime.utcnow()
+    db.commit()
+    return {
+        "status": "ok",
+        "refund": {
+            "id": rf_row.id,
+            "curlec_refund_id": curlec_refund_id,
+            "refund_amount": round(total_refund, 2),
+            "status": refund_status,
+            "items": refund_items_payload,
+            "reason": reason,
+        },
+        "refund_info": _build_refund_info(bill, db, sync_curlec_contact=False),
+    }
 
 @app.get("/api/admin/audit-logs")
 def list_audit_logs(db: Session = Depends(get_db)):

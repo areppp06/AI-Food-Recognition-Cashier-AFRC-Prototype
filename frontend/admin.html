@@ -823,6 +823,200 @@
     padding: 1.5rem 0.5rem;
   }
 
+  /* Refund Modal */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 95;
+    background: rgba(15, 23, 42, 0.58);
+    backdrop-filter: blur(3px);
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .modal-backdrop.open { display: flex; }
+  .refund-modal-card {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 24px 55px rgba(15, 23, 42, 0.25);
+    width: 100%;
+    max-width: 720px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .refund-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+  .refund-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+  .refund-modal-close {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 1.15rem;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .refund-modal-close:hover { background: #f1f5f9; color: #0f172a; }
+  .refund-modal-body {
+    padding: 1.15rem 1.25rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .refund-top-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: stretch;
+  }
+  .refund-info-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    font-size: 0.84rem;
+  }
+  .refund-info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: baseline;
+  }
+  .refund-info-lbl { color: #64748b; font-weight: 600; flex-shrink: 0; }
+  .refund-info-val { color: #0f172a; font-weight: 700; text-align: right; word-break: break-word; }
+  .refund-photo-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 135px;
+    gap: 0.35rem;
+  }
+  .refund-photo-preview {
+    width: 100%;
+    max-height: 145px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    cursor: zoom-in;
+  }
+  .refund-items-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.45rem;
+  }
+  .refund-items-list {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .refund-item-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.85rem;
+  }
+  .refund-item-row:last-child { border-bottom: none; }
+  .refund-item-row.disabled { opacity: 0.55; background: #f8fafc; }
+  .refund-qty-ctrl {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .refund-qty-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .refund-qty-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .refund-qty-input {
+    width: 54px;
+    text-align: center;
+    padding: 0.28rem 0.35rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.83rem;
+  }
+  .refund-summary-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+  }
+  .refund-modal-foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    padding: 0.9rem 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+  .refund-err-box {
+    display: none;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  @media (max-width: 680px) {
+    .refund-top-grid { grid-template-columns: 1fr; }
+    .refund-item-row { grid-template-columns: auto minmax(0, 1fr); }
+  }
+
   @media (max-width: 1080px) {
     .analytics-grid { grid-template-columns: 1fr; }
     .breakdown-grid { grid-template-columns: 1fr; }
@@ -862,7 +1056,6 @@
         </svg>
         <span>Bills &amp; Receipts</span>
       </span>
-      <span class="nav-badge" id="navBillsCount">0</span>
     </button>
     <button class="nav-btn" data-tab="menu" onclick="switchTab('menu', 'Daily Menu Configuration')">
       <span class="nav-btn-left">
@@ -1178,6 +1371,24 @@
 <div class="lightbox" id="photoModal" onclick="this.classList.remove('open')">
   <img alt="Plate photo" id="photoModalImg" src="">
 </div>
+<div class="modal-backdrop" id="refundModal" onclick="if(event.target===this) closeRefundModal()">
+  <div class="refund-modal-card" role="dialog" aria-modal="true" aria-labelledby="refundModalTitle">
+    <div class="refund-modal-head">
+      <div class="refund-modal-title" id="refundModalTitle">
+        <span>Issue Refund</span>
+        <span class="bill-code" id="refundBillNoBadge">#---</span>
+      </div>
+      <button type="button" class="refund-modal-close" onclick="closeRefundModal()" aria-label="Close refund form">&times;</button>
+    </div>
+    <div class="refund-modal-body" id="refundModalBody">
+      <div class="empty-state-sm">Loading bill details...</div>
+    </div>
+    <div class="refund-modal-foot">
+      <button type="button" class="btn btn-outline" onclick="closeRefundModal()">Cancel</button>
+      <button type="button" class="btn" id="refundSubmitBtn" style="background:#dc2626;" onclick="submitRefund()" disabled>Process Refund</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1356,7 +1567,6 @@ function applySummaryCards(sum) {
   const todayPending = sum.today_pending_count || 0;
   document.getElementById("statAttention").textContent = String(todayVoid);
   document.getElementById("statAttentionSub").textContent = `${todayVoid} voided today · ${todayPending} open today`;
-  document.getElementById("navBillsCount").textContent = String(sum.total_bills || 0);
 }
 
 function syncPeriodSelectors(analytics) {
@@ -2078,8 +2288,19 @@ function renderBillsTable() {
   }
 
   tbody.innerHTML = pageBills.map(b => {
+    const refundedAmt = Number(b.refunded_amount || 0);
+    const totalAmt = Number(b.total || 0);
+    const isFullyRefunded = b.status === "paid" && totalAmt > 0 && refundedAmt >= totalAmt - 0.005;
     const markPaidBtn = b.status !== "paid"
       ? `<button class="btn btn-sm" onclick="setBillStatus('${esc(b.session_id)}', 'paid')">Mark Paid</button>`
+      : "";
+    const refundBtn = b.status === "paid"
+      ? (isFullyRefunded
+          ? `<button class="btn btn-outline btn-sm" onclick="openRefundModal('${esc(b.session_id)}')">Refunded</button>`
+          : `<button class="btn btn-outline btn-sm" style="color:#dc2626; border-color:#fecaca;" onclick="openRefundModal('${esc(b.session_id)}')">Refund</button>`)
+      : "";
+    const refundedSub = refundedAmt > 0
+      ? `<div style="font-size:0.72rem; color:#dc2626; font-weight:700; margin-top:0.2rem;">Refunded RM ${refundedAmt.toFixed(2)}</div>`
       : "";
     return `
       <tr>
@@ -2087,18 +2308,292 @@ function renderBillsTable() {
         <td>${esc(formatDateTime(b.created_at))}</td>
         <td>${formatItemsSummary(b.items)}</td>
         <td>${esc(b.receipt_email || "-")}</td>
-        <td style="font-weight:700;">RM ${Number(b.total).toFixed(2)}</td>
-        <td>${statusBadge(b.status, b.void_reason)}</td>
+        <td style="font-weight:700;">RM ${totalAmt.toFixed(2)}</td>
+        <td>${statusBadge(b.status, b.void_reason)}${refundedSub}</td>
         <td>${renderPhotoCell(b)}</td>
         <td>
           <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
             <button class="btn btn-outline btn-sm" onclick="downloadBillPdf('${esc(b.session_id)}')">PDF</button>
+            ${refundBtn}
             ${markPaidBtn}
           </div>
         </td>
       </tr>
     `;
   }).join("");
+}
+
+let activeRefundInfo = null;
+
+function closeRefundModal() {
+  const modal = document.getElementById("refundModal");
+  if (modal) modal.classList.remove("open");
+  activeRefundInfo = null;
+}
+
+async function openRefundModal(sessionId) {
+  const modal = document.getElementById("refundModal");
+  const body = document.getElementById("refundModalBody");
+  const submitBtn = document.getElementById("refundSubmitBtn");
+  const badge = document.getElementById("refundBillNoBadge");
+  badge.textContent = "#...";
+  body.innerHTML = '<div class="empty-state-sm">Loading bill details...</div>';
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Process Refund";
+  modal.classList.add("open");
+
+  try {
+    const res = await fetch(`/api/admin/bills/${encodeURIComponent(sessionId)}/refund-info`);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || "Failed to load bill details");
+    }
+    activeRefundInfo = data;
+    renderRefundModalContent(data);
+  } catch (err) {
+    body.innerHTML = `<div class="refund-err-box" style="display:block;">${esc(err.message || "Unable to load refund form.")}</div>`;
+  }
+}
+
+function renderRefundModalContent(info) {
+  const badge = document.getElementById("refundBillNoBadge");
+  const body = document.getElementById("refundModalBody");
+  badge.textContent = `#${info.bill_number || "---"}`;
+
+  const photoHtml = info.has_image && info.image_url
+    ? `<img src="${info.image_url}" alt="Plate photo for Bill #${esc(info.bill_number)}" class="refund-photo-preview" onclick="viewPhoto('${info.image_url}')" title="Click to enlarge"><span style="font-size:0.72rem;color:#64748b;">Click photo to enlarge</span>`
+    : `<div style="color:#94a3b8;font-size:0.82rem;text-align:center;">No photo tied to this bill</div>`;
+
+  const items = info.items || [];
+  const hasRefundableItems = items.some(it => Number(it.remaining_qty || 0) > 0);
+  const itemsHtml = items.length ? items.map((it, idx) => {
+    const rem = Number(it.remaining_qty || 0);
+    const qty = Number(it.quantity || 0);
+    const refundedQty = Number(it.refunded_qty || 0);
+    const disabled = rem <= 0 || Number(info.remaining_refundable || 0) <= 0;
+    const isWhole = Math.abs(rem - Math.round(rem)) < 1e-6;
+    const step = isWhole ? "1" : "0.1";
+    return `
+      <div class="refund-item-row ${disabled ? "disabled" : ""}" data-idx="${idx}">
+        <input type="checkbox" class="refund-item-chk" data-idx="${idx}" ${disabled ? "disabled" : ""} onchange="onRefundItemToggle(${idx})">
+        <div>
+          <div style="font-weight:700;color:#0f172a;">${esc(it.name)}</div>
+          <div style="font-size:0.76rem;color:#64748b;">
+            RM ${Number(it.unit_price || 0).toFixed(2)} each · Bill qty: ${esc(qty)}${refundedQty > 0 ? ` · ${esc(refundedQty)} already refunded` : ""}
+          </div>
+        </div>
+        <div class="refund-qty-ctrl">
+          <button type="button" class="refund-qty-btn" ${disabled ? "disabled" : ""} onclick="stepRefundQty(${idx}, -1)">-</button>
+          <input type="number" class="refund-qty-input" id="refundQty_${idx}" min="0" max="${rem}" step="${step}" value="${disabled ? 0 : rem}" ${disabled ? "disabled" : ""} oninput="onRefundQtyInput(${idx})">
+          <button type="button" class="refund-qty-btn" ${disabled ? "disabled" : ""} onclick="stepRefundQty(${idx}, 1)">+</button>
+        </div>
+        <div style="font-weight:700;color:#0f172a;min-width:74px;text-align:right;" id="refundLineSub_${idx}">RM 0.00</div>
+      </div>
+    `;
+  }).join("") : '<div class="empty-state-sm">No items found on this bill.</div>';
+
+  const history = info.refunds || [];
+  const historyHtml = history.length ? `
+    <div>
+      <div style="font-size:0.82rem;font-weight:700;color:#334155;margin-bottom:0.4rem;">Previous Refunds</div>
+      <div class="refund-info-box" style="gap:0.5rem;">
+        ${history.map(r => `
+          <div style="display:flex;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;border-bottom:1px solid #e2e8f0;padding-bottom:0.4rem;">
+            <div>
+              <span style="font-weight:700;color:#0f172a;">RM ${Number(r.refund_amount || 0).toFixed(2)}</span>
+              <span style="color:#64748b;font-size:0.76rem;"> · ${(r.items || []).map(x => `${esc(x.quantity)}x ${esc(x.name)}`).join(", ")}</span>
+              ${r.reason ? `<div style="font-size:0.75rem;color:#64748b;">Reason: ${esc(r.reason)}</div>` : ""}
+            </div>
+            <div style="text-align:right;font-size:0.75rem;color:#64748b;">
+              <div>${esc(r.curlec_refund_id || r.status || "recorded")}</div>
+              <div>${esc(formatDateTime(r.created_at))}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  ` : "";
+
+  const paymentNote = info.curlec_payment_id
+    ? `${esc(info.curlec_payment_id)} (Curlec)`
+    : "No Curlec Payment ID (will record as manual/offline)";
+
+  body.innerHTML = `
+    <div id="refundErrorBox" class="refund-err-box"></div>
+    <div class="refund-top-grid">
+      <div class="refund-info-box">
+        <div class="refund-info-row"><span class="refund-info-lbl">Bill #</span><span class="refund-info-val">#${esc(info.bill_number || "-")}</span></div>
+        <div class="refund-info-row"><span class="refund-info-lbl">Customer Email</span><span class="refund-info-val">${esc(info.receipt_email || "-")}</span></div>
+        <div class="refund-info-row"><span class="refund-info-lbl">Phone Number</span><span class="refund-info-val">${esc(info.receipt_phone || "-")}</span></div>
+        <div class="refund-info-row"><span class="refund-info-lbl">Payment Ref</span><span class="refund-info-val" style="font-size:0.78rem;">${paymentNote}</span></div>
+        <div class="refund-info-row"><span class="refund-info-lbl">Bill Total</span><span class="refund-info-val">RM ${Number(info.total || 0).toFixed(2)}</span></div>
+      </div>
+      <div class="refund-photo-box">${photoHtml}</div>
+    </div>
+
+    <div>
+      <div class="refund-items-head">
+        <span style="font-size:0.86rem;font-weight:800;color:#0f172a;">Select Items to Refund</span>
+        ${hasRefundableItems ? `
+          <div style="display:flex;gap:0.4rem;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllRefundItems(true)">Select All</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="toggleAllRefundItems(false)">Clear</button>
+          </div>
+        ` : ""}
+      </div>
+      <div class="refund-items-list">${itemsHtml}</div>
+    </div>
+
+    <div>
+      <label for="refundReasonInput" style="display:block;font-size:0.8rem;font-weight:700;color:#334155;margin-bottom:0.35rem;">Refund Reason (Optional)</label>
+      <input type="text" id="refundReasonInput" class="form-input" style="width:100%;" placeholder="e.g. Wrong item, customer request, overcharged" ${!hasRefundableItems ? "disabled" : ""}>
+    </div>
+
+    <div class="refund-summary-bar">
+      <div>
+        <div style="font-size:0.78rem;color:#9a3412;font-weight:700;">Calculated Refund Amount</div>
+        <div style="font-size:0.75rem;color:#7c2d12;">Remaining refundable: RM ${Number(info.remaining_refundable || 0).toFixed(2)}</div>
+      </div>
+      <div style="font-size:1.3rem;font-weight:800;color:#c2410c;" id="refundCalcTotal">RM 0.00</div>
+    </div>
+
+    ${historyHtml}
+  `;
+
+  recalcRefundTotal();
+}
+
+function onRefundItemToggle(idx) {
+  if (!activeRefundInfo) return;
+  const chk = document.querySelector(`.refund-item-chk[data-idx="${idx}"]`);
+  const inp = document.getElementById(`refundQty_${idx}`);
+  const it = (activeRefundInfo.items || [])[idx];
+  if (!chk || !inp || !it) return;
+  const maxQty = Number(it.remaining_qty || 0);
+  if (chk.checked && Number(inp.value || 0) <= 0) {
+    inp.value = String(maxQty);
+  }
+  recalcRefundTotal();
+}
+
+function stepRefundQty(idx, delta) {
+  if (!activeRefundInfo) return;
+  const chk = document.querySelector(`.refund-item-chk[data-idx="${idx}"]`);
+  const inp = document.getElementById(`refundQty_${idx}`);
+  const it = (activeRefundInfo.items || [])[idx];
+  if (!chk || !inp || !it) return;
+  const maxQty = Number(it.remaining_qty || 0);
+  const nextVal = Math.max(0, Math.min(maxQty, Number(inp.value || 0) + delta));
+  inp.value = String(Math.round(nextVal * 100) / 100);
+  chk.checked = nextVal > 0;
+  recalcRefundTotal();
+}
+
+function onRefundQtyInput(idx) {
+  if (!activeRefundInfo) return;
+  const chk = document.querySelector(`.refund-item-chk[data-idx="${idx}"]`);
+  const inp = document.getElementById(`refundQty_${idx}`);
+  const it = (activeRefundInfo.items || [])[idx];
+  if (!chk || !inp || !it) return;
+  const maxQty = Number(it.remaining_qty || 0);
+  let val = Number(inp.value || 0);
+  if (isNaN(val) || val < 0) val = 0;
+  if (val > maxQty) {
+    val = maxQty;
+    inp.value = String(maxQty);
+  }
+  chk.checked = val > 0;
+  recalcRefundTotal();
+}
+
+function toggleAllRefundItems(selectAll) {
+  if (!activeRefundInfo) return;
+  (activeRefundInfo.items || []).forEach((it, idx) => {
+    const chk = document.querySelector(`.refund-item-chk[data-idx="${idx}"]`);
+    const inp = document.getElementById(`refundQty_${idx}`);
+    if (!chk || !inp || chk.disabled) return;
+    chk.checked = !!selectAll;
+    if (selectAll) {
+      inp.value = String(Number(it.remaining_qty || 0));
+    }
+  });
+  recalcRefundTotal();
+}
+
+function getSelectedRefundPayload() {
+  if (!activeRefundInfo) return { items: [], total: 0 };
+  const selected = [];
+  let total = 0;
+  (activeRefundInfo.items || []).forEach((it, idx) => {
+    const chk = document.querySelector(`.refund-item-chk[data-idx="${idx}"]`);
+    const inp = document.getElementById(`refundQty_${idx}`);
+    const subEl = document.getElementById(`refundLineSub_${idx}`);
+    const maxQty = Number(it.remaining_qty || 0);
+    let qty = chk && chk.checked ? Number(inp ? inp.value : 0) : 0;
+    if (isNaN(qty) || qty < 0) qty = 0;
+    if (qty > maxQty) qty = maxQty;
+    const lineSub = Math.round(Number(it.unit_price || 0) * qty * 100) / 100;
+    if (subEl) subEl.textContent = `RM ${lineSub.toFixed(2)}`;
+    if (qty > 0) {
+      selected.push({ name: it.name, quantity: qty });
+      total += lineSub;
+    }
+  });
+  const maxRemaining = Number(activeRefundInfo.remaining_refundable || 0);
+  total = Math.min(Math.round(total * 100) / 100, maxRemaining);
+  return { items: selected, total };
+}
+
+function recalcRefundTotal() {
+  const { items, total } = getSelectedRefundPayload();
+  const totalEl = document.getElementById("refundCalcTotal");
+  const submitBtn = document.getElementById("refundSubmitBtn");
+  if (totalEl) totalEl.textContent = `RM ${total.toFixed(2)}`;
+  if (submitBtn) {
+    submitBtn.disabled = !items.length || total <= 0;
+    submitBtn.textContent = total > 0 ? `Process Refund (RM ${total.toFixed(2)})` : "Process Refund";
+  }
+}
+
+async function submitRefund() {
+  if (!activeRefundInfo) return;
+  const errBox = document.getElementById("refundErrorBox");
+  const submitBtn = document.getElementById("refundSubmitBtn");
+  const reasonEl = document.getElementById("refundReasonInput");
+  const { items, total } = getSelectedRefundPayload();
+  if (!items.length || total <= 0) return;
+
+  if (errBox) {
+    errBox.style.display = "none";
+    errBox.textContent = "";
+  }
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Processing...";
+
+  try {
+    const res = await fetch(`/api/admin/bills/${encodeURIComponent(activeRefundInfo.session_id)}/refund`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items,
+        reason: reasonEl ? reasonEl.value.trim() : "",
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.detail || "Refund failed");
+    }
+    showToast(`Refunded RM ${Number(data.refund?.refund_amount || total).toFixed(2)} for #${activeRefundInfo.bill_number}`);
+    activeRefundInfo = data.refund_info;
+    renderRefundModalContent(data.refund_info);
+    await loadBills({ includeSummary: true });
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = err.message || "Refund failed";
+      errBox.style.display = "block";
+    }
+    recalcRefundTotal();
+  }
 }
 
 function viewPhoto(url) {
