@@ -166,17 +166,95 @@ if [[ "$START_SERVER" == "false" ]]; then
   exit 0
 fi
 
+SUDO=""
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  if command -v sudo >/dev/null 2>&1; then
+    SUDO="sudo"
+  fi
+fi
+
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
+SETUP_CADDY_DOMAIN=""
 
-if [[ "$FOREGROUND" == "false" ]] && command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
-  SUDO=""
-  if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
-    if command -v sudo >/dev/null 2>&1; then
-      SUDO="sudo"
+if [[ -t 0 ]]; then
+  if [[ -f "/etc/caddy/Caddyfile" && "$FORCE_CONFIGURE" == "false" ]] && grep -q "reverse_proxy" /etc/caddy/Caddyfile 2>/dev/null; then
+    EXISTING_DOMAIN="$(grep -E '^[a-zA-Z0-9.-]+\s*\{' /etc/caddy/Caddyfile 2>/dev/null | head -n1 | sed -e 's/[{[:space:]]//g' || true)"
+    echo "[✓] Found existing Caddy configuration in /etc/caddy/Caddyfile${EXISTING_DOMAIN:+ ($EXISTING_DOMAIN)}"
+    SETUP_CADDY_DOMAIN="$EXISTING_DOMAIN"
+    HOST="127.0.0.1"
+    PORT="${PORT:-8000}"
+  else
+    echo ""
+    echo "============================================================"
+    echo " Web Server & Reverse Proxy Configuration"
+    echo "============================================================"
+    read -r -p "Would you like to setup Caddy reverse proxy with automatic HTTPS? [y/N]: " setup_caddy </dev/tty || setup_caddy="n"
+    setup_caddy="$(echo "$setup_caddy" | tr '[:upper:]' '[:lower:]')"
+
+    if [[ "$setup_caddy" == "y" || "$setup_caddy" == "yes" ]]; then
+      read -r -p "Enter your domain name (e.g. e-cashier.takcakap.com): " domain_name </dev/tty || domain_name=""
+      domain_name="$(echo "$domain_name" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+
+      if [[ -z "$domain_name" ]]; then
+        echo "[!] No domain entered. Falling back to local port setup."
+        read -r -p "Enter local port to run the server on [8000]: " custom_port </dev/tty || custom_port=""
+        custom_port="$(echo "$custom_port" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        PORT="${custom_port:-8000}"
+        HOST="${HOST:-0.0.0.0}"
+      else
+        SETUP_CADDY_DOMAIN="$domain_name"
+        PORT="8000"
+        HOST="127.0.0.1"
+
+        if ! command -v caddy >/dev/null 2>&1; then
+          echo "[*] Installing Caddy web server..."
+          if command -v apt-get >/dev/null 2>&1; then
+            $SUDO apt-get update -y
+            $SUDO apt-get install -y caddy || {
+              $SUDO apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
+              curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | $SUDO gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg --yes 2>/dev/null || true
+              curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | $SUDO tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
+              $SUDO apt-get update -y
+              $SUDO apt-get install -y caddy
+            }
+          elif command -v dnf >/dev/null 2>&1; then
+            $SUDO dnf install -y 'dnf-command(copr)' 2>/dev/null || true
+            $SUDO dnf copr enable -y @caddy/caddy 2>/dev/null || true
+            $SUDO dnf install -y caddy
+          fi
+        fi
+
+        if command -v caddy >/dev/null 2>&1; then
+          $SUDO mkdir -p /etc/caddy
+          if [[ -f /etc/caddy/Caddyfile ]]; then
+            $SUDO cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak 2>/dev/null || true
+          fi
+          $SUDO tee /etc/caddy/Caddyfile >/dev/null <<EOF
+${SETUP_CADDY_DOMAIN} {
+    reverse_proxy 127.0.0.1:${PORT}
+}
+EOF
+          if command -v systemctl >/dev/null 2>&1; then
+            $SUDO systemctl enable caddy >/dev/null 2>&1 || true
+            $SUDO systemctl restart caddy 2>/dev/null || $SUDO systemctl reload caddy 2>/dev/null || true
+          fi
+          echo "[✓] Caddy configured for https://${SETUP_CADDY_DOMAIN} -> 127.0.0.1:${PORT}"
+        else
+          echo "[!] Caddy could not be installed automatically. Binding to 0.0.0.0:${PORT}"
+          HOST="0.0.0.0"
+        fi
+      fi
+    else
+      read -r -p "Enter local port to run the server on [8000]: " custom_port </dev/tty || custom_port=""
+      custom_port="$(echo "$custom_port" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      PORT="${custom_port:-8000}"
+      HOST="${HOST:-0.0.0.0}"
     fi
   fi
+fi
 
+if [[ "$FOREGROUND" == "false" ]] && command -v systemctl >/dev/null 2>&1 && [[ -d /run/systemd/system ]]; then
   SERVICE_USER="$(id -un)"
   SERVICE_FILE="/etc/systemd/system/afrc.service"
 
@@ -207,11 +285,21 @@ EOF
   $SUDO systemctl restart afrc.service
 
   echo ""
-  echo "[✓] AFRC is now running in the background via systemd on http://${HOST}:${PORT}"
+  if [[ -n "${SETUP_CADDY_DOMAIN:-}" ]]; then
+    echo "[✓] AFRC is now running in the background via systemd behind Caddy HTTPS:"
+    echo "    - Public URL   : https://${SETUP_CADDY_DOMAIN}"
+    echo "    - Local Port   : http://${HOST}:${PORT}"
+  else
+    echo "[✓] AFRC is now running in the background via systemd on http://${HOST}:${PORT}"
+  fi
   echo "    - Check status : sudo systemctl status afrc"
   echo "    - View logs    : sudo journalctl -u afrc -f"
   echo "    - Restart app  : sudo systemctl restart afrc"
   echo "    - Stop app     : sudo systemctl stop afrc"
+  if [[ -n "${SETUP_CADDY_DOMAIN:-}" ]]; then
+    echo "    - Caddy status : sudo systemctl status caddy"
+    echo "    - Caddy logs   : sudo journalctl -u caddy -f"
+  fi
   echo ""
   $SUDO systemctl status afrc.service --no-pager -l || true
   exit 0
