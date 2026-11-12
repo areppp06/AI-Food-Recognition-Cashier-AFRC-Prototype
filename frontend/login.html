@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Admin Sign In - AFRC</title>
+  <title>Admin - AFRC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: rgba(17, 24, 39, 0.85);
-      --border: rgba(255, 255, 255, 0.08);
-      --border-focus: #f59e0b;
-      --primary: #f59e0b;
-      --primary-hover: #d97706;
-      --text: #f8fafc;
+      --bg: #09090b;
+      --input-bg: #141419;
+      --input-border: #22222b;
+      --orange: #ff5e36;
+      --orange-focus: rgba(255, 94, 54, 0.4);
+      --text: #ffffff;
       --text-muted: #94a3b8;
+      --text-label: #cbd5e1;
       --danger: #ef4444;
-      --success: #10b981;
+      --danger-bg: rgba(239, 68, 68, 0.12);
     }
 
     * {
@@ -29,290 +29,337 @@
     }
 
     body {
-      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #090d16 75%);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 1.5rem;
+      padding: 2rem 1.5rem;
     }
 
-    .login-container {
+    .auth-wrapper {
       width: 100%;
       max-width: 440px;
     }
 
-    .brand-header {
-      text-align: center;
-      margin-bottom: 2rem;
+    .auth-header {
+      margin-bottom: 2.25rem;
     }
 
-    .brand-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #fbbf24;
-      font-size: 0.75rem;
+    .auth-title {
+      font-size: 2.75rem;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: 0.35rem 0.85rem;
-      border-radius: 9999px;
-      margin-bottom: 0.85rem;
+      color: #ffffff;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      margin-bottom: 0.65rem;
     }
 
-    .brand-title {
-      font-size: 1.75rem;
-      font-weight: 800;
-      letter-spacing: -0.025em;
-      color: #fff;
-    }
-
-    .brand-sub {
+    .auth-sub {
       color: var(--text-muted);
-      font-size: 0.9rem;
-      margin-top: 0.35rem;
+      font-size: 0.98rem;
       line-height: 1.45;
+      font-weight: 400;
     }
 
-    .login-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--border);
-      border-radius: 1.25rem;
-      padding: 2.25rem 2rem;
-      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
     }
 
     .form-group {
-      margin-bottom: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
     }
 
     .form-label {
-      display: block;
-      font-size: 0.825rem;
-      font-weight: 600;
-      color: #cbd5e1;
-      margin-bottom: 0.5rem;
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--text-label);
     }
 
-    .input-wrapper {
+    .input-box {
       position: relative;
-    }
-
-    .input-field {
-      width: 100%;
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      padding: 0.8rem 1rem;
-      color: #fff;
-      font-size: 0.95rem;
-      font-family: inherit;
+      display: flex;
+      align-items: center;
+      background-color: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 14px;
       transition: all 0.2s ease;
-      outline: none;
     }
 
-    .input-field:focus {
-      border-color: var(--border-focus);
-      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
-      background: rgba(15, 23, 42, 0.95);
+    .input-box:focus-within {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px var(--orange-focus);
+    }
+
+    .input-box input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 1rem 1.15rem;
+      color: #ffffff;
+      font-size: 0.98rem;
+      font-family: inherit;
+    }
+
+    .input-box input::placeholder {
+      color: #555562;
+    }
+
+    .input-box input:-webkit-autofill,
+    .input-box input:-webkit-autofill:hover, 
+    .input-box input:-webkit-autofill:focus {
+      -webkit-text-fill-color: #ffffff;
+      -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset;
+      transition: background-color 5000s ease-in-out 0s;
     }
 
     .toggle-pwd-btn {
-      position: absolute;
-      right: 0.85rem;
-      top: 50%;
-      transform: translateY(-50%);
       background: transparent;
       border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 0.25rem;
-    }
-
-    .toggle-pwd-btn:hover {
-      color: #fff;
-    }
-
-    .btn-submit {
-      width: 100%;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-      border: none;
-      border-radius: 0.75rem;
-      color: #111827;
-      font-size: 0.95rem;
-      font-weight: 700;
-      padding: 0.85rem;
+      color: #64748b;
+      padding: 0 1rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      transition: color 0.15s ease;
+      height: 100%;
+    }
+
+    .toggle-pwd-btn:hover {
+      color: #cbd5e1;
+    }
+
+    .toggle-pwd-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .form-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: -0.25rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .remember-label {
+      display: flex;
+      align-items: center;
       gap: 0.5rem;
+      color: #94a3b8;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .remember-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid #475569;
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+      display: inline-grid;
+      place-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .remember-checkbox:checked {
+      border-color: var(--orange);
+      background: var(--orange);
+    }
+
+    .remember-checkbox:checked::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    .btn-action {
+      width: 100%;
+      background: var(--orange);
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      padding: 0.95rem 1.25rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
       transition: all 0.2s ease;
-      box-shadow: 0 4px 14px -2px rgba(245, 158, 11, 0.4);
-      margin-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 0.75rem;
     }
 
-    .btn-submit:hover:not(:disabled) {
+    .btn-action:hover:not(:disabled) {
+      background: #ff4a1d;
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px -2px rgba(245, 158, 11, 0.5);
-      background: #fbbf24;
+      box-shadow: 0 6px 20px -3px rgba(255, 94, 54, 0.45);
     }
 
-    .btn-submit:disabled {
+    .btn-action:disabled {
       opacity: 0.6;
       cursor: not-allowed;
       transform: none;
     }
 
-    .alert-banner {
+    .msg-banner {
+      display: none;
       padding: 0.85rem 1rem;
-      border-radius: 0.75rem;
-      font-size: 0.85rem;
+      border-radius: 12px;
+      font-size: 0.88rem;
       line-height: 1.4;
       margin-bottom: 1.25rem;
-      display: none;
     }
 
-    .alert-danger {
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.3);
+    .msg-error {
+      background: var(--danger-bg);
+      border: 1px solid rgba(239, 68, 68, 0.25);
       color: #fca5a5;
     }
 
-    .alert-success {
+    .msg-success {
       background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border: 1px solid rgba(16, 185, 129, 0.25);
       color: #6ee7b7;
     }
 
-    .setup-callout {
-      background: rgba(59, 130, 246, 0.1);
-      border: 1px solid rgba(59, 130, 246, 0.25);
-      border-radius: 0.75rem;
-      padding: 0.85rem 1rem;
-      font-size: 0.825rem;
-      color: #93c5fd;
-      line-height: 1.45;
-      margin-bottom: 1.25rem;
-      display: none;
-    }
-
-    .footer-note {
+    .bottom-return {
+      margin-top: 2.5rem;
       text-align: center;
-      margin-top: 2rem;
-      font-size: 0.8rem;
-      color: #64748b;
+      font-size: 0.85rem;
+      color: #475569;
     }
 
-    .footer-note a {
-      color: var(--primary);
+    .bottom-return a {
+      color: #94a3b8;
       text-decoration: none;
-      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+
+    .bottom-return a:hover {
+      color: var(--orange);
     }
   </style>
 </head>
 <body>
 
-  <div class="login-container">
-    <div class="brand-header">
-      <div class="brand-badge" id="brandBadge">AFRC Admin</div>
-      <h1 class="brand-title" id="pageTitle">Admin Sign In</h1>
-      <p class="brand-sub" id="pageSub">Enter your administrator credentials to access the management portal.</p>
+  <div class="auth-wrapper">
+    <div class="auth-header">
+      <h1 class="auth-title">Welcome</h1>
+      <p class="auth-sub" id="authSub">Setup your admin account here</p>
     </div>
 
-    <div class="login-card">
-      <div class="setup-callout" id="setupCallout">
-        <strong>⚡ Initial Setup Wizard:</strong> No administrator account exists yet. Create your primary login credentials below to secure your system.
+    <div class="msg-banner msg-error" id="errorMsg"></div>
+    <div class="msg-banner msg-success" id="successMsg"></div>
+
+    <form class="auth-form" id="authForm" onsubmit="handleAuthSubmit(event)">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <div class="input-box">
+          <input type="text" id="username" name="username" placeholder="Enter your username" required autocomplete="username" autofocus>
+        </div>
       </div>
 
-      <div class="alert-banner alert-danger" id="errorBanner"></div>
-      <div class="alert-banner alert-success" id="successBanner"></div>
-
-      <form id="authForm" onsubmit="handleAuthSubmit(event)">
-        <div class="form-group">
-          <label class="form-label" for="username">Username</label>
-          <div class="input-wrapper">
-            <input class="input-field" type="text" id="username" name="username" required autocomplete="username" placeholder="e.g. admin" autofocus>
-          </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="input-box">
+          <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+          <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('password', this)" aria-label="Toggle password visibility">
+            <svg class="eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
         </div>
+      </div>
 
-        <div class="form-group">
-          <label class="form-label" for="password">Password</label>
-          <div class="input-wrapper">
-            <input class="input-field" type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
-            <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('password', this)">Show</button>
-          </div>
+      <div class="form-group" id="confirmGroup" style="display: none;">
+        <label class="form-label" for="confirmPassword">Confirm Password</label>
+        <div class="input-box">
+          <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" autocomplete="new-password">
+          <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('confirmPassword', this)" aria-label="Toggle password visibility">
+            <svg class="eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
         </div>
+      </div>
 
-        <div class="form-group" id="confirmGroup" style="display: none;">
-          <label class="form-label" for="confirmPassword">Confirm Password</label>
-          <div class="input-wrapper">
-            <input class="input-field" type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" placeholder="••••••••">
-            <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('confirmPassword', this)">Show</button>
-          </div>
-        </div>
+      <div class="form-options" id="optionsRow" style="display: none;">
+        <label class="remember-label">
+          <input type="checkbox" class="remember-checkbox" checked>
+          <span>Keep me signed in</span>
+        </label>
+      </div>
 
-        <button type="submit" class="btn-submit" id="submitBtn">
-          <span>Sign In</span>
-        </button>
-      </form>
-    </div>
+      <button type="submit" class="btn-action" id="actionBtn">Setup</button>
+    </form>
 
-    <div class="footer-note">
-      AFRC E-Cashier System &bull; <a href="/">Return to Camera Kiosk</a>
+    <div class="bottom-return">
+      <a href="/">&larr; Return to Camera Kiosk</a>
     </div>
   </div>
 
   <script>
+    const EYE_SHOW_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+    const EYE_HIDE_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+
     let isSetupMode = false;
 
     function togglePasswordVisibility(fieldId, btn) {
       const field = document.getElementById(fieldId);
+      if (!field) return;
       if (field.type === "password") {
         field.type = "text";
-        btn.textContent = "Hide";
+        btn.innerHTML = EYE_HIDE_SVG;
       } else {
         field.type = "password";
-        btn.textContent = "Show";
+        btn.innerHTML = EYE_SHOW_SVG;
       }
     }
 
     function showError(msg) {
-      const err = document.getElementById("errorBanner");
-      err.textContent = msg;
-      err.style.display = "block";
-      document.getElementById("successBanner").style.display = "none";
+      const el = document.getElementById("errorMsg");
+      el.textContent = msg;
+      el.style.display = "block";
+      document.getElementById("successMsg").style.display = "none";
     }
 
     function showSuccess(msg) {
-      const succ = document.getElementById("successBanner");
-      succ.textContent = msg;
-      succ.style.display = "block";
-      document.getElementById("errorBanner").style.display = "none";
+      const el = document.getElementById("successMsg");
+      el.textContent = msg;
+      el.style.display = "block";
+      document.getElementById("errorMsg").style.display = "none";
     }
 
-    function clearAlerts() {
-      document.getElementById("errorBanner").style.display = "none";
-      document.getElementById("successBanner").style.display = "none";
+    function clearMessages() {
+      document.getElementById("errorMsg").style.display = "none";
+      document.getElementById("successMsg").style.display = "none";
     }
 
-    async function checkAuthStatus() {
+    async function initAuthView() {
       try {
         const res = await fetch("/api/auth/status", { cache: "no-store" });
         if (!res.ok) return;
         const data = await res.json();
 
-        // If already authenticated, redirect straight to next destination
+        // If already logged in, redirect straight to admin or next param
         if (data.is_authenticated) {
           const urlParams = new URLSearchParams(window.location.search);
           const next = urlParams.get("next") || "/admin";
@@ -321,53 +368,63 @@
         }
 
         if (data.needs_setup) {
-          enableSetupMode();
+          setSetupMode();
+        } else {
+          setSignInMode();
         }
       } catch (e) {
-        console.error("Auth status error:", e);
+        console.error("Auth init error:", e);
       }
     }
 
-    function enableSetupMode() {
+    function setSetupMode() {
       isSetupMode = true;
-      document.getElementById("brandBadge").textContent = "Initial Setup";
-      document.getElementById("pageTitle").textContent = "Create Admin Account";
-      document.getElementById("pageSub").textContent = "Welcome to AFRC! Set up your primary admin login to secure the system.";
-      document.getElementById("setupCallout").style.display = "block";
-      document.getElementById("confirmGroup").style.display = "block";
+      document.getElementById("authSub").textContent = "Setup your admin account here";
+      document.getElementById("confirmGroup").style.display = "flex";
       document.getElementById("confirmPassword").setAttribute("required", "required");
-      document.getElementById("password").setAttribute("autocomplete", "new-password");
-      document.getElementById("submitBtn").innerHTML = "<span>Complete Setup & Launch Dashboard &rarr;</span>";
+      document.getElementById("optionsRow").style.display = "none";
+      document.getElementById("actionBtn").textContent = "Setup";
       document.getElementById("username").value = "admin";
+      document.getElementById("password").setAttribute("autocomplete", "new-password");
+    }
+
+    function setSignInMode() {
+      isSetupMode = false;
+      document.getElementById("authSub").textContent = "Access your account and continue your journey with us";
+      document.getElementById("confirmGroup").style.display = "none";
+      document.getElementById("confirmPassword").removeAttribute("required");
+      document.getElementById("optionsRow").style.display = "flex";
+      document.getElementById("actionBtn").textContent = "Sign In";
+      document.getElementById("password").setAttribute("autocomplete", "current-password");
     }
 
     async function handleAuthSubmit(e) {
       e.preventDefault();
-      clearAlerts();
+      clearMessages();
 
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
-      const submitBtn = document.getElementById("submitBtn");
+      const btn = document.getElementById("actionBtn");
 
       if (!username) {
-        showError("Username is required.");
+        showError("Please enter your username.");
         return;
       }
       if (password.length < 6) {
-        showError("Password must be at least 6 characters long.");
+        showError("Password must be at least 6 characters.");
         return;
       }
 
       if (isSetupMode) {
         const confirm = document.getElementById("confirmPassword").value;
         if (password !== confirm) {
-          showError("Passwords do not match. Please verify both fields.");
+          showError("Passwords do not match.");
           return;
         }
       }
 
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = "<span>Authenticating...</span>";
+      btn.disabled = true;
+      btn.textContent = isSetupMode ? "Setting up..." : "Signing in...";
 
       try {
         const endpoint = isSetupMode ? "/api/auth/setup" : "/api/auth/login";
@@ -382,25 +439,22 @@
           throw new Error(data.detail || "Authentication failed.");
         }
 
-        showSuccess(isSetupMode ? "Setup successful! Launching dashboard..." : "Login successful! Redirecting...");
+        showSuccess(isSetupMode ? "Admin setup complete! Opening dashboard..." : "Success! Redirecting...");
         const urlParams = new URLSearchParams(window.location.search);
         const nextUrl = urlParams.get("next") || "/admin";
 
         setTimeout(() => {
           window.location.href = nextUrl;
-        }, 500);
+        }, 400);
 
       } catch (err) {
-        showError(err.message || "An error occurred during authentication.");
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = isSetupMode 
-          ? "<span>Complete Setup & Launch Dashboard &rarr;</span>" 
-          : "<span>Sign In</span>";
+        showError(err.message || "An error occurred.");
+        btn.disabled = false;
+        btn.textContent = isSetupMode ? "Setup" : "Sign In";
       }
     }
 
-    // Initialize check
-    checkAuthStatus();
+    initAuthView();
   </script>
 </body>
 </html>
