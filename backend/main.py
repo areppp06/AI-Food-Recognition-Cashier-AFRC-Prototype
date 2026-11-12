@@ -799,6 +799,7 @@ def get_client_state(
             "scans_used": usage["scans_used"],
             "scans_limit": usage["scans_limit"],
             "scans_remaining": usage["scans_remaining"],
+            "restaurant_name": _restaurant_name(),
             "active_bill": _bill_payload(active_bill) if active_bill else None,
         },
         headers=NO_CACHE_HEADERS,
@@ -1065,6 +1066,7 @@ def _bill_payload(session: SessionBill, refunded_amount: float = 0.0) -> dict:
         "receipt_phone": session.receipt_phone or "",
         "curlec_order_id": session.curlec_order_id or "",
         "curlec_payment_id": session.curlec_payment_id or "",
+        "restaurant_name": _restaurant_name(),
         "refunded_amount": round(float(refunded_amount or 0.0), 2),
         "created_at": (session.created_at.isoformat() + "Z") if session.created_at else "",
         "updated_at": (session.updated_at.isoformat() + "Z") if session.updated_at else "",
@@ -1277,6 +1279,13 @@ def void_retake(session_id: str, request: Request, payload: dict = None, db: Ses
     resp.delete_cookie("afrc_active_session", path="/")
     return resp
 
+def _restaurant_name() -> str:
+    merged = {**_read_env_file_cached(ENV_DIR / ".env"), **_read_env_file_cached(ROOT / ".env")}
+    val = merged.get("RESTAURANT_NAME") or merged.get("STORE_NAME")
+    if not val:
+        val = os.getenv("RESTAURANT_NAME") or os.getenv("STORE_NAME") or "AFRC"
+    return str(val).strip() or "AFRC"
+
 def _curlec_client():
     key_id = os.getenv("CURLEC_KEY_ID", "").strip()
     key_secret = os.getenv("CURLEC_KEY_SECRET", "").strip()
@@ -1294,6 +1303,7 @@ def _checkout_payload(bill: SessionBill, key_id: str) -> dict:
         "amount": _amount_sen(bill),
         "currency": "MYR",
         "session_id": bill.id,
+        "restaurant_name": _restaurant_name(),
     }
 
 def _create_curlec_order(bill: SessionBill, db: Session) -> dict:

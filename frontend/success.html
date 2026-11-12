@@ -229,7 +229,7 @@
       <div id="total" class="amount-val">RM 0.00</div>
     </div>
     
-    <p id="emailNote" class="status-text">Receipt saved. <span>Next order ready.</span></p>
+    <p id="emailNote" class="status-text">Save or Share Receipt</p>
     
     <div class="receipt-actions">
       <button class="btn-secondary" id="saveReceiptBtn" type="button" onclick="saveReceiptPdf()">
@@ -289,6 +289,7 @@
       const { jsPDF } = window.jspdf;
       const items = (billData && billData.items) || [];
       const billNo = (billData && billData.bill_number) || "AAA-0001";
+      const restName = (billData && billData.restaurant_name) || "AFRC";
       const total = Number((billData && billData.total) || 0).toFixed(2);
       const dt = (billData && (billData.paid_at || billData.created_at))
         ? new Date(billData.paid_at || billData.created_at)
@@ -300,44 +301,43 @@
       const pageHeight = Math.max(115, 92 + hasContactLines * 4.5 + items.length * 9);
       const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
-      // Top accent bar
-      doc.setFillColor(15, 23, 42);
-      doc.rect(0, 0, 80, 3, "F");
-
       // Brand header
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
       doc.setTextColor(15, 23, 42);
-      doc.text("AFRC SELF-SERVICE", 40, 10, { align: "center" });
+      doc.text(restName, 40, 10, { align: "center" });
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
-      doc.text("AI Food Recognition Cashier", 40, 14, { align: "center" });
-      doc.text("OFFICIAL PAYMENT RECEIPT", 40, 18, { align: "center" });
+      doc.text("OFFICIAL PAYMENT RECEIPT", 40, 15, { align: "center" });
 
       // Dashed divider
       doc.setDrawColor(203, 213, 225);
       doc.setLineDashPattern([1, 1], 0);
-      doc.line(6, 21.5, 74, 21.5);
+      doc.line(6, 18.5, 74, 18.5);
 
       // Bill metadata
       doc.setFontSize(8);
       doc.setTextColor(71, 85, 105);
-      doc.text("BILL NO:", 6, 26.5);
+      doc.text("BILL NO:", 6, 23.5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(15, 23, 42);
-      doc.text("#" + billNo, 74, 26.5, { align: "right" });
+      doc.text("#" + billNo, 74, 23.5, { align: "right" });
 
       doc.setFont("helvetica", "normal");
       doc.setTextColor(71, 85, 105);
-      doc.text("DATE:", 6, 31);
+      doc.text("DATE:", 6, 28);
       doc.setTextColor(15, 23, 42);
-      doc.text(dateStr + " " + timeStr, 74, 31, { align: "right" });
+      doc.text(dateStr + " " + timeStr, 74, 28, { align: "right" });
 
       doc.setTextColor(71, 85, 105);
-      doc.text("STATUS:", 6, 35.5);
+      doc.text("STATUS:", 6, 32.5);
       doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      doc.text("PAID", 74, 32.5, { align: "right" });
+
+      let headerBottomY = 36;
       doc.setTextColor(16, 185, 129);
       doc.text("PAID", 74, 35.5, { align: "right" });
 
