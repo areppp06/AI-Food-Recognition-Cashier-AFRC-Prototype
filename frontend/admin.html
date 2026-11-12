@@ -1061,6 +1061,10 @@
     .content { padding: 1.25rem 1rem 2.5rem; }
     .topbar { padding: 0.9rem 1rem; }
   }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 </style>
 </head>
 <body>
@@ -1096,13 +1100,13 @@
         <span>Daily Menu</span>
       </span>
     </button>
-    <button class="nav-btn" data-tab="audit" onclick="switchTab('audit', 'Cashiers & Verification Logs')">
+    <button class="nav-btn" data-tab="audit" onclick="switchTab('audit', 'Audit Log')">
       <span class="nav-btn-left">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 3l7 3v5c0 5-3.5 9.2-7 10.5C8.5 20.2 5 16 5 11V6l7-3z" stroke-linecap="round" stroke-linejoin="round"></path>
           <path d="M9.5 12l1.8 1.8L15 10" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
-        <span>Cashier &amp; Audit</span>
+        <span>Audit Log</span>
       </span>
     </button>
   </div>
@@ -1367,8 +1371,14 @@
 
       <div class="panel-card">
         <div class="panel-header">
-          <div class="panel-title">Current Menu Items</div>
-          <button class="btn btn-dark" onclick="saveMenu()">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <div class="panel-title">Current Menu Items</div>
+            <span id="menuAutoSaveStatus" style="font-size:0.78rem; font-weight:600; color:#10b981; display:flex; align-items:center; gap:0.35rem; transition:all 0.2s ease;">
+              <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              <span>All changes saved</span>
+            </span>
+          </div>
+          <button class="btn btn-dark" onclick="saveMenu()" id="btnSaveMenuManual" title="Manual save shortcut">
             <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M5 4h11l3 3v13H5V4z" stroke-linecap="round" stroke-linejoin="round"></path>
               <path d="M8 4v5h7V4M8 20v-6h8v6" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -1394,11 +1404,11 @@
       </div>
     </section>
 
-    <!-- TAB 4: CASHIER & AUDIT -->
+    <!-- TAB 4: AUDIT LOG -->
     <section class="section-pane" id="tab-audit">
       <div class="panel-card">
         <div class="panel-header">
-          <div class="panel-title">Cashier Verification Audit Log</div>
+          <div class="panel-title">Audit Log</div>
         </div>
         <div class="table-wrap">
           <table>
@@ -2924,15 +2934,93 @@ async function loadMenu() {
   const menu = await res.json();
   const tbody = document.getElementById("menuBody");
   tbody.innerHTML = menu.map(d => `
-    <tr>
+    <tr data-dish-id="${d.id}">
       <td style="font-weight:700;">${esc(d.name)}</td>
-      <td><textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like">${esc(d.description || "")}</textarea></td>
-      <td style="width:120px;"><input type="number" min="1" max="100" step="1" class="input-box pieces" required value="${d.pieces_per_portion || 1}"></td>
-      <td style="width:130px;"><input type="number" step="0.01" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price"></td>
-      <td style="width:110px; text-align:center;"><input type="checkbox" style="width:18px; height:18px;" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail"></td>
+      <td><textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">${esc(d.description || "")}</textarea></td>
+      <td style="width:120px;"><input type="number" min="1" max="100" step="1" class="input-box pieces" required value="${d.pieces_per_portion || 1}" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
+      <td style="width:130px;"><input type="number" step="0.01" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
+      <td style="width:110px; text-align:center;"><input type="checkbox" style="width:18px; height:18px;" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail" onchange="flushAutoSaveDish(${d.id})"></td>
       <td style="width:90px;"><button type="button" class="btn btn-danger btn-sm" data-id="${d.id}" data-name="${esc(d.name)}" onclick="removeDish(this)">Remove</button></td>
     </tr>
   `).join("");
+}
+
+const _menuDebounceTimers = {};
+
+function setAutoSaveIndicator(state) {
+  const el = document.getElementById("menuAutoSaveStatus");
+  if (!el) return;
+  if (state === "saving") {
+    el.style.color = "#f59e0b";
+    el.innerHTML = `
+      <svg style="width:14px; height:14px; animation: spin 1s linear infinite;" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round"></circle></svg>
+      <span>Saving...</span>
+    `;
+  } else if (state === "saved") {
+    el.style.color = "#10b981";
+    el.innerHTML = `
+      <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span>All changes saved</span>
+    `;
+  } else if (state === "error") {
+    el.style.color = "#ef4444";
+    el.innerHTML = `
+      <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      <span>Failed to save</span>
+    `;
+  }
+}
+
+function triggerAutoSaveDish(dishId) {
+  setAutoSaveIndicator("saving");
+  if (_menuDebounceTimers[dishId]) {
+    clearTimeout(_menuDebounceTimers[dishId]);
+  }
+  _menuDebounceTimers[dishId] = setTimeout(() => {
+    saveDishById(dishId);
+  }, 600);
+}
+
+function flushAutoSaveDish(dishId) {
+  if (_menuDebounceTimers[dishId]) {
+    clearTimeout(_menuDebounceTimers[dishId]);
+    delete _menuDebounceTimers[dishId];
+  }
+  saveDishById(dishId);
+}
+
+async function saveDishById(dishId) {
+  const row = document.querySelector(`tr[data-dish-id="${dishId}"]`);
+  if (!row) return;
+
+  const priceInput = row.querySelector(".price");
+  const descInput = row.querySelector(".desc");
+  const piecesInput = row.querySelector(".pieces");
+  const availInput = row.querySelector(".avail");
+
+  const dishPayload = [{
+    id: parseInt(dishId),
+    price: parseFloat(priceInput ? priceInput.value : 0) || 0,
+    description: descInput ? descInput.value : "",
+    pieces_per_portion: piecesInput ? piecesInput.value : "1",
+    available: availInput ? availInput.checked : true
+  }];
+
+  setAutoSaveIndicator("saving");
+  try {
+    const res = await fetch("/api/menu", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dishPayload)
+    });
+    if (!res.ok) {
+      throw new Error("Save failed");
+    }
+    setAutoSaveIndicator("saved");
+  } catch (err) {
+    console.error("Auto-save error:", err);
+    setAutoSaveIndicator("error");
+  }
 }
 
 async function addDish(event) {
@@ -2992,6 +3080,7 @@ async function saveMenu() {
       available: r.querySelector(".avail").checked
     };
   });
+  setAutoSaveIndicator("saving");
   const res = await fetch("/api/menu", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
@@ -2999,8 +3088,10 @@ async function saveMenu() {
   });
   if (!res.ok) {
     showError("Could not save menu changes.");
+    setAutoSaveIndicator("error");
     return;
   }
+  setAutoSaveIndicator("saved");
   showToast("Menu changes saved!");
 }
 
