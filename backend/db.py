@@ -59,6 +59,23 @@ class Cashier(Base):
     pin = Column(String)  # 4 digit, store hashed in prod
     active = Column(Boolean, default=True)
 
+class AdminUser(Base):
+    __tablename__ = "admin_users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login_at = Column(DateTime, nullable=True)
+
+class AdminSession(Base):
+    __tablename__ = "admin_sessions"
+    token = Column(String, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    ip = Column(String, default="")
+    user_agent = Column(String, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False, index=True)
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     id = Column(Integer, primary_key=True)

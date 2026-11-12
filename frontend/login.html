@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin Sign In - AFRC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(17, 24, 39, 0.85);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: #f59e0b;
+      --primary: #f59e0b;
+      --primary-hover: #d97706;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #090d16 75%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .brand-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      margin-bottom: 0.85rem;
+    }
+
+    .brand-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #fff;
+    }
+
+    .brand-sub {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 0.35rem;
+      line-height: 1.45;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 2.25rem 2rem;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 0.5rem;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 0.8rem 1rem;
+      color: #fff;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .input-field:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+      background: rgba(15, 23, 42, 0.95);
+    }
+
+    .toggle-pwd-btn {
+      position: absolute;
+      right: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.25rem;
+    }
+
+    .toggle-pwd-btn:hover {
+      color: #fff;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      border: none;
+      border-radius: 0.75rem;
+      color: #111827;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px -2px rgba(245, 158, 11, 0.4);
+      margin-top: 1.5rem;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px -2px rgba(245, 158, 11, 0.5);
+      background: #fbbf24;
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .alert-banner {
+      padding: 0.85rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    .alert-danger {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+
+    .setup-callout {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      font-size: 0.825rem;
+      color: #93c5fd;
+      line-height: 1.45;
+      margin-bottom: 1.25rem;
+      display: none;
+    }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .footer-note a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="brand-header">
+      <div class="brand-badge" id="brandBadge">AFRC Admin</div>
+      <h1 class="brand-title" id="pageTitle">Admin Sign In</h1>
+      <p class="brand-sub" id="pageSub">Enter your administrator credentials to access the management portal.</p>
+    </div>
+
+    <div class="login-card">
+      <div class="setup-callout" id="setupCallout">
+        <strong>⚡ Initial Setup Wizard:</strong> No administrator account exists yet. Create your primary login credentials below to secure your system.
+      </div>
+
+      <div class="alert-banner alert-danger" id="errorBanner"></div>
+      <div class="alert-banner alert-success" id="successBanner"></div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <div class="input-wrapper">
+            <input class="input-field" type="text" id="username" name="username" required autocomplete="username" placeholder="e.g. admin" autofocus>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-wrapper">
+            <input class="input-field" type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+            <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('password', this)">Show</button>
+          </div>
+        </div>
+
+        <div class="form-group" id="confirmGroup" style="display: none;">
+          <label class="form-label" for="confirmPassword">Confirm Password</label>
+          <div class="input-wrapper">
+            <input class="input-field" type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" placeholder="••••••••">
+            <button type="button" class="toggle-pwd-btn" onclick="togglePasswordVisibility('confirmPassword', this)">Show</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span>Sign In</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="footer-note">
+      AFRC E-Cashier System &bull; <a href="/">Return to Camera Kiosk</a>
+    </div>
+  </div>
+
+  <script>
+    let isSetupMode = false;
+
+    function togglePasswordVisibility(fieldId, btn) {
+      const field = document.getElementById(fieldId);
+      if (field.type === "password") {
+        field.type = "text";
+        btn.textContent = "Hide";
+      } else {
+        field.type = "password";
+        btn.textContent = "Show";
+      }
+    }
+
+    function showError(msg) {
+      const err = document.getElementById("errorBanner");
+      err.textContent = msg;
+      err.style.display = "block";
+      document.getElementById("successBanner").style.display = "none";
+    }
+
+    function showSuccess(msg) {
+      const succ = document.getElementById("successBanner");
+      succ.textContent = msg;
+      succ.style.display = "block";
+      document.getElementById("errorBanner").style.display = "none";
+    }
+
+    function clearAlerts() {
+      document.getElementById("errorBanner").style.display = "none";
+      document.getElementById("successBanner").style.display = "none";
+    }
+
+    async function checkAuthStatus() {
+      try {
+        const res = await fetch("/api/auth/status", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // If already authenticated, redirect straight to next destination
+        if (data.is_authenticated) {
+          const urlParams = new URLSearchParams(window.location.search);
+          const next = urlParams.get("next") || "/admin";
+          window.location.href = next;
+          return;
+        }
+
+        if (data.needs_setup) {
+          enableSetupMode();
+        }
+      } catch (e) {
+        console.error("Auth status error:", e);
+      }
+    }
+
+    function enableSetupMode() {
+      isSetupMode = true;
+      document.getElementById("brandBadge").textContent = "Initial Setup";
+      document.getElementById("pageTitle").textContent = "Create Admin Account";
+      document.getElementById("pageSub").textContent = "Welcome to AFRC! Set up your primary admin login to secure the system.";
+      document.getElementById("setupCallout").style.display = "block";
+      document.getElementById("confirmGroup").style.display = "block";
+      document.getElementById("confirmPassword").setAttribute("required", "required");
+      document.getElementById("password").setAttribute("autocomplete", "new-password");
+      document.getElementById("submitBtn").innerHTML = "<span>Complete Setup & Launch Dashboard &rarr;</span>";
+      document.getElementById("username").value = "admin";
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      clearAlerts();
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+      const submitBtn = document.getElementById("submitBtn");
+
+      if (!username) {
+        showError("Username is required.");
+        return;
+      }
+      if (password.length < 6) {
+        showError("Password must be at least 6 characters long.");
+        return;
+      }
+
+      if (isSetupMode) {
+        const confirm = document.getElementById("confirmPassword").value;
+        if (password !== confirm) {
+          showError("Passwords do not match. Please verify both fields.");
+          return;
+        }
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "<span>Authenticating...</span>";
+
+      try {
+        const endpoint = isSetupMode ? "/api/auth/setup" : "/api/auth/login";
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Authentication failed.");
+        }
+
+        showSuccess(isSetupMode ? "Setup successful! Launching dashboard..." : "Login successful! Redirecting...");
+        const urlParams = new URLSearchParams(window.location.search);
+        const nextUrl = urlParams.get("next") || "/admin";
+
+        setTimeout(() => {
+          window.location.href = nextUrl;
+        }, 500);
+
+      } catch (err) {
+        showError(err.message || "An error occurred during authentication.");
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = isSetupMode 
+          ? "<span>Complete Setup & Launch Dashboard &rarr;</span>" 
+          : "<span>Sign In</span>";
+      }
+    }
+
+    // Initialize check
+    checkAuthStatus();
+  </script>
+</body>
+</html>

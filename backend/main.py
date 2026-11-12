@@ -20,7 +20,8 @@ from pathlib import Path
 from urllib.parse import quote
 from dotenv import dotenv_values
 
-from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, BillRefund, next_bill_number
+from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, BillRefund, AdminUser, AdminSession, next_bill_number
+from .auth import hash_password, verify_password, create_admin_session, get_current_admin, require_admin_api, revoke_session, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS
 from .schemas import Dish as DishSchema, BillResponse, BillItem, VerifyRequest, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
@@ -695,9 +696,118 @@ NO_CACHE_HEADERS = {
 async def root():
     return FileResponse("frontend/index.html", headers=NO_CACHE_HEADERS)
 
+@app.get("/login")
+async def login_page(request: Request, db: Session = Depends(get_db)):
+    current_admin = get_current_admin(request, db)
+    if current_admin:
+        return RedirectResponse(url="/admin", status_code=303)
+    return FileResponse("frontend/login.html", headers=NO_CACHE_HEADERS)
+
 @app.get("/admin")
-async def admin():
+async def admin(request: Request, db: Session = Depends(get_db)):
+    admin_count = db.query(AdminUser).count()
+    if admin_count == 0:
+        return RedirectResponse(url="/login?setup=1", status_code=303)
+    current_admin = get_current_admin(request, db)
+    if not current_admin:
+        return RedirectResponse(url="/login?next=/admin", status_code=303)
     return FileResponse("frontend/admin.html", headers=NO_CACHE_HEADERS)
+
+@app.get("/api/auth/status")
+def auth_status(request: Request, db: Session = Depends(get_db)):
+    admin_count = db.query(AdminUser).count()
+    current_admin = get_current_admin(request, db)
+    return {
+        "needs_setup": admin_count == 0,
+        "is_authenticated": current_admin is not None,
+        "username": current_admin.username if current_admin else None,
+    }
+
+@app.post("/api/auth/setup")
+def auth_setup(payload: dict, request: Request, response: Response, db: Session = Depends(get_db)):
+    if db.query(AdminUser).count() > 0:
+        raise HTTPException(status_code=400, detail="Setup already completed. Please log in.")
+    username = str(payload.get("username") or "").strip()
+    password = str(payload.get("password") or "")
+    if len(username) < 3:
+        raise HTTPException(status_code=400, detail="Username must be at least 3 characters.")
+    if len(password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+    
+    user = AdminUser(
+        username=username,
+        password_hash=hash_password(password),
+        created_at=datetime.utcnow(),
+        last_login_at=datetime.utcnow(),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    ip = request.client.host if request.client else ""
+    ua = request.headers.get("user-agent", "")
+    token = create_admin_session(db, user.id, ip, ua)
+    
+    is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=86400 * SESSION_DURATION_DAYS,
+        httponly=True,
+        samesite="lax",
+        secure=is_https,
+    )
+    return {"ok": True, "username": user.username}
+
+@app.post("/api/auth/login")
+def auth_login(payload: dict, request: Request, response: Response, db: Session = Depends(get_db)):
+    username = str(payload.get("username") or "").strip()
+    password = str(payload.get("password") or "")
+    
+    user = db.query(AdminUser).filter(AdminUser.username == username).first()
+    if not user or not verify_password(password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid username or password.")
+    
+    user.last_login_at = datetime.utcnow()
+    db.commit()
+
+    ip = request.client.host if request.client else ""
+    ua = request.headers.get("user-agent", "")
+    token = create_admin_session(db, user.id, ip, ua)
+    
+    is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=86400 * SESSION_DURATION_DAYS,
+        httponly=True,
+        samesite="lax",
+        secure=is_https,
+    )
+    return {"ok": True, "username": user.username}
+
+@app.post("/api/auth/logout")
+def auth_logout(request: Request, response: Response, db: Session = Depends(get_db)):
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if token:
+        revoke_session(db, token)
+    response.delete_cookie(key=SESSION_COOKIE_NAME)
+    return {"ok": True}
+
+@app.post("/api/auth/change-password")
+def auth_change_password(payload: dict, request: Request, db: Session = Depends(get_db)):
+    current_admin = require_admin_api(request, db)
+    old_password = str(payload.get("old_password") or "")
+    new_password = str(payload.get("new_password") or "")
+    
+    if not verify_password(old_password, current_admin.password_hash):
+        raise HTTPException(status_code=400, detail="Current password incorrect.")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters.")
+    
+    current_admin.password_hash = hash_password(new_password)
+    db.commit()
+    return {"ok": True, "message": "Password updated successfully."}
 
 @app.get("/cashier")
 async def cashier():
@@ -717,7 +827,8 @@ def get_menu(db: Session = Depends(get_db)):
     return [_dish_json(d) for d in dishes]
 
 @app.post("/api/menu")
-def update_menu(dishes: List[dict], db: Session = Depends(get_db)):
+def update_menu(dishes: List[dict], request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
     for d in dishes:
         dish = db.query(Dish).filter(Dish.id == d["id"]).first()
         if dish:
@@ -731,7 +842,8 @@ def update_menu(dishes: List[dict], db: Session = Depends(get_db)):
     return {"status": "updated"}
 
 @app.post("/api/menu/item")
-def add_menu_item(payload: dict, db: Session = Depends(get_db)):
+def add_menu_item(payload: dict, request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
     name = str(payload.get("name") or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="Dish name is required")
@@ -759,7 +871,8 @@ def add_menu_item(payload: dict, db: Session = Depends(get_db)):
     return _dish_json(dish)
 
 @app.delete("/api/menu/{dish_id}")
-def delete_menu_item(dish_id: int, db: Session = Depends(get_db)):
+def delete_menu_item(dish_id: int, request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
     dish = db.query(Dish).filter(Dish.id == dish_id).first()
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
@@ -2027,6 +2140,7 @@ def _compute_overview_data(
 
 @app.get("/api/admin/bills")
 def list_admin_bills(
+    request: Request,
     page: int = 1,
     page_size: int = 20,
     status: str = "all",
@@ -2038,6 +2152,7 @@ def list_admin_bills(
     quarter: str = "",
     db: Session = Depends(get_db),
 ):
+    require_admin_api(request, db)
     _expire_stale_bills(db)
 
     page = max(1, int(page or 1))
@@ -2118,12 +2233,14 @@ def list_admin_bills(
 
 @app.get("/api/admin/analytics")
 def get_admin_analytics(
+    request: Request,
     days: int = 7,
     period: str = "",
     month: str = "",
     quarter: str = "",
     db: Session = Depends(get_db),
 ):
+    require_admin_api(request, db)
     _expire_stale_bills(db)
     data = _compute_overview_data(
         db,
@@ -2136,12 +2253,14 @@ def get_admin_analytics(
 
 @app.get("/api/admin/export")
 def export_admin_sales_csv(
+    request: Request,
     days: int = 7,
     period: str = "",
     month: str = "",
     quarter: str = "",
     db: Session = Depends(get_db),
 ):
+    require_admin_api(request, db)
     _expire_stale_bills(db)
     data = _compute_overview_data(
         db,
@@ -2236,7 +2355,8 @@ def export_admin_sales_csv(
     )
 
 @app.post("/api/admin/bills/{session_id}/status")
-def update_admin_bill_status(session_id: str, payload: dict, db: Session = Depends(get_db)):
+def update_admin_bill_status(session_id: str, payload: dict, request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
@@ -2352,14 +2472,16 @@ def _build_refund_info(bill: SessionBill, db: Session, sync_curlec_contact: bool
     }
 
 @app.get("/api/admin/bills/{session_id}/refund-info")
-def get_admin_bill_refund_info(session_id: str, db: Session = Depends(get_db)):
+def get_admin_bill_refund_info(session_id: str, request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
     return _build_refund_info(bill, db, sync_curlec_contact=True)
 
 @app.post("/api/admin/bills/{session_id}/refund")
-def refund_admin_bill(session_id: str, payload: dict, db: Session = Depends(get_db)):
+def refund_admin_bill(session_id: str, payload: dict, request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
@@ -2485,7 +2607,8 @@ def refund_admin_bill(session_id: str, payload: dict, db: Session = Depends(get_
     }
 
 @app.get("/api/admin/audit-logs")
-def list_audit_logs(db: Session = Depends(get_db)):
+def list_audit_logs(request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
     cashier_map = {c.id: c.name for c in db.query(Cashier).all()}
     logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(200).all()
     return [
