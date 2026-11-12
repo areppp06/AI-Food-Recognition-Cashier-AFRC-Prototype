@@ -67,7 +67,7 @@ What `bash install.sh` does automatically:
 ### Manual Setup
 1. `python3 -m venv venv && source venv/bin/activate`
 2. `pip install -r requirements.txt`
-3. Copy `env/.env.example` to `env/.env`, `env/curlec.env.example` to `env/curlec.env`, and `env/rate-limit.env.example` to `env/rate-limit.env` and configure your keys/limits
+3. Copy example configuration files from `env/examples/` into `env/` (e.g. `cp env/examples/.env.example env/.env`, `cp env/examples/curlec.env.example env/curlec.env`, `cp env/examples/rate-limit.env.example env/rate-limit.env`, `cp env/examples/restaurant.env.example env/restaurant.env`) and configure your keys/limits
 4. `uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000`
 5. Open http://localhost:8000
 
@@ -91,9 +91,15 @@ What `bash install.sh` does automatically:
 │   ├── schemas.py       # Pydantic models
 │   └── ai_service.py    # Vision AI wrapper
 ├── env/
-│   ├── .env.example
-│   ├── curlec.env.example
-│   └── rate-limit.env.example
+│   ├── examples/
+│   │   ├── .env.example
+│   │   ├── curlec.env.example
+│   │   ├── rate-limit.env.example
+│   │   └── restaurant.env.example
+│   ├── .env                    # Secrets & keys (git-ignored)
+│   ├── curlec.env              # Curlec secrets (git-ignored)
+│   ├── rate-limit.env          # Rate limits (git-ignored)
+│   └── restaurant.env          # Restaurant profile (git-ignored)
 ├── frontend/
 │   ├── index.html       # Customer flow
 │   ├── admin.html

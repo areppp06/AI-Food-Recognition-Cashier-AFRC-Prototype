@@ -5,14 +5,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
 ENV_DIR="$ROOT_DIR/env"
+EXAMPLES_DIR="$ENV_DIR/examples"
 MAIN_ENV="$ENV_DIR/.env"
-MAIN_EXAMPLE="$ENV_DIR/.env.example"
+MAIN_EXAMPLE="$EXAMPLES_DIR/.env.example"
 CURLEC_ENV="$ENV_DIR/curlec.env"
-CURLEC_EXAMPLE="$ENV_DIR/curlec.env.example"
+CURLEC_EXAMPLE="$EXAMPLES_DIR/curlec.env.example"
 RATELIMIT_ENV="$ENV_DIR/rate-limit.env"
-RATELIMIT_EXAMPLE="$ENV_DIR/rate-limit.env.example"
+RATELIMIT_EXAMPLE="$EXAMPLES_DIR/rate-limit.env.example"
 RESTAURANT_ENV="$ENV_DIR/restaurant.env"
-RESTAURANT_EXAMPLE="$ENV_DIR/restaurant.env.example"
+RESTAURANT_EXAMPLE="$EXAMPLES_DIR/restaurant.env.example"
 
 FORCE_CONFIGURE=false
 START_SERVER=true

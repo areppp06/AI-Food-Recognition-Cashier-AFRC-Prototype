@@ -41,9 +41,9 @@ bash install.sh
 
 ## 3. Environment Variables Reference
 
-During the interactive setup, `install.sh` walks through three files inside the `env/` directory:
+During the interactive setup, `install.sh` walks through the templates inside `env/examples/` and saves your live configs into `env/`:
 
-### `env/restaurant.env` (Restaurant & Company Profile)
+### `env/restaurant.env` (from `env/examples/restaurant.env.example`)
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
