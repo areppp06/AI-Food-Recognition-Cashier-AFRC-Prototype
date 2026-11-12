@@ -732,6 +732,45 @@
     align-items: center;
     gap: 0.38rem;
   }
+  .void-visual-wrap {
+    display: grid;
+    grid-template-columns: 164px minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: center;
+  }
+  .void-donut-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+  }
+  .void-donut-sub {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: #64748b;
+  }
+  .void-cat-row {
+    padding: 0.2rem 0.35rem;
+    border-radius: 8px;
+    transition: background-color 0.12s ease;
+  }
+  .void-cat-row.is-highlighted {
+    background: #f8fafc;
+  }
+  .void-cat-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: inline-block;
+    margin-right: 0.45rem;
+  }
+  @media (max-width: 640px) {
+    .void-visual-wrap {
+      grid-template-columns: 1fr;
+    }
+  }
   .breakdown-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1620,6 +1659,62 @@ function renderSalesSvgChart(series) {
   };
 }
 
+function buildSvgDonut({ total, centerText, centerSub, slices, size = 160, radius = 56, strokeWidth = 22, ariaLabel = "Donut Chart", interactivePrefix = "" }) {
+  const half = size / 2;
+  const circ = 2 * Math.PI * radius;
+  let arcs = "";
+  if (!total || total <= 0) {
+    arcs = `<circle cx="${half}" cy="${half}" r="${radius}" fill="none" stroke="#e2e8f0" stroke-width="${strokeWidth}"/>`;
+  } else {
+    let offset = 0;
+    slices.forEach((part, idx) => {
+      if (!part.val || part.val <= 0) return;
+      const len = (part.val / total) * circ;
+      const evAttrs = interactivePrefix
+        ? ` data-void-slice="${idx}" style="cursor:pointer; transition:opacity 0.12s ease;" onmouseenter="highlightVoidCat(${idx})" onmouseleave="clearVoidCatHighlight()"`
+        : "";
+      const tipTitle = part.label ? `<title>${esc(part.label)}: ${esc(part.val)}</title>` : "";
+      arcs += `<circle cx="${half}" cy="${half}" r="${radius}" fill="none" stroke="${part.color}" stroke-width="${strokeWidth}" stroke-dasharray="${len.toFixed(2)} ${(circ - len).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${half} ${half})"${evAttrs}>${tipTitle}</circle>`;
+      offset += len;
+    });
+  }
+  return `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-label="${esc(ariaLabel)}">
+      ${arcs}
+      <text x="${half}" y="${half - 4}" text-anchor="middle" fill="#0f172a" font-size="22" font-weight="800" font-family="Plus Jakarta Sans, sans-serif">${esc(centerText)}</text>
+      <text x="${half}" y="${half + 15}" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600" font-family="Plus Jakarta Sans, sans-serif">${esc(centerSub)}</text>
+    </svg>
+  `;
+}
+
+function voidCategoryColor(reason, idx) {
+  const r = String(reason || "").toLowerCase();
+  if (r.includes("timed out") || r.includes("timeout")) return "#ef4444";
+  if (r.includes("cashier")) return "#f59e0b";
+  if (r.includes("cancel")) return "#8b5cf6";
+  if (r.includes("retri") || r.includes("retry") || r.includes("limit")) return "#ec4899";
+  const fallback = ["#0ea5e9", "#6366f1", "#14b8a6", "#64748b"];
+  return fallback[idx % fallback.length];
+}
+
+function highlightVoidCat(idx) {
+  document.querySelectorAll("[data-void-slice]").forEach(el => {
+    el.style.opacity = Number(el.dataset.voidSlice) === idx ? "1" : "0.35";
+  });
+  document.querySelectorAll("[data-void-row]").forEach(el => {
+    el.classList.toggle("is-highlighted", Number(el.dataset.voidRow) === idx);
+  });
+}
+
+function clearVoidCatHighlight() {
+  document.querySelectorAll("[data-void-slice]").forEach(el => {
+    el.style.opacity = "1";
+  });
+  document.querySelectorAll("[data-void-row]").forEach(el => {
+    el.classList.remove("is-highlighted");
+  });
+}
+
 function renderOutcomeSvgChart(pt) {
   const host = document.getElementById("outcomeChartHost");
   if (!host) return;
@@ -1627,34 +1722,20 @@ function renderOutcomeSvgChart(pt) {
   const voidV = Number(pt.void_count || 0);
   const openV = Number(pt.open_count || 0);
   const total = paidV + voidV + openV;
-
-  const size = 160;
-  const r = 56;
-  const circ = 2 * Math.PI * r;
-  let arcs = "";
-  if (total <= 0) {
-    arcs = `<circle cx="80" cy="80" r="${r}" fill="none" stroke="#e2e8f0" stroke-width="22"/>`;
-  } else {
-    const parts = [
+  const donutSvg = buildSvgDonut({
+    total,
+    centerText: String(total),
+    centerSub: "bills",
+    ariaLabel: "Bill Outcomes Donut",
+    slices: [
       { label: "Paid", val: paidV, color: "#10b981" },
       { label: "Voided", val: voidV, color: "#ef4444" },
       { label: "Open / Pending", val: openV, color: "#f59e0b" },
-    ];
-    let offset = 0;
-    parts.forEach(part => {
-      if (part.val <= 0) return;
-      const len = (part.val / total) * circ;
-      arcs += `<circle cx="80" cy="80" r="${r}" fill="none" stroke="${part.color}" stroke-width="22" stroke-dasharray="${len.toFixed(2)} ${(circ - len).toFixed(2)}" stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 80 80)"/>`;
-      offset += len;
-    });
-  }
+    ],
+  });
 
   host.innerHTML = `
-    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-label="Bill Outcomes Donut">
-      ${arcs}
-      <text x="80" y="76" text-anchor="middle" fill="#0f172a" font-size="22" font-weight="800" font-family="Plus Jakarta Sans, sans-serif">${total}</text>
-      <text x="80" y="95" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600" font-family="Plus Jakarta Sans, sans-serif">bills</text>
-    </svg>
+    ${donutSvg}
     <div class="outcome-legend">
       <span class="outcome-legend-item"><span class="swatch-line green"></span>Paid (${paidV})</span>
       <span class="outcome-legend-item"><span class="swatch-line" style="background:#ef4444;"></span>Voided (${voidV})</span>
@@ -1711,18 +1792,51 @@ function renderAnalytics(analytics) {
   if (!voidCauses.length) {
     voidEl.innerHTML = '<div class="empty-state-sm">No voided bills in this period.</div>';
   } else {
-    const maxCnt = Math.max(...voidCauses.map(v => v.count), 1);
-    voidEl.innerHTML = `<div class="breakdown-list">${voidCauses.map(v => `
-      <div>
-        <div class="breakdown-item-head">
-          <span class="breakdown-name">${esc(v.reason)}</span>
-          <span class="breakdown-meta">${esc(v.count)} bills · RM ${Number(v.lost_value).toFixed(2)}</span>
+    const totalVoidCnt = voidCauses.reduce((sum, v) => sum + Number(v.count || 0), 0);
+    const totalVoidVal = voidCauses.reduce((sum, v) => sum + Number(v.lost_value || 0), 0);
+    const slices = voidCauses.map((v, idx) => ({
+      label: v.reason,
+      val: Number(v.count || 0),
+      color: voidCategoryColor(v.reason, idx),
+    }));
+    const voidDonutSvg = buildSvgDonut({
+      total: totalVoidCnt,
+      centerText: String(totalVoidCnt),
+      centerSub: "voided",
+      size: 152,
+      radius: 52,
+      strokeWidth: 22,
+      ariaLabel: "Void Causes Donut Chart",
+      slices,
+      interactivePrefix: "void",
+    });
+
+    const listHtml = voidCauses.map((v, idx) => {
+      const cnt = Number(v.count || 0);
+      const pct = totalVoidCnt > 0 ? Math.round((cnt / totalVoidCnt) * 100) : 0;
+      const color = slices[idx].color;
+      return `
+        <div class="void-cat-row" data-void-row="${idx}" onmouseenter="highlightVoidCat(${idx})" onmouseleave="clearVoidCatHighlight()">
+          <div class="breakdown-item-head">
+            <span class="breakdown-name" style="display:inline-flex;align-items:center;"><span class="void-cat-dot" style="background:${color};"></span>${esc(v.reason)}</span>
+            <span class="breakdown-meta">${pct}% · ${esc(cnt)} · RM ${Number(v.lost_value || 0).toFixed(2)}</span>
+          </div>
+          <div class="breakdown-track">
+            <div class="breakdown-fill" style="width:${Math.max(6, pct)}%; background:${color};"></div>
+          </div>
         </div>
-        <div class="breakdown-track">
-          <div class="breakdown-fill void" style="width:${Math.max(8, Math.round((v.count / maxCnt) * 100))}%"></div>
+      `;
+    }).join("");
+
+    voidEl.innerHTML = `
+      <div class="void-visual-wrap">
+        <div class="void-donut-box">
+          ${voidDonutSvg}
+          <div class="void-donut-sub">RM ${totalVoidVal.toFixed(2)} voided</div>
         </div>
+        <div class="breakdown-list">${listHtml}</div>
       </div>
-    `).join("")}</div>`;
+    `;
   }
 }
 
