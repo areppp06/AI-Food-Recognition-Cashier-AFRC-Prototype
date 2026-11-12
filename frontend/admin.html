@@ -1858,7 +1858,8 @@ function renderSalesSvgChart(series) {
     voidPts.push({ x: cx, y: vy });
 
     if (idx % labelStride === 0) {
-      xLabelsSvg += `<text x="${cx.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#64748b" font-size="11" font-family="Plus Jakarta Sans, sans-serif">${esc(s.label)}</text>`;
+      const xLbl = s.label.length > 7 && s.label.includes(" ") ? s.label.split(" ").slice(0, 2).join(" ") : s.label;
+      xLabelsSvg += `<text x="${cx.toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="#64748b" font-size="11" font-family="Plus Jakarta Sans, sans-serif">${esc(xLbl)}</text>`;
     }
   });
 
@@ -2182,6 +2183,10 @@ function exportOverviewPdf() {
   const an = latestAnalytics;
   const pt = an.period_totals || {};
 
+  const restName = (an.restaurant_name || (latestSummary && latestSummary.restaurant_name) || "AFRC").trim();
+  const compName = (an.company_name || (latestSummary && latestSummary.company_name) || "").trim();
+  const domainName = (window.location.hostname || "e-cashier").trim();
+
   let y = 16;
   const checkPage = (needed = 12) => {
     if (y + needed > 282) {
@@ -2190,55 +2195,59 @@ function exportOverviewPdf() {
     }
   };
 
-  doc.setFillColor(15, 23, 42);
-  doc.rect(0, 0, 210, 4, "F");
+  doc.setFillColor(255, 94, 54);
+  doc.rect(0, 0, 210, 3.5, "F");
+
+  // Restaurant Name
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
+  doc.setFontSize(17);
   doc.setTextColor(15, 23, 42);
-  doc.text("AFRC Dashboard & Sales Overview Report", 14, y);
-  y += 6;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  doc.setTextColor(100, 116, 139);
-  doc.text(`Period: ${an.period_label}   |   Generated: ${an.generated_at_local}`, 14, y);
-  y += 8;
+  doc.text(restName, 14, y);
+  y += 6.5;
 
-  // KPI Grid
-  doc.setDrawColor(226, 232, 240);
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(14, y, 182, 26, 2, 2, "FD");
-  const kpis = [
-    ["Today's Paid Revenue", `RM ${Number(sum.today_revenue || 0).toFixed(2)}`],
-    ["Weekly Revenue (7d)", `RM ${Number(sum.weekly_revenue || 0).toFixed(2)}`],
-    ["Today's Bills", String(sum.today_bills || 0)],
-    ["Today Voided / Pending", `${sum.today_void_count || 0} void / ${sum.today_pending_count || 0} pending`],
-  ];
-  kpis.forEach(([lbl, val], idx) => {
-    const x = 18 + idx * 45;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text(lbl.toUpperCase(), x, y + 8);
-    doc.setFontSize(12);
-    doc.setTextColor(15, 23, 42);
-    doc.text(val, x, y + 17);
-  });
-  y += 34;
+  // Company Name
+  if (compName) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(compName, 14, y);
+    y += 7;
+  } else {
+    y += 2;
+  }
 
-  // Period Summary Line
+  // [domainname] comprehensive data reports
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(15, 23, 42);
-  doc.text(`Period Totals (${an.period_label})`, 14, y);
+  doc.text(`${domainName} comprehensive data reports`, 14, y);
   y += 6;
+
+  // Period & Generation timestamp
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Period: ${an.period_label}   |   Generated: ${an.generated_at_local}`, 14, y);
+  y += 9;
+
+  // Period Performance Summary Box (Replaces daily/weekly KPI grid)
+  doc.setDrawColor(226, 232, 240);
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(14, y, 182, 24, 2, 2, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Period Performance Summary (${an.period_label})`, 18, y + 7.5);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
   doc.setTextColor(51, 65, 85);
   doc.text(
-    `Paid Revenue: RM ${Number(pt.revenue || 0).toFixed(2)}  |  Paid Bills: ${pt.paid_count || 0}  |  Voided Bills: ${pt.void_count || 0} (RM ${Number(pt.void_value || 0).toFixed(2)})  |  Pending: ${pt.open_count || 0}`,
-    14, y
+    `Paid Revenue: RM ${Number(pt.revenue || 0).toFixed(2)}   |   Paid Bills: ${pt.paid_count || 0}   |   Voided: ${pt.void_count || 0} (RM ${Number(pt.void_value || 0).toFixed(2)})   |   Pending: ${pt.open_count || 0}`,
+    18, y + 16.5
   );
-  y += 10;
+  y += 32;
 
   // Timeline Table
   doc.setFont("helvetica", "bold");
@@ -2312,7 +2321,8 @@ function exportOverviewPdf() {
     });
   }
 
-  doc.save(`AFRC-Sales-Overview-${an.file_tag || "report"}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  const filePrefix = (restName || "AFRC").replace(/[^a-zA-Z0-9_-]/g, "_");
+  doc.save(`${filePrefix}-Sales-Overview-${an.file_tag || "report"}-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
 function onBillSearchInput() {

@@ -1805,7 +1805,7 @@ def _compute_overview_data(
         start_date = today_date
         end_date = today_date
         granularity = "hour"
-        period_label = "Today (Hourly)"
+        period_label = f"Today, {today_date.strftime('%d %b %Y')} (Hourly)"
         file_tag = "today"
         for h in range(24):
             lbl = f"{h:02d}:00"
@@ -1815,21 +1815,21 @@ def _compute_overview_data(
         start_date = today_date - timedelta(days=6)
         end_date = today_date
         granularity = "day"
-        period_label = "Last 7 Days"
+        period_label = f"Last 7 Days ({start_date.strftime('%d %b %Y')} - {end_date.strftime('%d %b %Y')})"
         file_tag = "last-7d"
         for i in range(6, -1, -1):
             d = today_date - timedelta(days=i)
-            _add_bucket(d.isoformat(), d.strftime("%d %b"))
+            _add_bucket(d.isoformat(), d.strftime("%d %b %Y"))
     elif p_norm == "30d":
         days_int = 30
         start_date = today_date - timedelta(days=29)
         end_date = today_date
         granularity = "day"
-        period_label = "Last 30 Days"
+        period_label = f"Last 30 Days ({start_date.strftime('%d %b %Y')} - {end_date.strftime('%d %b %Y')})"
         file_tag = "last-30d"
         for i in range(29, -1, -1):
             d = today_date - timedelta(days=i)
-            _add_bucket(d.isoformat(), d.strftime("%d %b"))
+            _add_bucket(d.isoformat(), d.strftime("%d %b %Y"))
     elif p_norm == "monthly":
         days_int = 30
         parsed_m = None
@@ -1852,13 +1852,13 @@ def _compute_overview_data(
             file_tag = f"month-{selected_month}"
             for day_num in range(1, last_day + 1):
                 d = date(my, mm, day_num)
-                _add_bucket(d.isoformat(), d.strftime("%d %b"))
+                _add_bucket(d.isoformat(), d.strftime("%d %b %Y"))
         else:
             oy, om = _shift_year_month(today_date.year, today_date.month, -11)
             start_date = date(oy, om, 1)
             end_date = today_date
             granularity = "month"
-            period_label = "Monthly (Last 12 Months)"
+            period_label = f"Last 12 Months ({start_date.strftime('%b %Y')} - {end_date.strftime('%b %Y')})"
             file_tag = "monthly-12m"
             for delta in range(-11, 1):
                 ym_y, ym_m = _shift_year_month(today_date.year, today_date.month, delta)
@@ -1897,7 +1897,7 @@ def _compute_overview_data(
             start_date = date(sy, (sq - 1) * 3 + 1, 1)
             end_date = today_date
             granularity = "quarter"
-            period_label = "Quarterly (Last 4 Quarters)"
+            period_label = f"Last 4 Quarters ({start_date.strftime('%b %Y')} - {end_date.strftime('%b %Y')})"
             file_tag = "quarterly-4q"
             for q_idx in range(3, -1, -1):
                 tq = today_date.year * 4 + (cur_q - 1) - q_idx
@@ -1909,7 +1909,7 @@ def _compute_overview_data(
         start_date = None
         end_date = None
         granularity = "day"
-        period_label = "All Time"
+        period_label = f"All Time (up to {today_date.strftime('%d %b %Y')})"
         file_tag = "all-time"
 
     def _bucket_info(dt_local: datetime) -> tuple[str, str]:
@@ -1922,7 +1922,7 @@ def _compute_overview_data(
             qq = (dt_local.month - 1) // 3 + 1
             return f"{dt_local.year:04d}-Q{qq}", f"Q{qq} {dt_local.year:04d}"
         d_val = dt_local.date()
-        return d_val.isoformat(), d_val.strftime("%d %b")
+        return d_val.isoformat(), d_val.strftime("%d %b %Y")
 
     def _in_date_range(d_val: date | None) -> bool:
         if d_val is None:
@@ -2111,6 +2111,9 @@ def _compute_overview_data(
         "pending_count": pending_count,
         "void_count": void_count,
     }
+    profile = _restaurant_profile()
+    summary["restaurant_name"] = profile.get("restaurant_name", "AFRC")
+    summary["company_name"] = profile.get("company_name", "")
     analytics = {
         "period": p_norm,
         "month": selected_month,
@@ -2118,6 +2121,8 @@ def _compute_overview_data(
         "days": days_int,
         "period_label": period_label,
         "file_tag": file_tag,
+        "restaurant_name": profile.get("restaurant_name", "AFRC"),
+        "company_name": profile.get("company_name", ""),
         "generated_at_local": now_local.strftime("%Y-%m-%d %H:%M:%S MYT"),
         "granularity": granularity,
         "available_months": available_months,
@@ -2278,7 +2283,14 @@ def export_admin_sales_csv(
     buf = io.StringIO()
     writer = csv.writer(buf)
 
-    writer.writerow(["AFRC SALES & DASHBOARD OVERVIEW REPORT"])
+    rest_name = analytics.get("restaurant_name") or "AFRC"
+    comp_name = analytics.get("company_name") or ""
+    host_name = request.headers.get("host", "").split(":")[0] or "e-cashier"
+
+    writer.writerow([rest_name])
+    if comp_name:
+        writer.writerow([comp_name])
+    writer.writerow([f"{host_name} comprehensive data reports"])
     writer.writerow(["Period", analytics["period_label"]])
     writer.writerow(["Generated At", analytics["generated_at_local"]])
     writer.writerow([])
