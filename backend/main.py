@@ -1,3 +1,4 @@
+import secrets
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
@@ -21,7 +22,7 @@ from urllib.parse import quote
 from dotenv import dotenv_values
 
 from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, BillRefund, AdminUser, AdminSession, next_bill_number
-from .auth import hash_password, verify_password, create_admin_session, get_current_admin, require_admin_api, revoke_session, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS
+from .auth import hash_password, verify_password, create_admin_session, get_current_admin, require_admin_api, revoke_session, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS, get_or_create_setup_token, burn_setup_token
 from .schemas import Dish as DishSchema, BillResponse, BillItem, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
@@ -76,7 +77,7 @@ def _rate_limit_config() -> dict:
         "cooldown_minutes": _rl_int(merged, "COOLDOWN_MINUTES", COOLDOWN_MINUTES),
         "max_retakes": _rl_int(merged, "MAX_RETAKES", MAX_RETAKES),
     }
-app = FastAPI(title="AFRC Prototype", version="1.0")
+app = FastAPI(title="AFRC Prototype", version="1.0", docs_url=None, redoc_url=None, openapi_url=None)
 
 _R2_SESSION_KEYS: dict[str, str] = {}
 _R2_BILL_KEYS: dict[str, str] = {}
@@ -713,6 +714,74 @@ async def admin(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/login?next=/admin", status_code=303)
     return FileResponse("frontend/admin.html", headers=NO_CACHE_HEADERS)
 
+
+_FAILED_LOGINS_IP: dict[str, list[float]] = {}
+_FAILED_LOGINS_USER: dict[str, list[float]] = {}
+MAX_LOGIN_FAILURES = 5
+LOGIN_LOCKOUT_SECONDS = 15 * 60  # 15 minutes
+
+def _check_login_rate_limit(request: Request, username: str) -> None:
+    now = datetime.utcnow().timestamp()
+    ip = _client_ip(request)
+    cutoff = now - LOGIN_LOCKOUT_SECONDS
+    for bucket, key, label in [
+        (_FAILED_LOGINS_IP, ip, "network IP"),
+        (_FAILED_LOGINS_USER, username.strip().lower(), f"account '{username}'")
+    ]:
+        if not key:
+            continue
+        attempts = [t for t in bucket.get(key, []) if t > cutoff]
+        bucket[key] = attempts
+        if len(attempts) >= MAX_LOGIN_FAILURES:
+            oldest = attempts[0]
+            remaining_mins = max(1, math.ceil((oldest + LOGIN_LOCKOUT_SECONDS - now) / 60))
+            raise HTTPException(
+                status_code=429,
+                detail=f"Too many failed login attempts for this {label}. Locked for {remaining_mins} more minute(s)."
+            )
+
+def _record_login_failure(request: Request, username: str, db: Session) -> None:
+    now = datetime.utcnow().timestamp()
+    ip = _client_ip(request)
+    u = username.strip().lower()
+    if ip:
+        _FAILED_LOGINS_IP.setdefault(ip, []).append(now)
+    if u:
+        _FAILED_LOGINS_USER.setdefault(u, []).append(now)
+    try:
+        db.add(AuditLog(
+            cashier_id=0,
+            admin_username=username[:100],
+            action="LOGIN_FAILED",
+            details=f"Failed login attempt for '{username}' from IP {ip}"
+        ))
+        db.commit()
+    except Exception:
+        pass
+
+def _record_login_success(request: Request, username: str, user_id: int, db: Session) -> None:
+    ip = _client_ip(request)
+    u = username.strip().lower()
+    _FAILED_LOGINS_USER.pop(u, None)
+    if ip and ip in _FAILED_LOGINS_IP:
+        _FAILED_LOGINS_IP.pop(ip, None)
+    try:
+        db.add(AuditLog(
+            cashier_id=user_id,
+            admin_username=username[:100],
+            action="LOGIN_SUCCESS",
+            details=f"Admin '{username}' logged in successfully from IP {ip}"
+        ))
+        db.commit()
+    except Exception:
+        pass
+
+def _csv_escape(val) -> str:
+    s = str(val if val is not None else "")
+    if s and s[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + s
+    return s
+
 @app.get("/api/auth/status")
 def auth_status(request: Request, db: Session = Depends(get_db)):
     admin_count = db.query(AdminUser).count()
@@ -728,6 +797,12 @@ def auth_status(request: Request, db: Session = Depends(get_db)):
 def auth_setup(payload: dict, request: Request, response: Response, db: Session = Depends(get_db)):
     if db.query(AdminUser).count() > 0:
         raise HTTPException(status_code=400, detail="Setup already completed. Please log in.")
+
+    req_token = str(payload.get("setup_token") or payload.get("token") or "").strip()
+    expected_token = get_or_create_setup_token()
+    if not req_token or not secrets.compare_digest(req_token, expected_token):
+        raise HTTPException(status_code=403, detail="Invalid or missing one-time setup token. Check your VPS terminal for the link or QR.")
+
     username = str(payload.get("username") or "").strip()
     password = str(payload.get("password") or "")
     if len(username) < 3:
@@ -742,8 +817,16 @@ def auth_setup(payload: dict, request: Request, response: Response, db: Session 
         last_login_at=datetime.utcnow(),
     )
     db.add(user)
+    db.add(AuditLog(
+        cashier_id=0,
+        admin_username=username,
+        action="ADMIN_INITIAL_SETUP",
+        details=f"Initial admin '{username}' created from {request.client.host if request.client else 'local'}"
+    ))
     db.commit()
     db.refresh(user)
+
+    burn_setup_token()
 
     ip = request.client.host if request.client else ""
     ua = request.headers.get("user-agent", "")
@@ -764,13 +847,18 @@ def auth_setup(payload: dict, request: Request, response: Response, db: Session 
 def auth_login(payload: dict, request: Request, response: Response, db: Session = Depends(get_db)):
     username = str(payload.get("username") or "").strip()
     password = str(payload.get("password") or "")
-    
+
+    _check_login_rate_limit(request, username)
+
     user = db.query(AdminUser).filter(AdminUser.username == username).first()
     if not user or not verify_password(password, user.password_hash):
+        _record_login_failure(request, username, db)
         raise HTTPException(status_code=401, detail="Invalid username or password.")
     
     user.last_login_at = datetime.utcnow()
     db.commit()
+
+    _record_login_success(request, user.username, user.id, db)
 
     ip = request.client.host if request.client else ""
     ua = request.headers.get("user-agent", "")
@@ -807,8 +895,26 @@ def auth_change_password(payload: dict, request: Request, db: Session = Depends(
         raise HTTPException(status_code=400, detail="New password must be at least 6 characters.")
     
     current_admin.password_hash = hash_password(new_password)
+
+    # Revoke all other active sessions for this admin (keep current session active)
+    current_token = request.cookies.get(SESSION_COOKIE_NAME) or ""
+    if not current_token:
+        auth_h = request.headers.get("Authorization", "")
+        if auth_h.startswith("Bearer "):
+            current_token = auth_h[7:].strip()
+    db.query(AdminSession).filter(
+        AdminSession.user_id == current_admin.id,
+        AdminSession.token != current_token
+    ).delete()
+
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="PASSWORD_CHANGE",
+        details=f"Admin '{current_admin.username}' updated password (all other sessions revoked)"
+    ))
     db.commit()
-    return {"ok": True, "message": "Password updated successfully."}
+    return {"ok": True, "message": "Password updated successfully. Other active sessions revoked."}
 
 @app.get("/pay")
 async def pay_page():
@@ -825,22 +931,35 @@ def get_menu(db: Session = Depends(get_db)):
 
 @app.post("/api/menu")
 def update_menu(dishes: List[dict], request: Request, db: Session = Depends(get_db)):
-    require_admin_api(request, db)
+    current_admin = require_admin_api(request, db)
     for d in dishes:
         dish = db.query(Dish).filter(Dish.id == d["id"]).first()
         if dish:
             dish.available = d.get("available", dish.available)
-            dish.price = d.get("price", dish.price)
+            if "price" in d:
+                try:
+                    p = float(d["price"])
+                except (TypeError, ValueError):
+                    raise HTTPException(status_code=400, detail=f"Invalid price for dish '{dish.name}'")
+                if p < 0 or p > 10000:
+                    raise HTTPException(status_code=400, detail=f"Price cannot be negative or exceed RM 10,000 for dish '{dish.name}'")
+                dish.price = round(p, 2)
             if "description" in d:
                 dish.description = _clean_description(d.get("description"))
             if "pieces_per_portion" in d:
                 dish.pieces_per_portion = _clean_pieces(d.get("pieces_per_portion"))
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="MENU_UPDATE",
+        details=f"Admin '{current_admin.username}' updated menu ({len(dishes)} item(s) modified)"
+    ))
     db.commit()
     return {"status": "updated"}
 
 @app.post("/api/menu/item")
 def add_menu_item(payload: dict, request: Request, db: Session = Depends(get_db)):
-    require_admin_api(request, db)
+    current_admin = require_admin_api(request, db)
     name = str(payload.get("name") or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="Dish name is required")
@@ -848,32 +967,45 @@ def add_menu_item(payload: dict, request: Request, db: Session = Depends(get_db)
         price = float(payload.get("price"))
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="A valid price is required")
-    if price < 0:
-        raise HTTPException(status_code=400, detail="Price cannot be negative")
+    if price < 0 or price > 10000:
+        raise HTTPException(status_code=400, detail="Price cannot be negative or exceed RM 10,000")
     existing = db.query(Dish).filter(func.lower(Dish.name) == name.casefold()).first()
     if existing:
         raise HTTPException(status_code=409, detail="A dish with this name already exists")
     unit = str(payload.get("unit") or "portion").strip() or "portion"
     dish = Dish(
         name=name,
-        price=price,
+        price=round(price, 2),
         available=bool(payload.get("available", True)),
         unit=unit,
         description=_clean_description(payload.get("description")),
         pieces_per_portion=_clean_pieces(payload.get("pieces_per_portion")),
     )
     db.add(dish)
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="MENU_ADD",
+        details=f"Admin '{current_admin.username}' added dish '{dish.name}' (RM {dish.price:.2f})"
+    ))
     db.commit()
     db.refresh(dish)
     return _dish_json(dish)
 
 @app.delete("/api/menu/{dish_id}")
 def delete_menu_item(dish_id: int, request: Request, db: Session = Depends(get_db)):
-    require_admin_api(request, db)
+    current_admin = require_admin_api(request, db)
     dish = db.query(Dish).filter(Dish.id == dish_id).first()
     if not dish:
         raise HTTPException(status_code=404, detail="Dish not found")
+    d_name = dish.name
     db.delete(dish)
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="MENU_DELETE",
+        details=f"Admin '{current_admin.username}' deleted dish '{d_name}'"
+    ))
     db.commit()
     return {"status": "deleted", "id": dish_id}
 
@@ -1002,6 +1134,11 @@ async def recognize(
             raise HTTPException(status_code=400, detail=ErrorResponse(
                 error_code="UPLOAD_FAILED",
                 message="Photo is too small or empty. Please retake."
+            ).dict())
+        if len(image_bytes) > 1 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail=ErrorResponse(
+                error_code="IMAGE_TOO_LARGE",
+                message="Photo exceeds 1MB limit. Please retake using camera."
             ).dict())
     except HTTPException:
         raise
@@ -1566,8 +1703,12 @@ def pay(payload: dict, request: Request, db: Session = Depends(get_db)):
         return {"status": "paid", "session_id": bill.id}
     phone = _normalize_my_phone(payload.get("phone") or "")
     email = str(payload.get("email") or "").strip()
-    if email and ("@" not in email or "." not in email.split("@")[-1]):
-        raise HTTPException(status_code=400, detail="Enter a valid email or leave it blank")
+    if email:
+        if email[0] in ("=", "+", "-", "@"):
+            raise HTTPException(status_code=400, detail="Invalid email format")
+        import re
+        if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email) or len(email) > 100:
+            raise HTTPException(status_code=400, detail="Enter a valid email address or leave it blank")
     bill.receipt_phone = phone
     bill.receipt_email = email
     bill.updated_at = datetime.utcnow()
@@ -2294,16 +2435,16 @@ def export_admin_sales_csv(
     writer.writerow(["Bill #", "Created At (MYT)", "Paid At (MYT)", "Status", "Void Cause", "Total (RM)", "Items", "Phone Number", "Customer Email", "Payment ID"])
     for b in data["export_bills"]:
         writer.writerow([
-            b["bill_number"],
-            b["created_at_local"],
-            b["paid_at_local"],
-            b["status"].upper(),
-            b["void_reason"],
+            _csv_escape(b["bill_number"]),
+            _csv_escape(b["created_at_local"]),
+            _csv_escape(b["paid_at_local"]),
+            _csv_escape(b["status"].upper()),
+            _csv_escape(b["void_reason"]),
             f"{b['total']:.2f}",
-            b["items"],
-            b.get("receipt_phone", ""),
-            b["receipt_email"],
-            b["curlec_payment_id"],
+            _csv_escape(b["items"]),
+            _csv_escape(b.get("receipt_phone", "")),
+            _csv_escape(b["receipt_email"]),
+            _csv_escape(b["curlec_payment_id"]),
         ])
 
     csv_bytes = ("\ufeff" + buf.getvalue()).encode("utf-8")
@@ -2340,6 +2481,12 @@ def update_admin_bill_status(session_id: str, payload: dict, request: Request, d
     bill.updated_at = datetime.utcnow()
     if bill.status == "paid" and not bill.paid_at:
         bill.paid_at = datetime.utcnow()
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action=f"BILL_{new_status.upper()}",
+        details=f"Bill #{bill.bill_number}: status set to {new_status} by admin '{current_admin.username}'"
+    ))
     db.commit()
     return _bill_payload(bill)
 
@@ -2548,12 +2695,14 @@ def refund_admin_bill(session_id: str, payload: dict, request: Request, db: Sess
     )
     db.add(rf_row)
     db.add(AuditLog(
-        cashier_id=0,
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
         action="REFUND_ISSUED",
         details=(
             f"Bill #{bill.bill_number or bill.id}: RM {total_refund:.2f} "
             f"({', '.join(f'{i['quantity']}x {i['name']}' for i in refund_items_payload)})"
             + (f" [Curlec {curlec_refund_id}]" if curlec_refund_id else " [Manual]")
+            + f" by admin '{current_admin.username}'"
         ),
     ))
     bill.updated_at = datetime.utcnow()
@@ -2596,7 +2745,7 @@ def list_audit_logs(
         {
             "id": l.id,
             "cashier_id": l.cashier_id,
-            "cashier_name": cashier_map.get(
+            "cashier_name": l.admin_username if getattr(l, "admin_username", None) else cashier_map.get(
                 l.cashier_id,
                 "System / Admin" if l.cashier_id == 0 else f"Cashier #{l.cashier_id}"
             ),

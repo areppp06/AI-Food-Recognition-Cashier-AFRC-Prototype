@@ -290,6 +290,17 @@
         </div>
       </div>
 
+            <div class="form-group" id="tokenGroup" style="display: none;">
+        <label class="form-label" for="setupToken">One-Time Setup Token <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">(from VPS terminal)</span></label>
+        <div class="input-box">
+          <input type="text" id="setupToken" name="setupToken" placeholder="Paste 32-character token here" autocomplete="off">
+        </div>
+        <div id="tokenVerifiedBadge" style="display:none; font-size:0.75rem; color:#10b981; font-weight:600; margin-top:0.35rem; align-items:center; gap:0.25rem;">
+          <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          <span>One-time setup token detected</span>
+        </div>
+      </div>
+
       <div class="form-group" id="confirmGroup" style="display: none;">
         <label class="form-label" for="confirmPassword">Confirm Password</label>
         <div class="input-box">
@@ -383,14 +394,28 @@
 
     function setSetupMode() {
       isSetupMode = true;
-      document.getElementById("authTitle").textContent = "Welcome";
-      document.getElementById("authSub").textContent = "Setup your admin account here";
+      document.getElementById("authTitle").textContent = "Initial Setup";
+      document.getElementById("authSub").textContent = "Configure your AFRC administrator account";
       document.getElementById("confirmGroup").style.display = "flex";
       document.getElementById("confirmPassword").setAttribute("required", "required");
       document.getElementById("optionsRow").style.display = "none";
-      document.getElementById("actionBtn").textContent = "Setup";
+      document.getElementById("actionBtn").textContent = "Complete Setup";
       document.getElementById("username").value = "admin";
       document.getElementById("password").setAttribute("autocomplete", "new-password");
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("setup_token") || urlParams.get("token") || "";
+      const tokenGroup = document.getElementById("tokenGroup");
+      const tokenInput = document.getElementById("setupToken");
+      const badge = document.getElementById("tokenVerifiedBadge");
+      tokenGroup.style.display = "flex";
+      if (token) {
+        tokenInput.value = token;
+        badge.style.display = "inline-flex";
+      } else {
+        tokenInput.setAttribute("required", "required");
+        badge.style.display = "none";
+      }
     }
 
     function setSignInMode(restaurantName) {
@@ -399,6 +424,7 @@
       document.getElementById("authTitle").textContent = "Welcome Back";
       document.getElementById("authSub").textContent = `to ${name} E-Cashier Dashboard`;
       document.getElementById("confirmGroup").style.display = "none";
+      document.getElementById("tokenGroup").style.display = "none";
       document.getElementById("confirmPassword").removeAttribute("required");
       document.getElementById("optionsRow").style.display = "flex";
       document.getElementById("actionBtn").textContent = "Sign In";
@@ -435,10 +461,21 @@
 
       try {
         const endpoint = isSetupMode ? "/api/auth/setup" : "/api/auth/login";
+        const payloadData = { username, password };
+        if (isSetupMode) {
+          const tokVal = (document.getElementById("setupToken").value || "").trim();
+          if (!tokVal) {
+            btn.disabled = false;
+            btn.textContent = "Complete Setup";
+            showError("One-time setup token is required. Check your VPS terminal.");
+            return;
+          }
+          payloadData.setup_token = tokVal;
+        }
         const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify(payloadData)
         });
 
         const data = await res.json();

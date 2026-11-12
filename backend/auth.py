@@ -1,3 +1,4 @@
+from pathlib import Path
 import bcrypt
 import secrets
 import sys
@@ -5,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import Request, HTTPException, Depends
 from sqlalchemy.orm import Session
-from backend.db import AdminUser, AdminSession, SessionLocal
+from backend.db import AdminUser, AdminSession, SessionLocal, ENV_DIR
 
 SESSION_COOKIE_NAME = "afrc_admin_session"
 SESSION_DURATION_DAYS = 7
@@ -93,11 +94,83 @@ def require_admin_api(request: Request, db: Session) -> AdminUser:
     return admin
 
 
+
+SETUP_TOKEN_FILE = ENV_DIR / ".setup_token"
+
+def get_or_create_setup_token(force_new: bool = False) -> str:
+    """Gets or generates a secure 32-character random slug token for initial admin setup."""
+    if not force_new and SETUP_TOKEN_FILE.is_file():
+        try:
+            tok = SETUP_TOKEN_FILE.read_text(encoding="utf-8").strip()
+            if tok and len(tok) >= 16:
+                return tok
+        except Exception:
+            pass
+    tok = secrets.token_urlsafe(24)  # 32 url-safe base64 characters
+    ENV_DIR.mkdir(parents=True, exist_ok=True)
+    SETUP_TOKEN_FILE.write_text(tok, encoding="utf-8")
+    try:
+        SETUP_TOKEN_FILE.chmod(0o600)
+    except Exception:
+        pass
+    return tok
+
+def burn_setup_token() -> None:
+    """Permanently removes the one-time setup token after admin creation."""
+    try:
+        if SETUP_TOKEN_FILE.is_file():
+            SETUP_TOKEN_FILE.unlink()
+    except Exception:
+        pass
+
+def print_setup_qr_cli(base_url: str = ""):
+    """Displays terminal setup link and scannable QR code if no admin user exists."""
+    db = SessionLocal()
+    try:
+        admin_count = db.query(AdminUser).count()
+        if admin_count > 0:
+            return
+        token = get_or_create_setup_token()
+        if not base_url:
+            domain = ""
+            caddy_file = Path("/etc/caddy/Caddyfile")
+            if caddy_file.is_file():
+                try:
+                    for line in caddy_file.read_text().splitlines():
+                        line = line.strip()
+                        if line and not line.startswith("#") and "{" in line:
+                            domain = line.split("{")[0].strip()
+                            break
+                except Exception:
+                    pass
+            if domain:
+                base_url = f"https://{domain}"
+            else:
+                base_url = "http://localhost:8000"
+
+        setup_url = f"{base_url}/login?setup_token={token}"
+        print("\n" + "=" * 65)
+        print("  [!] INITIAL ADMIN ONBOARDING SETUP REQUIRED")
+        print("=" * 65)
+        print("  Please open this one-time admin setup URL or scan the QR code")
+        print("  on mobile to configure your admin account:\n")
+        print(f"  URL: {setup_url}\n")
+        try:
+            import qrcode
+            qr = qrcode.QRCode(border=1)
+            qr.add_data(setup_url)
+            qr.print_ascii(invert=True)
+        except Exception as e:
+            print(f"  (QR code display error: {e})")
+        print("=" * 65 + "\n")
+    finally:
+        db.close()
+
 # CLI Helper functions for manual terminal management
 def cli_main():
     args = sys.argv[1:]
     if not args:
-        print("Usage: python -m backend.auth [create-admin | reset-password | list-admins]")
+        print("Usage: python -m backend.auth [create-admin | reset-password | list-admins | setup-token | print-setup-qr]")
         sys.exit(1)
 
     cmd = args[0].lower()
@@ -143,6 +216,14 @@ def cli_main():
                 print(f"Found {len(users)} admin user(s):")
                 for u in users:
                     print(f" - ID: {u.id} | Username: {u.username} | Created: {u.created_at}")
+
+        elif cmd == "setup-token":
+            tok = get_or_create_setup_token()
+            print(f"One-Time Setup Token: {tok}")
+
+        elif cmd == "print-setup-qr":
+            url_arg = args[1] if len(args) > 1 else ""
+            print_setup_qr_cli(url_arg)
 
         else:
             print(f"Unknown command: {cmd}")

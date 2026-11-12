@@ -20,3 +20,5 @@ env/restaurant.env
 *.bak*
 .DS_Store
 uploads/
+.setup_token
+env/.setup_token

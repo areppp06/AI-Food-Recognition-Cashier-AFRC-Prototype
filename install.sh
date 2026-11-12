@@ -287,6 +287,9 @@ if [[ -t 0 ]]; then
           fi
           $SUDO tee /etc/caddy/Caddyfile >/dev/null <<EOF
 ${SETUP_CADDY_DOMAIN} {
+    request_body {
+        max_size 2MB
+    }
     reverse_proxy 127.0.0.1:${PORT}
 }
 EOF
@@ -359,6 +362,7 @@ EOF
   fi
   echo ""
   $SUDO systemctl status afrc.service --no-pager -l || true
+  "${ROOT_DIR}/venv/bin/python3" -m backend.auth print-setup-qr 2>/dev/null || true
   exit 0
 fi
 

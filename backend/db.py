@@ -84,6 +84,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
     id = Column(Integer, primary_key=True)
     cashier_id = Column(Integer)
+    admin_username = Column(String(100), nullable=True)
     action = Column(String)
     details = Column(Text)
     timestamp = Column(DateTime, default=datetime.utcnow)
@@ -242,6 +243,5 @@ def init_db():
             Dish(name="Lamb", price=9.0, available=False),
         ]
         db.add_all(seeds)
-        db.add(Cashier(name="Admin", pin="1234", active=True))
         db.commit()
     db.close()
