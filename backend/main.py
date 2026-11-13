@@ -1862,19 +1862,16 @@ async def curlec_webhook(request: Request, db: Session = Depends(get_db)):
         except Exception:
             verified_by_sig = False
 
+    if not verified_by_sig:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid webhook signature"
+        )
+
     if event.get("event") in ("payment.captured", "order.paid"):
         entity = ((event.get("payload") or {}).get("payment") or {}).get("entity") or {}
-        payment_id = str(entity.get("id") or "").strip()
         order_id = str(entity.get("order_id") or "").strip()
         payment = entity
-        if not verified_by_sig:
-            if not payment_id:
-                return {"status": "ignored"}
-            try:
-                payment = client.payment.fetch(payment_id)
-                order_id = str(payment.get("order_id") or "").strip()
-            except Exception:
-                return {"status": "ignored"}
         bill = db.query(SessionBill).filter(SessionBill.curlec_order_id == order_id).first()
         if bill and bill.status != "paid" and str(payment.get("status")) == "captured":
             _record_captured_payment(bill, payment, db)
