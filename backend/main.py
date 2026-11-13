@@ -27,6 +27,22 @@ from .schemas import Dish as DishSchema, BillResponse, BillItem, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
 
 UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads"
+
+FORBIDDEN_SESSION_HTML = """<!DOCTYPE html>
+<html>
+<head>
+    <title>403 Forbidden</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8fafc;padding:1rem;">
+    <div style="text-align:center;padding:2.5rem 2rem;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.06);max-width:420px;border:1px solid #e2e8f0;">
+        <div style="font-size:3rem;margin-bottom:1rem;">🔒</div>
+        <h1 style="color:#0f172a;font-size:1.5rem;margin:0 0 0.5rem 0;font-weight:700;">403 Forbidden</h1>
+        <p style="color:#64748b;font-size:0.95rem;line-height:1.5;margin:0;">You do not have permission to view or pay for this bill session.</p>
+    </div>
+</body>
+</html>"""
+
 MAX_RETAKES = int(os.getenv("MAX_RETAKES", "4"))
 COOLDOWN_MINUTES = int(os.getenv("COOLDOWN_MINUTES", "25"))
 MAX_SCANS_PER_WINDOW = int(os.getenv("MAX_SCANS_PER_WINDOW", "5"))
@@ -955,11 +971,35 @@ def auth_change_password(payload: dict, request: Request, db: Session = Depends(
     return {"ok": True, "message": "Password updated successfully. Other active sessions revoked."}
 
 @app.get("/pay")
-async def pay_page():
+async def pay_page(request: Request, session: str = "", db: Session = Depends(get_db)):
+    if session:
+        bill = db.query(SessionBill).filter(SessionBill.id == session).first()
+        if bill and bill.client_token:
+            current_admin = get_current_admin(request, db)
+            if not current_admin:
+                c_token = _get_client_token(request)
+                if not c_token or c_token != bill.client_token:
+                    return Response(
+                        content=FORBIDDEN_SESSION_HTML,
+                        status_code=403,
+                        media_type="text/html",
+                    )
     return FileResponse("frontend/pay.html", headers=NO_CACHE_HEADERS)
 
 @app.get("/payment/success")
-async def payment_success_page():
+async def payment_success_page(request: Request, session: str = "", db: Session = Depends(get_db)):
+    if session:
+        bill = db.query(SessionBill).filter(SessionBill.id == session).first()
+        if bill and bill.client_token:
+            current_admin = get_current_admin(request, db)
+            if not current_admin:
+                c_token = _get_client_token(request)
+                if not c_token or c_token != bill.client_token:
+                    return Response(
+                        content=FORBIDDEN_SESSION_HTML,
+                        status_code=403,
+                        media_type="text/html",
+                    )
     return FileResponse("frontend/success.html", headers=NO_CACHE_HEADERS)
 
 @app.get("/api/menu")
@@ -1378,9 +1418,8 @@ def get_session(session_id: str, request: Request, db: Session = Depends(get_db)
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
+    _verify_bill_ownership(bill, request, db)
     c_token = _get_client_token(request)
-    current_admin = get_current_admin(request, db)
-    is_owner_or_admin = bool(current_admin or not bill.client_token or (c_token and c_token == bill.client_token))
     changed = False
     if bill.status == "retaking":
         bill.status = "open"
@@ -1390,7 +1429,7 @@ def get_session(session_id: str, request: Request, db: Session = Depends(get_db)
         changed = True
     if changed:
         db.commit()
-    resp = JSONResponse(content=_bill_payload(bill, is_owner_or_admin=is_owner_or_admin), headers=NO_CACHE_HEADERS)
+    resp = JSONResponse(content=_bill_payload(bill), headers=NO_CACHE_HEADERS)
     resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
     if bill.status in ("open", "pending"):
         resp.set_cookie("afrc_active_session", bill.id, max_age=3600, path="/", samesite="lax")
@@ -1456,7 +1495,11 @@ def _save_bill_image_key(session_id: str, key: str) -> None:
         db.close()
 
 @app.get("/api/sessions/{session_id}/image")
-async def get_session_image(session_id: str):
+async def get_session_image(session_id: str, request: Request, db: Session = Depends(get_db)):
+    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    _verify_bill_ownership(bill, request, db)
     meta = await asyncio.to_thread(_get_bill_image_meta, session_id)
     if not meta:
         raise HTTPException(status_code=404, detail="Bill not found")
@@ -1748,6 +1791,7 @@ def pay(payload: dict, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="This bill has been voided. Please pay at the counter.")
     if bill.status == "needs_cashier":
         raise HTTPException(status_code=409, detail="A cashier is checking this bill")
+    _verify_bill_ownership(bill, request, db, (payload or {}).get("client_token", ""))
     if bill.status == "paid":
         return {"status": "paid", "session_id": bill.id}
     phone = _normalize_my_phone(payload.get("phone") or "")
