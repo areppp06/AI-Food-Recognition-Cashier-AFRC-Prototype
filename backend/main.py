@@ -215,13 +215,51 @@ def get_db():
     finally:
         db.close()
 
+def _mask_phone(phone: str) -> str:
+    p = str(phone or "").strip()
+    if not p or len(p) < 6:
+        return p
+    if p.startswith("+"):
+        prefix = p[:4]
+        suffix = p[-3:]
+        stars = "•" * max(3, len(p) - 7)
+        return f"{prefix}{stars}{suffix}"
+    prefix = p[:3]
+    suffix = p[-3:]
+    stars = "•" * max(3, len(p) - 6)
+    return f"{prefix}{stars}{suffix}"
+
+def _mask_email(email: str) -> str:
+    e = str(email or "").strip()
+    if not e or "@" not in e:
+        return e
+    parts = e.split("@", 1)
+    user, domain = parts[0], parts[1]
+    if len(user) <= 2:
+        masked_user = user[0] + "•"
+    else:
+        masked_user = user[0] + ("•" * max(2, len(user) - 2)) + user[-1]
+    return f"{masked_user}@{domain}"
+
+def _verify_bill_ownership(bill, request: Request, db, explicit_token: str = "") -> None:
+    current_admin = get_current_admin(request, db)
+    if current_admin:
+        return
+    if not bill.client_token:
+        return
+    c_token = _get_client_token(request, explicit_token)
+    if not c_token or c_token != bill.client_token:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to modify this bill."
+        )
+
 def _client_ip(request: Request) -> str:
-    cf_ip = request.headers.get("cf-connecting-ip", "").strip()
-    if cf_ip:
-        return cf_ip
     forwarded = request.headers.get("x-forwarded-for", "")
     if forwarded:
-        return forwarded.split(",")[0].strip()
+        parts = [p.strip() for p in forwarded.split(",") if p.strip()]
+        if parts:
+            return parts[0]
     if request.client and request.client.host:
         return request.client.host
     return ""
@@ -1280,7 +1318,7 @@ async def recognize(
     resp.set_cookie("afrc_active_session", session_id, max_age=3600, path="/", samesite="lax")
     return resp
 
-def _bill_payload(session: SessionBill, refunded_amount: float = 0.0) -> dict:
+def _bill_payload(session: SessionBill, refunded_amount: float = 0.0, is_owner_or_admin: bool = True) -> dict:
     prof = _restaurant_profile()
     try:
         items = json.loads(session.final_bill or "[]")
@@ -1304,6 +1342,11 @@ def _bill_payload(session: SessionBill, refunded_amount: float = 0.0) -> dict:
             if retakes_used >= max_retakes
             else "Bill timed out"
         )
+    email_val = session.receipt_email or ""
+    phone_val = session.receipt_phone or ""
+    if not is_owner_or_admin:
+        email_val = _mask_email(email_val)
+        phone_val = _mask_phone(phone_val)
     return {
         "session_id": session.id,
         "bill_number": session.bill_number or "AAA-0001",
@@ -1314,8 +1357,8 @@ def _bill_payload(session: SessionBill, refunded_amount: float = 0.0) -> dict:
         "retake_count": retakes_used,
         "retakes_left": max(0, max_retakes - retakes_used),
         "max_retakes": max_retakes,
-        "receipt_email": session.receipt_email or "",
-        "receipt_phone": session.receipt_phone or "",
+        "receipt_email": email_val,
+        "receipt_phone": phone_val,
         "curlec_order_id": session.curlec_order_id or "",
         "curlec_payment_id": session.curlec_payment_id or "",
         "restaurant_name": prof["restaurant_name"],
@@ -1336,6 +1379,8 @@ def get_session(session_id: str, request: Request, db: Session = Depends(get_db)
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
     c_token = _get_client_token(request)
+    current_admin = get_current_admin(request, db)
+    is_owner_or_admin = bool(current_admin or not bill.client_token or (c_token and c_token == bill.client_token))
     changed = False
     if bill.status == "retaking":
         bill.status = "open"
@@ -1345,7 +1390,7 @@ def get_session(session_id: str, request: Request, db: Session = Depends(get_db)
         changed = True
     if changed:
         db.commit()
-    resp = JSONResponse(content=_bill_payload(bill), headers=NO_CACHE_HEADERS)
+    resp = JSONResponse(content=_bill_payload(bill, is_owner_or_admin=is_owner_or_admin), headers=NO_CACHE_HEADERS)
     resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
     if bill.status in ("open", "pending"):
         resp.set_cookie("afrc_active_session", bill.id, max_age=3600, path="/", samesite="lax")
@@ -1363,13 +1408,14 @@ def start_retake(session_id: str, request: Request, payload: dict = None, db: Se
         raise HTTPException(status_code=409, detail="This bill is already paid")
     if bill.status in ("void", "cancelled"):
         raise HTTPException(status_code=409, detail="This bill has been voided. Please pay at the counter.")
+    _verify_bill_ownership(bill, request, db, (payload or {}).get("client_token", ""))
     max_retakes = _rate_limit_config()["max_retakes"]
     if (bill.retake_count or 0) >= max_retakes:
         raise HTTPException(status_code=409, detail="No retries remaining")
     c_token = _get_client_token(request, (payload or {}).get("client_token", ""))
     bill.status = "retaking"
     bill.updated_at = datetime.utcnow()
-    if c_token:
+    if c_token and not bill.client_token:
         bill.client_token = c_token
     db.commit()
     resp = JSONResponse(
@@ -1454,12 +1500,13 @@ async def get_session_image(session_id: str):
     raise HTTPException(status_code=404, detail="Image not found")
 
 @app.post("/api/sessions/{session_id}/need-cashier")
-def need_cashier(session_id: str, db: Session = Depends(get_db)):
+def need_cashier(session_id: str, request: Request, db: Session = Depends(get_db)):
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
     if bill.status == "paid":
         raise HTTPException(status_code=409, detail="This bill is already paid")
+    _verify_bill_ownership(bill, request, db)
     bill.status = "void"
     bill.void_reason = "Needed Cashier Assistance"
     bill.updated_at = datetime.utcnow()
@@ -1477,12 +1524,13 @@ def need_cashier(session_id: str, db: Session = Depends(get_db)):
     return resp
 
 @app.post("/api/sessions/{session_id}/cancel")
-def cancel_bill(session_id: str, db: Session = Depends(get_db)):
+def cancel_bill(session_id: str, request: Request, db: Session = Depends(get_db)):
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
     if bill.status == "paid":
         raise HTTPException(status_code=409, detail="This bill is already paid")
+    _verify_bill_ownership(bill, request, db)
     bill.status = "void"
     bill.void_reason = "Customer Cancelled"
     bill.updated_at = datetime.utcnow()
@@ -1506,6 +1554,7 @@ def void_retake(session_id: str, request: Request, payload: dict = None, db: Ses
         raise HTTPException(status_code=404, detail="Bill not found")
     if bill.status == "paid":
         raise HTTPException(status_code=409, detail="This bill is already paid")
+    _verify_bill_ownership(bill, request, db, (payload or {}).get("client_token", ""))
     cfg = _rate_limit_config()
     body = payload or {}
     c_token = _get_client_token(request, body.get("client_token", "")) or bill.client_token or ""
