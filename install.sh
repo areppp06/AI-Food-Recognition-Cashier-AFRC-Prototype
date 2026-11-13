@@ -287,6 +287,12 @@ if [[ -t 0 ]]; then
           fi
           $SUDO tee /etc/caddy/Caddyfile >/dev/null <<EOF
 ${SETUP_CADDY_DOMAIN} {
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
     request_body {
         max_size 2MB
     }
