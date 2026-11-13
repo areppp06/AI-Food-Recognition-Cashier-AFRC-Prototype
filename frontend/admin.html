@@ -3263,20 +3263,23 @@ function recalcRefundTotal() {
   }
 }
 
+let isRefundSubmitting = false;
+
 async function submitRefund() {
-  if (!activeRefundInfo) return;
+  if (!activeRefundInfo || isRefundSubmitting) return;
   const errBox = document.getElementById("refundErrorBox");
   const submitBtn = document.getElementById("refundSubmitBtn");
   const reasonEl = document.getElementById("refundReasonInput");
   const { items, total } = getSelectedRefundPayload();
   if (!items.length || total <= 0) return;
 
+  isRefundSubmitting = true;
   if (errBox) {
     errBox.style.display = "none";
     errBox.textContent = "";
   }
   submitBtn.disabled = true;
-  submitBtn.textContent = "Processing...";
+  submitBtn.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:6px;vertical-align:middle;"></span> Processing...';
 
   try {
     const res = await fetch(`/api/admin/bills/${encodeURIComponent(activeRefundInfo.session_id)}/refund`, {
@@ -3300,6 +3303,8 @@ async function submitRefund() {
       errBox.style.display = "block";
     }
     recalcRefundTotal();
+  } finally {
+    isRefundSubmitting = false;
   }
 }
 
