@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terma & Syarat | Terms & Conditions - PRISM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  overflow-x: hidden;
+  width: 100%;
+  background: #f1f5f9;
+}
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #f1f5f9;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: hidden;
+}
+.page-container {
+  width: 100%;
+  max-width: 680px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3.5rem;
+  background: #f8fafc;
+  box-shadow: 0 0 40px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.back-link:hover {
+  color: #ff5e36;
+  border-color: #ff5e36;
+  background: #fff5f2;
+}
+.back-link svg {
+  width: 16px;
+  height: 16px;
+}
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.lang-btn {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.lang-btn.active {
+  background: #ff5e36;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(255, 94, 54, 0.35);
+}
+.content-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.6rem 1.4rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05);
+  margin-bottom: 1.5rem;
+}
+.page-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  background: #fff5f2;
+  color: #ff5e36;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 9999px;
+  margin-bottom: 0.65rem;
+}
+.page-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.3rem;
+  line-height: 1.25;
+}
+.page-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+}
+.page-updated {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: inline-block;
+  margin-bottom: 1.25rem;
+}
+.policy-section {
+  margin-bottom: 1.4rem;
+}
+.policy-section h2, .policy-section h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.policy-section p {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: #334155;
+  margin-bottom: 0.65rem;
+}
+.policy-section ul {
+  list-style: none;
+  margin: 0.5rem 0 0.85rem;
+  padding: 0;
+}
+.policy-section ul li {
+  position: relative;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #334155;
+  padding-left: 1.25rem;
+  margin-bottom: 0.45rem;
+}
+.policy-section ul li::before {
+  content: "•";
+  color: #ff5e36;
+  font-weight: bold;
+  font-size: 1.1rem;
+  position: absolute;
+  left: 0.25rem;
+  top: -0.1rem;
+}
+.callout-box {
+  background: #f8fafc;
+  border-left: 4px solid #ff5e36;
+  border-radius: 0 12px 12px 0;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #1e293b;
+}
+.counter-box {
+  background: #fff8f5;
+  border: 1px solid #ffd8cc;
+  border-radius: 14px;
+  padding: 1rem;
+  margin: 1.25rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.counter-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.counter-text {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #9a3412;
+}
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 0.9rem;
+  margin: 0.75rem 0;
+  border: 1px solid #e2e8f0;
+}
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #334155;
+}
+.info-item a {
+  color: #ff5e36;
+  text-decoration: none;
+  font-weight: 600;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background: #ff5e36;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.7rem 1.15rem;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 4px 14px -2px rgba(255, 94, 54, 0.4);
+  transition: all 0.2s ease;
+}
+.btn-primary:hover {
+  background: #f04e26;
+  transform: translateY(-1px);
+}
+.quick-links-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.7;
+}
+.quick-links-footer .footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin-bottom: 0.65rem;
+}
+.quick-links-footer .footer-link {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+.quick-links-footer .footer-link:hover {
+  color: #ff5e36;
+  text-decoration: underline;
+}
+.quick-links-footer .dot {
+  color: #cbd5e1;
+  font-size: 0.6rem;
+}
+.quick-links-footer .footer-brand {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+</style>
+</head>
+<body>
+<div class="page-container">
+  <div class="top-nav">
+    <a href="/" class="back-link">
+      <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <span data-lang="bm">Utama</span>
+      <span data-lang="en" style="display:none;">Home</span>
+    </a>
+    <div class="lang-toggle" role="tablist">
+      <button type="button" class="lang-btn active" id="lang-bm" onclick="setLanguage('bm')">🇲🇾 BM</button>
+      <button type="button" class="lang-btn" id="lang-en" onclick="setLanguage('en')">🇬🇧 EN</button>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="page-badge">PRISM &bull; <span data-lang="bm">Terma &amp; Syarat</span><span data-lang="en" style="display:none;">Terms &amp; Conditions</span></div>
+
+    <!-- BM VERSION -->
+    <div data-lang="bm">
+      <h1 class="page-title">Terma &amp; Syarat</h1>
+      <p class="page-sub"><span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; Sistem e-Juruwang Layan Diri (PRISM)</p>
+      <span class="page-updated">Kemas kini terakhir: 14 November 2026</span>
+
+      <div class="policy-section">
+        <h2>1. Pengenalan</h2>
+        <p>Terma &amp; Syarat ini mengawal selia penggunaan anda terhadap Sistem e-Juruwang Layan Diri PRISM (&ldquo;PRISM&rdquo;) yang disediakan oleh <strong class="dyn-restaurant-name">TAKCAKAP.COM</strong> (&ldquo;Pihak Restoran&rdquo;).</p>
+        <p>Dengan mengakses atau menggunakan PRISM, anda mengakui bahawa anda telah membaca, memahami dan bersetuju untuk terikat dengan Terma &amp; Syarat ini.</p>
+        <p>Sekiranya anda tidak bersetuju dengan Terma &amp; Syarat ini atau menghadapi sebarang kesulitan semasa menggunakan sistem, sila hadir terus ke kaunter juruwang fizikal kami untuk bantuan manual.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>2. Penggunaan di Premis Sahaja (On-Premises Only)</h2>
+        <p>Sistem PRISM direka bentuk khusus secara eksklusif untuk pelanggan yang hadir secara fizikal di premis Restoran.</p>
+        <ul>
+          <li>PRISM hanya sah digunakan untuk makanan dan hidangan yang diambil dan dibeli di premis Restoran.</li>
+          <li>Pelanggan wajib berada secara fizikal di Restoran semasa menggunakan sistem PRISM.</li>
+          <li>PRISM tidak direka bentuk, tidak dimaksudkan dan tidak dibenarkan untuk kegunaan transaksi jarak jauh atau pesanan di luar premis Restoran.</li>
+        </ul>
+        <div class="callout-box">
+          Pihak Restoran berhak sepenuhnya untuk menolak, membatalkan atau menyiasat sebarang transaksi yang dikesan melibatkan penggunaan tanpa kebenaran di luar premis atau penyalahgunaan sistem.
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>3. Bagaimana PRISM Berfungsi</h2>
+        <p>PRISM membolehkan pelanggan mengambil gambar pinggan makanan mereka dan menerima bil yang dijana secara automatik dalam masa beberapa saat.</p>
+        <p>Sistem ini menggunakan Model Bahasa Besar (LLM/AI) untuk mengenal pasti item makanan, lauk-pauk dan menganggar kuantiti daripada gambar foto yang dihantar oleh pelanggan.</p>
+        <p>Keputusan pengecaman makanan tersebut diproses oleh pelayan sistem restoran, yang akan memadankan harga rasmi daripada pangkalan data menu dan mengira jumlah bil akhir.</p>
+        <div class="callout-box">
+          <strong>PENTING:</strong><br>
+          • Model AI/LLM hanya mengenal pasti lauk dan menganggar kuantiti; model AI TIDAK menentukan atau mengubah harga.<br>
+          • Semua harga makanan diambil secara tepat daripada pangkalan data menu rasmi Restoran.<br>
+          • Pengiraan bil muktamad dikira oleh sistem backend Restoran.
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>4. Ketepatan Pengecaman LLM &amp; Pengesahan Pelanggan</h2>
+        <p>Sistem PRISM memanfaatkan teknologi kecerdasan buatan (AI/LLM), yang dalam keadaan tertentu mungkin tersilap mengenal pasti jenis makanan, tersalah anggar kuantiti atau menghasilkan keputusan yang berbeza daripada keadaan sebenar.</p>
+        <p>Pelanggan bertanggungjawab sepenuhnya untuk menyemak dan meneliti senarai bil yang dipaparkan pada skrin sebelum meneruskan pembayaran.</p>
+        <p>Sebelum membuat pembayaran, pelanggan WAJIB menandakan kotak pengesahan bahawa semua item lauk, kuantiti dan jumlah bil yang dipaparkan adalah tepat dan benar.</p>
+        <p>Dengan mengesahkan bil dan membuat pembayaran, pelanggan mengakui ketepatan keputusan yang dipaparkan pada masa transaksi dijalankan.</p>
+        <p>Walau bagaimanapun, pengesahan ini tidak menghalang pihak Restoran daripada menyemak atau menyiasat sebarang perbezaan tulen yang dikenal pasti semasa atau selepas pembayaran.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>5. Pengesahan Bil &amp; Kuasa Juruwang</h2>
+        <p>Pihak Restoran mempunyai hak mutlak untuk menyemak, mengesahkan dan membetulkan mana-mana bil pada bila-bila masa sekiranya perlu, termasuk situasi:</p>
+        <ul>
+          <li>Keputusan imbasan AI yang kabur, meragukan atau berpotensi tidak tepat.</li>
+          <li>Pertikaian atau aduan pelanggan di kaunter.</li>
+          <li>Percanggahan harga atau kuantiti lauk yang disyaki.</li>
+          <li>Ketidakseimbangan yang dikesan semasa audit transaksi harian.</li>
+        </ul>
+        <p>Juruwang Restoran memegang kuasa muktamad untuk mengesahkan dan meminda butiran bil sekiranya perlu demi keadilan kedua-dua pihak.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>6. Tanggungjawab Pelanggan &amp; Penggunaan Yang Diterima</h2>
+        <p>Pelanggan yang menggunakan PRISM bersetuju untuk:</p>
+        <ul>
+          <li>Menggunakan PRISM hanya semasa berada secara fizikal di premis Restoran.</li>
+          <li>Mengambil dan menghantar gambar pinggan yang tulen, jelas dan terang.</li>
+          <li>Menyemak setiap item bil sebelum membuat bayaran.</li>
+          <li>Memberikan maklumat nombor telefon yang sah untuk rujukan transaksi.</li>
+          <li>Menggunakan PRISM dengan niat baik dan TIDAK memanipulasi, memperdaya atau mengeksploitasi algoritma imbasan.</li>
+          <li>Tidak merosakkan, menggodam, menghantar data berbahaya atau mengganggu sistem.</li>
+          <li>Mematuhi arahan sistem serta arahan kakitangan Restoran.</li>
+        </ul>
+      </div>
+
+      <div class="policy-section">
+        <h2>7. Ketersediaan Sistem &amp; Isu Teknikal</h2>
+        <p>PRISM disediakan sebagai kemudahan layan diri dan kadangkala mungkin mengalami gangguan internet, kerja-kerja penyelenggaraan atau ketidaktersediaan sementara.</p>
+        <p>Pihak Restoran tidak menjamin operasi sistem tanpa gangguan 100% bebas ralat.</p>
+        <p>Sekiranya berlaku sebarang masalah sistem, pelanggan hendaklah terus ke kaunter juruwang fizikal dan membuat bayaran melalui kaedah manual biasa.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>8. Had Liabiliti</h2>
+        <p>Setakat yang dibenarkan oleh undang-undang Malaysia, Restoran tidak bertanggungjawab ke atas sebarang kerugian sampingan yang berpunca daripada kesilapan imbasan AI, kegagalan rangkaian internet peranti pelanggan, atau kelewatan gerbang bayaran pihak ketiga.</p>
+        <p>Tiada apa-apa dalam Terma ini yang mengecualikan hak undang-undang pengguna yang tidak boleh diketepikan di bawah undang-undang Malaysia.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>9. Privasi &amp; Data Peribadi</h2>
+        <p>Pengendalian data peribadi dikawal selia di bawah <a href="/privacy" style="color:#ff5e36;font-weight:600;">Notis Privasi</a> rasmi kami. Sila rujuk dokumen tersebut untuk butiran lanjut.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>10. Perubahan pada Terma &amp; Syarat</h2>
+        <p>Pihak Restoran berhak meminda Terma ini dari semasa ke semasa mengikut kesesuaian operasi. Terma yang dikemas kini akan dipaparkan secara langsung melalui sistem PRISM.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>11. Undang-undang Yang Mengawal Selia</h2>
+        <p>Terma &amp; Syarat ini ditadbir dan ditafsirkan sepenuhnya mengikut undang-undang Negara Malaysia.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>12. Hubungan &amp; Bantuan Kaunter</h2>
+        <div class="counter-box">
+          <span class="counter-icon">🏪</span>
+          <div class="counter-text">
+            <strong>Bantuan Kaunter Fizikal:</strong><br>
+            Untuk sebarang pertanyaan, pembetulan bil atau isu teknikal, sila hadir ke kaunter juruwang di premis kami:<br>
+            <strong><span class="dyn-restaurant-name">TAKCAKAP.COM</span></strong> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)<br>
+            Telefon: <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a> &bull; E-mel: <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EN VERSION -->
+    <div data-lang="en" style="display:none;">
+      <h1 class="page-title">Terms &amp; Conditions</h1>
+      <p class="page-sub"><span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; Self-Service e-Cashier System (PRISM)</p>
+      <span class="page-updated">Last updated: 14 November 2026</span>
+
+      <div class="policy-section">
+        <h2>1. Introduction</h2>
+        <p>These Terms &amp; Conditions govern your use of the PRISM Self-Service e-Cashier System (&ldquo;PRISM&rdquo;) provided by <strong class="dyn-restaurant-name">TAKCAKAP.COM</strong> (&ldquo;the Restaurant&rdquo;).</p>
+        <p>By accessing or using PRISM, you acknowledge that you have read and agreed to these Terms &amp; Conditions.</p>
+        <p>If you do not agree with these Terms &amp; Conditions or experience difficulties using the system, please proceed to the physical cashier counter for assistance.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>2. On-Premises Use Only</h2>
+        <p>PRISM is designed exclusively for customers physically present at the Restaurant&rsquo;s premises.</p>
+        <ul>
+          <li>PRISM may only be used for food purchased at the Restaurant&rsquo;s premises.</li>
+          <li>Customers must be physically present at the Restaurant when using PRISM.</li>
+          <li>PRISM is not designed, intended or authorised for remote use or transactions conducted outside the Restaurant&rsquo;s premises.</li>
+        </ul>
+        <div class="callout-box">
+          The Restaurant reserves the right to reject or investigate transactions that appear to involve unauthorised off-premises use or misuse of the system.
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>3. How PRISM Works</h2>
+        <p>PRISM allows customers to photograph their food and receive an automatically generated bill.</p>
+        <p>The system uses a Large Language Model (LLM) to identify food items and estimate their quantities from the submitted photograph.</p>
+        <p>The generated results are processed by the Restaurant&rsquo;s backend system, which retrieves the applicable menu prices and calculates the bill.</p>
+        <div class="callout-box">
+          <strong>Important:</strong><br>
+          • The LLM identifies food items and estimates quantities. It does not determine or set prices.<br>
+          • All food prices are obtained from the Restaurant&rsquo;s menu and pricing database.<br>
+          • The final bill amount is calculated by the Restaurant&rsquo;s backend system.
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>4. LLM Recognition Accuracy and Customer Confirmation</h2>
+        <p>PRISM uses LLM technology, which may occasionally misidentify food items, incorrectly estimate quantities or produce inaccurate results.</p>
+        <p>Customers are responsible for reviewing the generated bill before proceeding with payment.</p>
+        <p>Before payment, customers must explicitly confirm that the displayed food items, quantities and bill details are correct.</p>
+        <p>By confirming the bill and proceeding with payment, customers acknowledge the displayed results at the time of the transaction.</p>
+        <p>However, this confirmation does not prevent the Restaurant from investigating genuine discrepancies discovered during or after payment.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>5. Bill Verification and Cashier Authority</h2>
+        <p>The Restaurant reserves the right to review, verify and correct a bill whenever necessary, including situations involving:</p>
+        <ul>
+          <li>Uncertain or potentially inaccurate LLM recognition results.</li>
+          <li>Customer complaints or disputes.</li>
+          <li>Suspected pricing or quantity discrepancies.</li>
+          <li>Issues identified during transaction audits.</li>
+        </ul>
+        <p>Cashier verification is not necessarily performed for every transaction.</p>
+        <p>The Restaurant&rsquo;s cashier retains final authority to verify and correct bill details where necessary.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>6. Customer Responsibilities and Acceptable Use</h2>
+        <p>Customers using PRISM agree to:</p>
+        <ul>
+          <li>Use PRISM only while physically present at the Restaurant&rsquo;s premises.</li>
+          <li>Submit genuine and reasonably clear photographs of their food.</li>
+          <li>Review the generated bill before confirming payment.</li>
+          <li>Provide accurate information when reporting issues or discrepancies.</li>
+          <li>Use PRISM in good faith and not intentionally manipulate or exploit its recognition process.</li>
+          <li>Avoid interfering with, damaging or attempting to disrupt the system.</li>
+          <li>Follow the instructions displayed by PRISM and the Restaurant&rsquo;s staff.</li>
+        </ul>
+        <p>The Restaurant reserves the right to restrict access to PRISM or take appropriate action where misuse, fraudulent activity or intentional system exploitation is identified.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>7. System Availability and Technical Issues</h2>
+        <p>PRISM is provided as a self-service facility and may occasionally experience technical issues, service interruptions, maintenance or temporary unavailability.</p>
+        <p>The Restaurant does not guarantee uninterrupted availability or error-free operation of the system.</p>
+        <p>If customers experience difficulties using PRISM, they should head to the physical cashier counter and complete their transaction through the Restaurant&rsquo;s traditional manual payment process.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>8. Limitation of Liability</h2>
+        <p>To the extent permitted by applicable law, the Restaurant shall not be responsible for losses arising from:</p>
+        <ul>
+          <li>Inaccurate food recognition or quantity estimation by the LLM.</li>
+          <li>Temporary system interruptions or technical failures.</li>
+          <li>Network connectivity issues or third-party service disruptions.</li>
+          <li>Customer errors when reviewing or confirming bill details.</li>
+        </ul>
+        <p>Nothing in these Terms &amp; Conditions excludes or restricts any consumer rights, guarantees or liabilities that cannot legally be excluded or restricted under Malaysian law.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>9. Privacy and Personal Data</h2>
+        <p>The collection, use, storage and disclosure of personal data through PRISM are governed by the Restaurant&rsquo;s separate <a href="/privacy" style="color:#ff5e36;font-weight:600;">Privacy Notice</a>.</p>
+        <p>Customers are encouraged to review the Privacy Notice before using the system.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>10. Changes to These Terms &amp; Conditions</h2>
+        <p>The Restaurant reserves the right to amend or update these Terms &amp; Conditions when necessary.</p>
+        <p>Updated terms will be made available through PRISM or other appropriate communication channels.</p>
+        <p>Continued use of PRISM after updated Terms &amp; Conditions take effect constitutes acceptance of the revised terms, subject to applicable law.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>11. Governing Law</h2>
+        <p>These Terms &amp; Conditions shall be governed by and interpreted in accordance with the laws of Malaysia.</p>
+        <p>Any disputes arising from the use of PRISM shall be handled in accordance with applicable Malaysian laws and regulations.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>12. Contact and Assistance</h2>
+        <div class="counter-box">
+          <span class="counter-icon">🏪</span>
+          <div class="counter-text">
+            <strong>Physical Cashier Assistance:</strong><br>
+            For technical assistance or questions regarding PRISM, customers should approach the Restaurant&rsquo;s physical cashier counter.<br>
+            <strong><span class="dyn-restaurant-name">TAKCAKAP.COM</span></strong> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)<br>
+            Contact: <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a> &bull; Email: <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a><br>
+            Address: <span class="dyn-restaurant-address">Restaurant Premises</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="quick-links-footer">
+    <div class="footer-links">
+      <a href="/privacy" class="footer-link"><span data-lang="bm">Dasar Privasi</span><span data-lang="en" style="display:none;">Privacy Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/terms" class="footer-link"><span data-lang="bm">Terma &amp; Syarat</span><span data-lang="en" style="display:none;">Terms &amp; Conditions</span></a>
+      <span class="dot">•</span>
+      <a href="/payment-policy" class="footer-link"><span data-lang="bm">Polisi Pembayaran</span><span data-lang="en" style="display:none;">Payment Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/contact" class="footer-link"><span data-lang="bm">Hubungi Kami</span><span data-lang="en" style="display:none;">Contact Us</span></a>
+      <span class="dot">•</span>
+      <a href="/about" class="footer-link"><span data-lang="bm">Tentang Kami</span><span data-lang="en" style="display:none;">About Us</span></a>
+      <span class="dot">•</span>
+      <a href="/pricelist" class="footer-link"><span data-lang="bm">Senarai Harga</span><span data-lang="en" style="display:none;">Menu Prices</span></a>
+    </div>
+    <div class="footer-brand">
+      &copy; 2026 <span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; PRISM e-Cashier
+    </div>
+  </footer>
+</div>
+
+<script>
+function setLanguage(lang) {
+  try { localStorage.setItem('prism_lang', lang); } catch (e) {}
+  document.querySelectorAll('[data-lang]').forEach(el => {
+    if (el.getAttribute('data-lang') === lang) {
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('lang-' + lang);
+  if (btn) btn.classList.add('active');
+  document.documentElement.lang = (lang === 'bm') ? 'ms' : 'en';
+}
+
+function initProfile() {
+  fetch('/api/public-profile')
+    .then(r => r.json())
+    .then(data => {
+      if (!data) return;
+      const rName = data.restaurant_name || 'TAKCAKAP.COM';
+      const cName = data.company_name || 'De Warisan Ibunda Enterprise';
+      const cPhone = data.company_phone || '+60 1121815101';
+      const cEmail = data.company_email || 'support@takcakap.com';
+      const rAddr = data.restaurant_address || 'Premis Restoran';
+      const gUrl = data.google_maps_url || 'https://maps.google.com';
+      const gEmbed = data.google_maps_embed_url || '';
+
+      document.querySelectorAll('.dyn-restaurant-name').forEach(el => el.textContent = rName);
+      document.querySelectorAll('.dyn-company-name').forEach(el => el.textContent = cName);
+      document.querySelectorAll('.dyn-company-phone').forEach(el => {
+        el.textContent = cPhone;
+        if (el.tagName === 'A') el.href = 'tel:' + cPhone.replace(/\s+/g, '');
+      });
+      document.querySelectorAll('.dyn-company-email').forEach(el => {
+        el.textContent = cEmail;
+        if (el.tagName === 'A') el.href = 'mailto:' + cEmail;
+      });
+      document.querySelectorAll('.dyn-restaurant-address').forEach(el => el.textContent = rAddr);
+      document.querySelectorAll('.dyn-google-maps-link').forEach(el => {
+        el.href = gUrl;
+      });
+      document.querySelectorAll('.dyn-google-maps-iframe').forEach(el => {
+        if (gEmbed) el.src = gEmbed;
+        else el.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(rName) + '&output=embed';
+      });
+    })
+    .catch(() => {});
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  let lang = 'bm';
+  try {
+    const saved = localStorage.getItem('prism_lang');
+    if (saved === 'en' || saved === 'bm') lang = saved;
+  } catch (e) {}
+  setLanguage(lang);
+  initProfile();
+});
+</script>
+</body>
+</html>

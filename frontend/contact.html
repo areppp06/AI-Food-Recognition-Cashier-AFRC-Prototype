@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hubungi Kami | Contact Us - PRISM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  overflow-x: hidden;
+  width: 100%;
+  background: #f1f5f9;
+}
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #f1f5f9;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: hidden;
+}
+.page-container {
+  width: 100%;
+  max-width: 680px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3.5rem;
+  background: #f8fafc;
+  box-shadow: 0 0 40px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.back-link:hover {
+  color: #ff5e36;
+  border-color: #ff5e36;
+  background: #fff5f2;
+}
+.back-link svg {
+  width: 16px;
+  height: 16px;
+}
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.lang-btn {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.lang-btn.active {
+  background: #ff5e36;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(255, 94, 54, 0.35);
+}
+.content-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.6rem 1.4rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05);
+  margin-bottom: 1.5rem;
+}
+.page-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  background: #fff5f2;
+  color: #ff5e36;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 9999px;
+  margin-bottom: 0.65rem;
+}
+.page-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.3rem;
+  line-height: 1.25;
+}
+.page-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+}
+.page-updated {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: inline-block;
+  margin-bottom: 1.25rem;
+}
+.policy-section {
+  margin-bottom: 1.4rem;
+}
+.policy-section h2, .policy-section h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.policy-section p {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: #334155;
+  margin-bottom: 0.65rem;
+}
+.policy-section ul {
+  list-style: none;
+  margin: 0.5rem 0 0.85rem;
+  padding: 0;
+}
+.policy-section ul li {
+  position: relative;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #334155;
+  padding-left: 1.25rem;
+  margin-bottom: 0.45rem;
+}
+.policy-section ul li::before {
+  content: "•";
+  color: #ff5e36;
+  font-weight: bold;
+  font-size: 1.1rem;
+  position: absolute;
+  left: 0.25rem;
+  top: -0.1rem;
+}
+.callout-box {
+  background: #f8fafc;
+  border-left: 4px solid #ff5e36;
+  border-radius: 0 12px 12px 0;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #1e293b;
+}
+.counter-box {
+  background: #fff8f5;
+  border: 1px solid #ffd8cc;
+  border-radius: 14px;
+  padding: 1rem;
+  margin: 1.25rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.counter-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.counter-text {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #9a3412;
+}
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 0.9rem;
+  margin: 0.75rem 0;
+  border: 1px solid #e2e8f0;
+}
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #334155;
+}
+.info-item a {
+  color: #ff5e36;
+  text-decoration: none;
+  font-weight: 600;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background: #ff5e36;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.7rem 1.15rem;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 4px 14px -2px rgba(255, 94, 54, 0.4);
+  transition: all 0.2s ease;
+}
+.btn-primary:hover {
+  background: #f04e26;
+  transform: translateY(-1px);
+}
+.quick-links-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.7;
+}
+.quick-links-footer .footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin-bottom: 0.65rem;
+}
+.quick-links-footer .footer-link {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+.quick-links-footer .footer-link:hover {
+  color: #ff5e36;
+  text-decoration: underline;
+}
+.quick-links-footer .dot {
+  color: #cbd5e1;
+  font-size: 0.6rem;
+}
+.quick-links-footer .footer-brand {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+</style>
+</head>
+<body>
+<div class="page-container">
+  <div class="top-nav">
+    <a href="/" class="back-link">
+      <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <span data-lang="bm">Utama</span>
+      <span data-lang="en" style="display:none;">Home</span>
+    </a>
+    <div class="lang-toggle" role="tablist">
+      <button type="button" class="lang-btn active" id="lang-bm" onclick="setLanguage('bm')">🇲🇾 BM</button>
+      <button type="button" class="lang-btn" id="lang-en" onclick="setLanguage('en')">🇬🇧 EN</button>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="page-badge">PRISM &bull; <span data-lang="bm">Hubungi Kami</span><span data-lang="en" style="display:none;">Contact Us</span></div>
+
+    <!-- BM VERSION -->
+    <div data-lang="bm">
+      <h1 class="page-title">Hubungi Kami</h1>
+      <p class="page-sub"><strong class="dyn-restaurant-name">TAKCAKAP.COM</strong> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)</p>
+
+      <div class="counter-box" style="margin-top:0.75rem;">
+        <span class="counter-icon">🏪</span>
+        <div class="counter-text">
+          Untuk sebarang pertanyaan mengenai Dasar Privasi, Terma dan Syarat &amp; Polisi Pembayaran &amp; Bayaran Balik, data peribadi anda, atau isu berkaitan transaksi anda, <strong>sila hadir terus ke kaunter fizikal kami</strong>.
+        </div>
+      </div>
+
+      <div class="policy-section" style="margin-top:1.25rem;">
+        <h2>Cari kami di Google Maps:</h2>
+        <div style="width:100%; height:260px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin:0.85rem 0 1rem; background:#e2e8f0;">
+          <iframe class="dyn-google-maps-iframe" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=De+Warisan+Ibunda&output=embed"></iframe>
+        </div>
+        
+        <div style="margin: 0.75rem 0 1.25rem;">
+          <a href="https://maps.google.com/?q=De+Warisan+Ibunda" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            Buka di Google Maps
+          </a>
+        </div>
+        <p style="font-size:0.85rem; color:#64748b; line-height:1.5;">
+          Semua butiran lokasi tepat dan nombor hubungan boleh didapati di penyenaraian Google Maps kami.
+        </p>
+      </div>
+
+      <div class="policy-section">
+        <h2>Maklumat Premis</h2>
+        <div class="info-row">
+          <div class="info-item">🏪 <strong>Nama Gerai / Restoran:</strong> <span class="dyn-restaurant-name">TAKCAKAP.COM</span></div>
+          <div class="info-item">🏢 <strong>Syarikat:</strong> <span class="dyn-company-name">De Warisan Ibunda Enterprise</span></div>
+          <div class="info-item">📞 <strong>Telefon:</strong> <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a></div>
+          <div class="info-item">✉️ <strong>E-mel:</strong> <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a></div>
+          <div class="info-item">📍 <strong>Alamat Fizikal:</strong> <span class="dyn-restaurant-address">De Warisan Ibunda Enterprise, Kuala Lumpur, Malaysia</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EN VERSION -->
+    <div data-lang="en" style="display:none;">
+      <h1 class="page-title">Contact Us</h1>
+      <p class="page-sub"><strong class="dyn-restaurant-name">TAKCAKAP.COM</strong> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)</p>
+
+      <div class="counter-box" style="margin-top:0.75rem;">
+        <span class="counter-icon">🏪</span>
+        <div class="counter-text">
+          For any questions about Privacy Policy, Terms and conditions &amp; Payment Refund Policy, your personal data, or issues with your transaction, <strong>please head directly to our physical counter</strong>.
+        </div>
+      </div>
+
+      <div class="policy-section" style="margin-top:1.25rem;">
+        <h2>Find us on Google Maps:</h2>
+        <div style="width:100%; height:260px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin:0.85rem 0 1rem; background:#e2e8f0;">
+          <iframe class="dyn-google-maps-iframe" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=De+Warisan+Ibunda&output=embed"></iframe>
+        </div>
+        
+        <div style="margin: 0.75rem 0 1.25rem;">
+          <a href="https://maps.google.com/?q=De+Warisan+Ibunda" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            Open in Google Maps
+          </a>
+        </div>
+        <p style="font-size:0.85rem; color:#64748b; line-height:1.5;">
+          All location details and contact numbers are available on our Google Maps listing.
+        </p>
+      </div>
+
+      <div class="policy-section">
+        <h2>Premises Details</h2>
+        <div class="info-row">
+          <div class="info-item">🏪 <strong>Restaurant / Stall:</strong> <span class="dyn-restaurant-name">TAKCAKAP.COM</span></div>
+          <div class="info-item">🏢 <strong>Registered Company:</strong> <span class="dyn-company-name">De Warisan Ibunda Enterprise</span></div>
+          <div class="info-item">📞 <strong>Phone:</strong> <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a></div>
+          <div class="info-item">✉️ <strong>Email:</strong> <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a></div>
+          <div class="info-item">📍 <strong>Premises Address:</strong> <span class="dyn-restaurant-address">De Warisan Ibunda Enterprise, Kuala Lumpur, Malaysia</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="quick-links-footer">
+    <div class="footer-links">
+      <a href="/privacy" class="footer-link"><span data-lang="bm">Dasar Privasi</span><span data-lang="en" style="display:none;">Privacy Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/terms" class="footer-link"><span data-lang="bm">Terma &amp; Syarat</span><span data-lang="en" style="display:none;">Terms &amp; Conditions</span></a>
+      <span class="dot">•</span>
+      <a href="/payment-policy" class="footer-link"><span data-lang="bm">Polisi Pembayaran</span><span data-lang="en" style="display:none;">Payment Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/contact" class="footer-link"><span data-lang="bm">Hubungi Kami</span><span data-lang="en" style="display:none;">Contact Us</span></a>
+      <span class="dot">•</span>
+      <a href="/about" class="footer-link"><span data-lang="bm">Tentang Kami</span><span data-lang="en" style="display:none;">About Us</span></a>
+      <span class="dot">•</span>
+      <a href="/pricelist" class="footer-link"><span data-lang="bm">Senarai Harga</span><span data-lang="en" style="display:none;">Menu Prices</span></a>
+    </div>
+    <div class="footer-brand">
+      &copy; 2026 <span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; PRISM e-Cashier
+    </div>
+  </footer>
+</div>
+
+<script>
+function setLanguage(lang) {
+  try { localStorage.setItem('prism_lang', lang); } catch (e) {}
+  document.querySelectorAll('[data-lang]').forEach(el => {
+    if (el.getAttribute('data-lang') === lang) {
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('lang-' + lang);
+  if (btn) btn.classList.add('active');
+  document.documentElement.lang = (lang === 'bm') ? 'ms' : 'en';
+}
+
+function initProfile() {
+  fetch('/api/public-profile')
+    .then(r => r.json())
+    .then(data => {
+      if (!data) return;
+      const rName = data.restaurant_name || 'TAKCAKAP.COM';
+      const cName = data.company_name || 'De Warisan Ibunda Enterprise';
+      const cPhone = data.company_phone || '+60 1121815101';
+      const cEmail = data.company_email || 'support@takcakap.com';
+      const rAddr = data.restaurant_address || 'Premis Restoran';
+      const gUrl = data.google_maps_url || 'https://maps.google.com';
+      const gEmbed = data.google_maps_embed_url || '';
+
+      document.querySelectorAll('.dyn-restaurant-name').forEach(el => el.textContent = rName);
+      document.querySelectorAll('.dyn-company-name').forEach(el => el.textContent = cName);
+      document.querySelectorAll('.dyn-company-phone').forEach(el => {
+        el.textContent = cPhone;
+        if (el.tagName === 'A') el.href = 'tel:' + cPhone.replace(/\s+/g, '');
+      });
+      document.querySelectorAll('.dyn-company-email').forEach(el => {
+        el.textContent = cEmail;
+        if (el.tagName === 'A') el.href = 'mailto:' + cEmail;
+      });
+      document.querySelectorAll('.dyn-restaurant-address').forEach(el => el.textContent = rAddr);
+      document.querySelectorAll('.dyn-google-maps-link').forEach(el => {
+        el.href = gUrl;
+      });
+      document.querySelectorAll('.dyn-google-maps-iframe').forEach(el => {
+        if (gEmbed) el.src = gEmbed;
+        else el.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(rName) + '&output=embed';
+      });
+    })
+    .catch(() => {});
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  let lang = 'bm';
+  try {
+    const saved = localStorage.getItem('prism_lang');
+    if (saved === 'en' || saved === 'bm') lang = saved;
+  } catch (e) {}
+  setLanguage(lang);
+  initProfile();
+});
+</script>
+</body>
+</html>

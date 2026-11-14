@@ -734,6 +734,41 @@ video, canvas {
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
 }
+
+.quick-links-footer {
+  margin-top: auto;
+  padding: 1.5rem 0.5rem 0.5rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.6;
+}
+.quick-links-footer .footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.quick-links-footer .footer-link {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+.quick-links-footer .footer-link:hover {
+  color: #ff5e36;
+  text-decoration: underline;
+}
+.quick-links-footer .dot {
+  color: #cbd5e1;
+  font-size: 0.6rem;
+}
+.quick-links-footer .footer-brand {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
 </style>
 </head>
 <body>
@@ -779,6 +814,24 @@ video, canvas {
 </div>
 </div>
 <div id="result"></div>
+<footer class="quick-links-footer">
+  <div class="footer-links">
+    <a href="/privacy" class="footer-link">Privacy Policy</a>
+    <span class="dot">•</span>
+    <a href="/terms" class="footer-link">Terms &amp; Conditions</a>
+    <span class="dot">•</span>
+    <a href="/payment-policy" class="footer-link">Payment Policy</a>
+    <span class="dot">•</span>
+    <a href="/contact" class="footer-link">Contact Us</a>
+    <span class="dot">•</span>
+    <a href="/about" class="footer-link">About Us</a>
+    <span class="dot">•</span>
+    <a href="/pricelist" class="footer-link">Menu Prices</a>
+  </div>
+  <div class="footer-brand">
+    &copy; 2026 <span id="footerBrandName">TAKCAKAP.COM</span> &bull; Self-Service e-Cashier
+  </div>
+</footer>
 </div>
 <script>
 const video = document.getElementById('video');
@@ -1093,6 +1146,10 @@ async function checkClientState() {
       return true;
     }
     const state = await res.json();
+    if (state.restaurant_name) {
+      const fb = document.getElementById("footerBrandName");
+      if (fb) fb.textContent = state.restaurant_name;
+    }
     if (state.client_token) {
       try { localStorage.setItem("afrc_client_id", state.client_token); } catch (e) {}
       setCookie("afrc_client_id", state.client_token, 86400 * 30);

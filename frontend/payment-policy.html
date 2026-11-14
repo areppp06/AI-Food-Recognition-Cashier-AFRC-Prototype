@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polisi Pembayaran | Payment & Refund Policy - PRISM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  overflow-x: hidden;
+  width: 100%;
+  background: #f1f5f9;
+}
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #f1f5f9;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: hidden;
+}
+.page-container {
+  width: 100%;
+  max-width: 680px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3.5rem;
+  background: #f8fafc;
+  box-shadow: 0 0 40px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.back-link:hover {
+  color: #ff5e36;
+  border-color: #ff5e36;
+  background: #fff5f2;
+}
+.back-link svg {
+  width: 16px;
+  height: 16px;
+}
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.lang-btn {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.lang-btn.active {
+  background: #ff5e36;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(255, 94, 54, 0.35);
+}
+.content-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.6rem 1.4rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05);
+  margin-bottom: 1.5rem;
+}
+.page-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  background: #fff5f2;
+  color: #ff5e36;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 9999px;
+  margin-bottom: 0.65rem;
+}
+.page-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.3rem;
+  line-height: 1.25;
+}
+.page-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+}
+.page-updated {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: inline-block;
+  margin-bottom: 1.25rem;
+}
+.policy-section {
+  margin-bottom: 1.4rem;
+}
+.policy-section h2, .policy-section h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.policy-section p {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: #334155;
+  margin-bottom: 0.65rem;
+}
+.policy-section ul {
+  list-style: none;
+  margin: 0.5rem 0 0.85rem;
+  padding: 0;
+}
+.policy-section ul li {
+  position: relative;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #334155;
+  padding-left: 1.25rem;
+  margin-bottom: 0.45rem;
+}
+.policy-section ul li::before {
+  content: "•";
+  color: #ff5e36;
+  font-weight: bold;
+  font-size: 1.1rem;
+  position: absolute;
+  left: 0.25rem;
+  top: -0.1rem;
+}
+.callout-box {
+  background: #f8fafc;
+  border-left: 4px solid #ff5e36;
+  border-radius: 0 12px 12px 0;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #1e293b;
+}
+.counter-box {
+  background: #fff8f5;
+  border: 1px solid #ffd8cc;
+  border-radius: 14px;
+  padding: 1rem;
+  margin: 1.25rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.counter-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.counter-text {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #9a3412;
+}
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 0.9rem;
+  margin: 0.75rem 0;
+  border: 1px solid #e2e8f0;
+}
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #334155;
+}
+.info-item a {
+  color: #ff5e36;
+  text-decoration: none;
+  font-weight: 600;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background: #ff5e36;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.7rem 1.15rem;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 4px 14px -2px rgba(255, 94, 54, 0.4);
+  transition: all 0.2s ease;
+}
+.btn-primary:hover {
+  background: #f04e26;
+  transform: translateY(-1px);
+}
+.quick-links-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.7;
+}
+.quick-links-footer .footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin-bottom: 0.65rem;
+}
+.quick-links-footer .footer-link {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+.quick-links-footer .footer-link:hover {
+  color: #ff5e36;
+  text-decoration: underline;
+}
+.quick-links-footer .dot {
+  color: #cbd5e1;
+  font-size: 0.6rem;
+}
+.quick-links-footer .footer-brand {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+</style>
+</head>
+<body>
+<div class="page-container">
+  <div class="top-nav">
+    <a href="/" class="back-link">
+      <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <span data-lang="bm">Utama</span>
+      <span data-lang="en" style="display:none;">Home</span>
+    </a>
+    <div class="lang-toggle" role="tablist">
+      <button type="button" class="lang-btn active" id="lang-bm" onclick="setLanguage('bm')">🇲🇾 BM</button>
+      <button type="button" class="lang-btn" id="lang-en" onclick="setLanguage('en')">🇬🇧 EN</button>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="page-badge">PRISM &bull; <span data-lang="bm">Polisi Pembayaran</span><span data-lang="en" style="display:none;">Payment Policy</span></div>
+
+    <!-- BM VERSION -->
+    <div data-lang="bm">
+      <h1 class="page-title">Polisi Pembayaran &amp; Bayaran Balik</h1>
+      <p class="page-sub"><span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; PRISM – Plate Recognition &amp; Intelligent Scanning Mechanism</p>
+      <span class="page-updated">Kemas kini terakhir: 14 November 2026</span>
+
+      <div class="policy-section">
+        <h2>1. Kaedah Pembayaran</h2>
+        <p>Sistem PRISM menyokong pembayaran dalam talian secara terus (FPX, DuitNow QR, e-Dompet) melalui gerbang pembayaran sah yang dilantik.</p>
+        <p>Pembayaran dalam talian melalui PRISM bertujuan untuk diselesaikan semasa pelanggan hadir secara fizikal di premis Restoran. PRISM tidak direka bentuk untuk pembayaran jarak jauh atau pesanan di luar premis.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>2. Pengesahan Pembayaran Rasmi</h2>
+        <p>Sesuatu pembayaran dianggap BERJAYA hanya apabila sistem menerima dan mengesahkan status transaksi berjaya secara terus daripada penyedia gerbang pembayaran (backend webhook confirmation).</p>
+        <div class="callout-box">
+          <strong>PERHATIAN: Perkara berikut TIDAK membentuk bukti sah pembayaran:</strong><br>
+          • Sekadar membuka semula laman pembayaran berjaya.<br>
+          • Menunjukkan tangkapan skrin (screenshot) transaksi telefon.<br>
+          • Sebarang notifikasi sebelah pelanggan yang belum disahkan oleh gerbang bayaran rasmi.
+        </div>
+        <p>Sekiranya status pembayaran belum dapat disahkan, transaksi akan kekal berstatus belum bayar sehingga pengesahan rasmi diterima.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>3. Pembayaran Gagal atau Tidak Berjaya</h2>
+        <p>Sekiranya pembayaran gagal, pelanggan dinasihatkan untuk menyemak akaun bank atau e-dompet terlebih dahulu bagi memastikan baki tidak ditolak sebelum mencuba pembayaran semula.</p>
+        <p>Jika baki telah ditolak namun sistem PRISM tidak mengesahkannya, <strong>JANGAN BUAT PEMBAYARAN KALI KEDUA</strong> melalui aplikasi.</p>
+        <p>Sebaliknya, sila hadir terus ke kaunter juruwang fizikal bersama bukti potongan bank untuk bantuan pengesahan manual oleh kakitangan.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>4. Bayaran Balik &amp; Pertikaian Pembayaran (Refunds)</h2>
+        <p><strong>Semua permohonan bayaran balik, laporan caj berlebihan dan pertikaian transaksi berkaitan PRISM MESTI dilaporkan secara bersemuka di premis fizikal Restoran.</strong></p>
+        <p>Pihak Restoran mengutamakan pelaporan secara bersemuka dan tidak melayani atau memproses sebarang permohonan bayaran balik melalui saluran media sosial, aplikasi pemesejan (WhatsApp/Telegram) atau e-mel.</p>
+        <p>Pelanggan hendaklah hadir ke kaunter juruwang dengan menunjukkan resit atau butiran transaksi berkenaan. Kakitangan restoran akan membuat semakan audit transaksi serta-merta.</p>
+        <p>Bayaran balik hanya akan diproses selepas pengesahan rasmi bahawa transaksi berlebihan atau kesilapan pembayaran telah sah berlaku.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>5. Kaedah Pemprosesan Bayaran Balik</h2>
+        <p>Setelah caj berlebihan disahkan oleh pengurusan:</p>
+        <ul>
+          <li>Bayaran balik akan diuruskan terus melalui gerbang pembayaran atau kaedah yang dipersetujui.</li>
+          <li>Kredit bayaran balik secara lazimnya dipulangkan ke kaedah pembayaran asal pelanggan (cth: akaun bank asal).</li>
+          <li>Tempoh pemprosesan bergantung kepada terma dan kelajuan institusi perbankan pelanggan.</li>
+        </ul>
+      </div>
+
+      <div class="policy-section">
+        <h2>6. Tempoh Masa Pelaporan Bayaran Balik</h2>
+        <p>Sebarang laporan pertikaian bayaran atau caj berlebihan hendaklah dilaporkan dalam tempoh <strong>tiga (3) hari bekerja</strong> dari tarikh transaksi berlaku.</p>
+        <p>Permohonan selepas tempoh tersebut adalah tertakluk kepada budi bicara pihak Restoran dan semakan arkib log pelayan.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>7. Kurang Bayaran &amp; Percanggahan Transaksi</h2>
+        <p>Pihak Restoran berhak mengenal pasti percanggahan antara jumlah bayaran yang diterima dengan nilai sebenar lauk yang diambil melalui audit harian.</p>
+        <div style="margin-left: 0.5rem; margin-top: 0.5rem;">
+          <h3 style="font-size:0.95rem;color:#1e293b;margin-bottom:0.3rem;">7.1 Ralat LLM Yang Tidak Disengajakan</h3>
+          <p>Jika bayaran kurang berpunca daripada kesilapan pengecaman model AI, pihak Restoran akan menilai keadaan secara teliti sebelum menentukan sama ada bayaran pelarasan diperlukan.</p>
+          <h3 style="font-size:0.95rem;color:#1e293b;margin-bottom:0.3rem;">7.2 Disyaki Salah Guna atau Manipulasi Sengaja</h3>
+          <p>Sekiranya terdapat bukti jelas atau syak wasangka munasabah bahawa pelanggan dengan sengaja memanipulasi sudut foto, menyembunyikan lauk atau mengeksploitasi sistem AI untuk mengelak bayaran sebenar, Restoran berhak menuntut bayaran penuh dan mengambil tindakan sewajarnya.</p>
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>8. Pembatalan Bil &amp; Pemansuhan Automatik (Voiding)</h2>
+        <p>Sesuatu bil yang belum dibayar akan dimansuhkan (void) secara automatik sekiranya:</p>
+        <ul>
+          <li>Pelanggan menekan butang &ldquo;Bantuan Juruwang / Help&rdquo;.</li>
+          <li>Pelanggan memilih untuk membatalkan transaksi.</li>
+          <li>Pelanggan telah menggunakan semua kuota pengambilan semula gambar (retake limit).</li>
+          <li>Sesi bil dibiarkan melahu (idle) melebihi had masa yang ditetapkan sistem.</li>
+        </ul>
+        <p>Sebaik sahaja bil terbatal, transaksi tersebut tidak boleh dibayar melalui telefon dan pelanggan mesti menyelesaikan bayaran di kaunter fizikal.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>9. Masalah Sistem &amp; Pembayaran Manual</h2>
+        <p>Jika telefon anda kehabisan bateri, talian internet perlahan, atau sistem mengalami ralat teknikal, sila terus ke kaunter fizikal untuk pembayaran tunai atau kad secara manual.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>10. Hubungan &amp; Bantuan Kaunter</h2>
+        <div class="counter-box">
+          <span class="counter-icon">🏪</span>
+          <div class="counter-text">
+            <strong>Ada persoalan mengenai bil atau bayaran balik?</strong><br>
+            Sila hadir terus ke kaunter juruwang fizikal kami di premis kedai:<br>
+            <strong><span class="dyn-restaurant-name">TAKCAKAP.COM</span></strong> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)<br>
+            Telefon: <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a> &bull; E-mel: <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EN VERSION -->
+    <div data-lang="en" style="display:none;">
+      <h1 class="page-title">Payment &amp; Refund Policies</h1>
+      <p class="page-sub"><span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; PRISM – Plate Recognition &amp; Intelligent Scanning Mechanism</p>
+      <span class="page-updated">Last updated: 14 November 2026</span>
+
+      <div class="policy-section">
+        <h2>1. Payment Method</h2>
+        <p>PRISM supports online payment through its designated payment gateway (including FPX, DuitNow QR, and major e-Wallets).</p>
+        <p>Online payment through PRISM is intended to be completed while the customer is physically present at the Restaurant&rsquo;s premises. PRISM is not designed for remote payment or transactions outside the premises.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>2. Payment Confirmation</h2>
+        <p>A payment is considered successful only when the payment gateway&rsquo;s successful-payment confirmation has been received and verified by the Restaurant&rsquo;s backend system.</p>
+        <div class="callout-box">
+          <strong>The following do not independently constitute proof of successful payment:</strong><br>
+          • Returning to a payment success page.<br>
+          • Displaying a payment screenshot from your phone.<br>
+          • Receiving a customer-side bank notification.<br>
+          • Any other indication that has not been verified by the payment gateway webhook.
+        </div>
+        <p>If a payment cannot be verified, the transaction will remain unpaid until its status is officially confirmed.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>3. Failed or Unsuccessful Payments</h2>
+        <p>If a payment attempt fails, customers should retry payment only after confirming that the previous attempt did not result in a deduction from their bank account, e-wallet or other payment method.</p>
+        <p>If money has been deducted, or the payment status is uncertain, customers should not immediately attempt another payment on their mobile device.</p>
+        <p>Instead, customers should head directly to the physical cashier counter for staff assistance and transaction verification.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>4. Refunds and Payment Disputes</h2>
+        <p><strong>All PRISM-related refund requests, overcharge reports and payment disputes must be reported physically to the Restaurant&rsquo;s staff at its premises.</strong></p>
+        <p>The Restaurant prioritises in-person reporting and does not accept or process PRISM-related refund or payment-dispute requests through online channels, including social media, messaging applications (WhatsApp/Telegram), email or other online platforms.</p>
+        <p>Customers must approach the physical cashier counter to report the issue and provide the relevant transaction details.</p>
+        <p>The Restaurant will review the reported transaction and determine whether an overcharge or other legitimate payment discrepancy has occurred.</p>
+        <p>A refund will only be arranged after the Restaurant confirms that a legitimate overcharge has taken place.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>5. Refund Processing</h2>
+        <p>Once a legitimate overcharge is confirmed:</p>
+        <ul>
+          <li>The Restaurant will arrange the refund through the payment gateway.</li>
+          <li>Refunds will generally be credited to the original payment method used for the transaction.</li>
+          <li>Refund processing is subject to the payment gateway&rsquo;s policies, procedures and capabilities.</li>
+          <li>Processing times may vary depending on the payment gateway and the customer&rsquo;s financial institution.</li>
+        </ul>
+      </div>
+
+      <div class="policy-section">
+        <h2>6. Refund and Dispute Reporting Period</h2>
+        <p>Customers should report refund or payment-dispute issues within the first <strong>three (3) working days</strong> from the payment date.</p>
+        <p>Requests received after this period will be subject to the Restaurant&rsquo;s discretion and assessed on a case-by-case basis.</p>
+        <p>The Restaurant reserves the right to consider the circumstances and available transaction records when reviewing late requests.</p>
+        <p>Nothing in this section is intended to exclude any complaint or remedy that cannot legally be restricted under applicable Malaysian law.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>7. Underpayment and Transaction Discrepancies</h2>
+        <p>The Restaurant may identify discrepancies between the amount paid and the actual value of food received during or after a transaction audit.</p>
+        <p>This may include situations where an LLM recognition inconsistency results in an incorrectly generated bill and an underpayment.</p>
+        <div style="margin-left: 0.5rem; margin-top: 0.5rem;">
+          <h3 style="font-size:0.95rem;color:#1e293b;margin-bottom:0.3rem;">7.1 Unintentional LLM Errors</h3>
+          <p>Where an underpayment results from an unintentional LLM recognition error or system inconsistency, the Restaurant will assess the circumstances on a case-by-case basis before deciding whether to request additional payment.</p>
+          <h3 style="font-size:0.95rem;color:#1e293b;margin-bottom:0.3rem;">7.2 Suspected Abuse or Intentional Exploitation</h3>
+          <p>Where there is reasonable suspicion that a customer has intentionally manipulated, exploited or abused inconsistencies in the LLM recognition system to obtain an incorrect bill or avoid paying the correct amount, the Restaurant reserves the right to investigate the transaction and seek recovery of any resulting losses.</p>
+          <p>The Restaurant may also take appropriate action where deliberate misuse is established. Customers remain responsible for legitimate outstanding amounts arising from confirmed discrepancies.</p>
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>8. Bill Cancellation and Automatic Voiding</h2>
+        <p>An unpaid bill may be automatically voided and become unavailable for payment under the following circumstances:</p>
+        <ul>
+          <li>The customer selects the &ldquo;Need Cashier Assistance&rdquo; option.</li>
+          <li>The customer clicks the &ldquo;Cancel&rdquo; button.</li>
+          <li>The customer has exhausted the permitted number of photo retakes.</li>
+          <li>The bill remains idle beyond the system&rsquo;s specified time limit.</li>
+        </ul>
+        <p>Once a bill has been voided, it cannot be used to complete payment through PRISM. Customers who require assistance or wish to complete payment should proceed to the physical cashier counter.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>9. System Difficulties and Manual Payment</h2>
+        <p>If customers experience difficulties using PRISM or cannot complete their online payment, they should head to the physical cashier counter and complete their payment through the Restaurant&rsquo;s traditional manual payment process.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>10. Contact and Assistance</h2>
+        <div class="counter-box">
+          <span class="counter-icon">🏪</span>
+          <div class="counter-text">
+            <strong>For payment issues, refund requests or transaction disputes:</strong><br>
+            Please approach our physical cashier counter at our premises:<br>
+            <strong><span class="dyn-restaurant-name">TAKCAKAP.COM</span></strong> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)<br>
+            Contact: <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a> &bull; Email: <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a><br>
+            Address: <span class="dyn-restaurant-address">Restaurant Premises</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="quick-links-footer">
+    <div class="footer-links">
+      <a href="/privacy" class="footer-link"><span data-lang="bm">Dasar Privasi</span><span data-lang="en" style="display:none;">Privacy Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/terms" class="footer-link"><span data-lang="bm">Terma &amp; Syarat</span><span data-lang="en" style="display:none;">Terms &amp; Conditions</span></a>
+      <span class="dot">•</span>
+      <a href="/payment-policy" class="footer-link"><span data-lang="bm">Polisi Pembayaran</span><span data-lang="en" style="display:none;">Payment Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/contact" class="footer-link"><span data-lang="bm">Hubungi Kami</span><span data-lang="en" style="display:none;">Contact Us</span></a>
+      <span class="dot">•</span>
+      <a href="/about" class="footer-link"><span data-lang="bm">Tentang Kami</span><span data-lang="en" style="display:none;">About Us</span></a>
+      <span class="dot">•</span>
+      <a href="/pricelist" class="footer-link"><span data-lang="bm">Senarai Harga</span><span data-lang="en" style="display:none;">Menu Prices</span></a>
+    </div>
+    <div class="footer-brand">
+      &copy; 2026 <span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; PRISM e-Cashier
+    </div>
+  </footer>
+</div>
+
+<script>
+function setLanguage(lang) {
+  try { localStorage.setItem('prism_lang', lang); } catch (e) {}
+  document.querySelectorAll('[data-lang]').forEach(el => {
+    if (el.getAttribute('data-lang') === lang) {
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('lang-' + lang);
+  if (btn) btn.classList.add('active');
+  document.documentElement.lang = (lang === 'bm') ? 'ms' : 'en';
+}
+
+function initProfile() {
+  fetch('/api/public-profile')
+    .then(r => r.json())
+    .then(data => {
+      if (!data) return;
+      const rName = data.restaurant_name || 'TAKCAKAP.COM';
+      const cName = data.company_name || 'De Warisan Ibunda Enterprise';
+      const cPhone = data.company_phone || '+60 1121815101';
+      const cEmail = data.company_email || 'support@takcakap.com';
+      const rAddr = data.restaurant_address || 'Premis Restoran';
+      const gUrl = data.google_maps_url || 'https://maps.google.com';
+      const gEmbed = data.google_maps_embed_url || '';
+
+      document.querySelectorAll('.dyn-restaurant-name').forEach(el => el.textContent = rName);
+      document.querySelectorAll('.dyn-company-name').forEach(el => el.textContent = cName);
+      document.querySelectorAll('.dyn-company-phone').forEach(el => {
+        el.textContent = cPhone;
+        if (el.tagName === 'A') el.href = 'tel:' + cPhone.replace(/\s+/g, '');
+      });
+      document.querySelectorAll('.dyn-company-email').forEach(el => {
+        el.textContent = cEmail;
+        if (el.tagName === 'A') el.href = 'mailto:' + cEmail;
+      });
+      document.querySelectorAll('.dyn-restaurant-address').forEach(el => el.textContent = rAddr);
+      document.querySelectorAll('.dyn-google-maps-link').forEach(el => {
+        el.href = gUrl;
+      });
+      document.querySelectorAll('.dyn-google-maps-iframe').forEach(el => {
+        if (gEmbed) el.src = gEmbed;
+        else el.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(rName) + '&output=embed';
+      });
+    })
+    .catch(() => {});
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  let lang = 'bm';
+  try {
+    const saved = localStorage.getItem('prism_lang');
+    if (saved === 'en' || saved === 'bm') lang = saved;
+  } catch (e) {}
+  setLanguage(lang);
+  initProfile();
+});
+</script>
+</body>
+</html>

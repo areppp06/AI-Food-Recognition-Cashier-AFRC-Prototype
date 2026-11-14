@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dasar Privasi | Privacy Policy - PRISM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  overflow-x: hidden;
+  width: 100%;
+  background: #f1f5f9;
+}
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #f1f5f9;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: hidden;
+}
+.page-container {
+  width: 100%;
+  max-width: 680px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3.5rem;
+  background: #f8fafc;
+  box-shadow: 0 0 40px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.back-link:hover {
+  color: #ff5e36;
+  border-color: #ff5e36;
+  background: #fff5f2;
+}
+.back-link svg {
+  width: 16px;
+  height: 16px;
+}
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.lang-btn {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.lang-btn.active {
+  background: #ff5e36;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(255, 94, 54, 0.35);
+}
+.content-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.6rem 1.4rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05);
+  margin-bottom: 1.5rem;
+}
+.page-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  background: #fff5f2;
+  color: #ff5e36;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 9999px;
+  margin-bottom: 0.65rem;
+}
+.page-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.3rem;
+  line-height: 1.25;
+}
+.page-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+}
+.page-updated {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  display: inline-block;
+  margin-bottom: 1.25rem;
+}
+.policy-section {
+  margin-bottom: 1.4rem;
+}
+.policy-section h2, .policy-section h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.policy-section p {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: #334155;
+  margin-bottom: 0.65rem;
+}
+.policy-section ul {
+  list-style: none;
+  margin: 0.5rem 0 0.85rem;
+  padding: 0;
+}
+.policy-section ul li {
+  position: relative;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #334155;
+  padding-left: 1.25rem;
+  margin-bottom: 0.45rem;
+}
+.policy-section ul li::before {
+  content: "•";
+  color: #ff5e36;
+  font-weight: bold;
+  font-size: 1.1rem;
+  position: absolute;
+  left: 0.25rem;
+  top: -0.1rem;
+}
+.callout-box {
+  background: #f8fafc;
+  border-left: 4px solid #ff5e36;
+  border-radius: 0 12px 12px 0;
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: #1e293b;
+}
+.counter-box {
+  background: #fff8f5;
+  border: 1px solid #ffd8cc;
+  border-radius: 14px;
+  padding: 1rem;
+  margin: 1.25rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.counter-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+.counter-text {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #9a3412;
+}
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 0.9rem;
+  margin: 0.75rem 0;
+  border: 1px solid #e2e8f0;
+}
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #334155;
+}
+.info-item a {
+  color: #ff5e36;
+  text-decoration: none;
+  font-weight: 600;
+}
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background: #ff5e36;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.7rem 1.15rem;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 4px 14px -2px rgba(255, 94, 54, 0.4);
+  transition: all 0.2s ease;
+}
+.btn-primary:hover {
+  background: #f04e26;
+  transform: translateY(-1px);
+}
+.quick-links-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.7;
+}
+.quick-links-footer .footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin-bottom: 0.65rem;
+}
+.quick-links-footer .footer-link {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+.quick-links-footer .footer-link:hover {
+  color: #ff5e36;
+  text-decoration: underline;
+}
+.quick-links-footer .dot {
+  color: #cbd5e1;
+  font-size: 0.6rem;
+}
+.quick-links-footer .footer-brand {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+</style>
+</head>
+<body>
+<div class="page-container">
+  <div class="top-nav">
+    <a href="/" class="back-link">
+      <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      <span data-lang="bm">Utama</span>
+      <span data-lang="en" style="display:none;">Home</span>
+    </a>
+    <div class="lang-toggle" role="tablist">
+      <button type="button" class="lang-btn active" id="lang-bm" onclick="setLanguage('bm')">🇲🇾 BM</button>
+      <button type="button" class="lang-btn" id="lang-en" onclick="setLanguage('en')">🇬🇧 EN</button>
+    </div>
+  </div>
+
+  <div class="content-card">
+    <div class="page-badge">PRISM &bull; <span data-lang="bm">Dasar Privasi</span><span data-lang="en" style="display:none;">Privacy Notice</span></div>
+    
+    <!-- BM VERSION -->
+    <div data-lang="bm">
+      <h1 class="page-title">Notis Privasi</h1>
+      <p class="page-sub"><span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; Sistem e-Juruwang Layan Diri (PRISM)</p>
+      <span class="page-updated">Kemas kini terakhir: 14 November 2026</span>
+
+      <div class="policy-section">
+        <h2>1. Siapa Kami</h2>
+        <p>Notis Privasi ini menerangkan bagaimana <strong class="dyn-restaurant-name">TAKCAKAP.COM</strong> mengumpul, menggunakan, menyimpan dan melindungi data peribadi anda apabila anda menggunakan sistem e-Juruwang Layan Diri kami, yang dikenali sebagai <strong>PRISM (Plate Recognition & Intelligent Scanning Mechanism)</strong>.</p>
+        <p>Anda boleh menggunakan perkhidmatan ini tanpa perlu mendaftar akaun. Dengan menggunakan perkhidmatan ini, anda mungkin diminta untuk memberikan maklumat tertentu seperti yang dijelaskan di bawah.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>2. Data Peribadi Yang Kami Kumpulkan</h2>
+        <p>Kami mengumpul maklumat berikut secara langsung daripada anda atau secara automatik melalui penggunaan perkhidmatan:</p>
+        <ul>
+          <li><strong>Nombor telefon (wajib):</strong> Diberikan oleh anda untuk penjejakan resit dan komunikasi berkaitan transaksi.</li>
+          <li><strong>Alamat e-mel (pilihan):</strong> Diberikan oleh anda jika anda ingin menerima resit elektronik.</li>
+          <li><strong>Foto pinggan makanan:</strong> Dirakam dan dihantar oleh anda untuk tujuan pengecaman makanan, penjanaan bil automatik dan penambahbaikan berterusan sistem AI/LLM.</li>
+          <li><strong>Maklumat teknikal:</strong> Seperti alamat IP, maklumat sesi (session), butiran peranti atau pelayar web dan log sistem yang dikumpul secara automatik demi keselamatan transaksi.</li>
+        </ul>
+        <p><em>Kami tidak mengumpul atau memerlukan nama penuh, nombor kad pengenalan (MyKad/Pasport) mahupun alamat kediaman anda.</em></p>
+      </div>
+
+      <div class="policy-section">
+        <h2>3. Tujuan Pengumpulan dan Pemprosesan</h2>
+        <p>Kami memproses maklumat anda bagi tujuan berikut:</p>
+        <ul>
+          <li><strong>Nombor telefon:</strong> Untuk mengenal pasti dan menjejaki transaksi anda serta menghubungi anda sekiranya terdapat sebarang isu berkaitan bil atau resit anda.</li>
+          <li><strong>Alamat e-mel:</strong> Untuk menghantar e-resit sekiranya anda memilih untuk menyediakannya.</li>
+          <li><strong>Foto pinggan:</strong> Untuk mengenal pasti item makanan dan menganggar kuantiti menggunakan Model Bahasa Besar (LLM), membolehkan sistem menjana bil anda secara automatik. Foto yang dimuat naik juga disimpan dan digunakan untuk tujuan latihan model (training), penilaian dan penambahbaikan ketepatan sistem.</li>
+          <li><strong>Maklumat teknikal:</strong> Untuk mengekalkan integriti keselamatan sistem, mengelakkan salah guna, menyelesaikan ralat teknikal dan menjamin kestabilan perkhidmatan.</li>
+        </ul>
+        <div class="callout-box">
+          Keputusan pengecaman makanan yang dijana oleh AI/LLM adalah alat bantuan untuk pengiraan bil. Kakitangan restoran berhak menyemak atau membetulkan keputusan sekiranya berlaku sebarang perbezaan.
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>4. Penyimpanan Foto Pinggan dan Penambahbaikan LLM</h2>
+        <p>Foto pinggan yang dihantar melalui PRISM akan disimpan dan digunakan oleh kami untuk menilai, melatih serta mempertingkatkan model AI pengecaman makanan.</p>
+        <p>Bagi tujuan ini, foto mungkin digunakan oleh pihak kami atau dikongsi dengan penyedia perkhidmatan LLM pihak ketiga kami untuk latihan model, ujian, tanda aras, serta penyediaan set data rujukan bagi memaksimumkan ketepatan imbasan.</p>
+        <p>Dengan menggunakan perkhidmatan dan menghantar foto pinggan makanan anda, anda mengakui dan bersetuju bahawa foto tersebut boleh disimpan dan diproses bagi tujuan-tujuan ini.</p>
+        <p>Pengendalian dan pemprosesan foto oleh penyedia pihak ketiga adalah tertakluk kepada dasar privasi dan syarat perkhidmatan masing-masing.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>5. Pemasaran dan Promosi</h2>
+        <p>Nombor telefon atau e-mel anda HANYA akan digunakan untuk sebarang mesej promosi atau makluman khas sekiranya anda telah memberikan persetujuan berasingan secara jelas.</p>
+        <p>Anda boleh menarik balik persetujuan atau meminta kami menghentikan sebarang komunikasi pemasaran langsung pada bila-bila masa dengan menghubungi kami melalui saluran di Bahagian 9.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>6. Pendedahan dan Penyimpanan Data Peribadi</h2>
+        <p><strong>Kami tidak sekali-kali menjual atau menyewakan data peribadi anda kepada pihak luar.</strong></p>
+        <p>Data anda hanya akan dikongsi dengan kategori pihak pembekal perkhidmatan berikut demi kelancaran operasi:</p>
+        <ul>
+          <li><strong>Penyedia Perkhidmatan AI/LLM:</strong> Untuk memproses foto, menganalisis lauk dan makanan, serta menyokong penambahbaikan algoritma.</li>
+          <li><strong>Penyedia Pengehosan & Infrastruktur Awan:</strong> Untuk mengehos pangkalan data dan pelayan sistem (termasuk pelayan luar negara sekiranya perlu).</li>
+          <li><strong>Penyedia Gerbang Pembayaran (Payment Gateway):</strong> Untuk memproses transaksi pembayaran atas talian. Nombor telefon atau e-mel boleh disalurkan kepada mereka bagi tujuan pengesahan bayaran rasmi.</li>
+          <li><strong>Penyedia Sokongan Teknikal:</strong> Bagi penyelenggaraan dan pencegahan serangan siber.</li>
+        </ul>
+        <p>Kami mengambil langkah-langkah keselamatan organisasi dan teknikal yang munasabah untuk memelihara keselamatan data peribadi anda selaras dengan Akta Perlindungan Data Peribadi 2010 (PDPA) Malaysia.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>7. Maklumat Wajib dan Pilihan</h2>
+        <p>Pemberian <strong>nombor telefon</strong> dan <strong>foto pinggan</strong> adalah mandatori bagi membolehkan sistem PRISM berfungsi dan menjana bil.</p>
+        <p>Tanpa nombor telefon, transaksi tidak dapat didaftarkan ke dalam sistem. Tanpa foto pinggan, sistem tidak dapat membuat pengecaman menu. Sebaliknya, pemberian alamat e-mel adalah <em>pilihan (optional)</em>.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>8. Hak Anda dan Perlindungan Data</h2>
+        <p>Tertakluk kepada undang-undang perlindungan data yang berkuat kuasa, anda mempunyai hak untuk:</p>
+        <ul>
+          <li>Meminta akses kepada data peribadi anda yang kami simpan.</li>
+          <li>Meminta pembetulan terhadap data yang tidak tepat atau lapuk.</li>
+          <li>Menarik balik persetujuan pemprosesan data bagi tujuan promosi.</li>
+          <li>Mengemukakan aduan sekiranya terdapat kebimbangan mengenai pengendalian privasi anda.</li>
+        </ul>
+        <p>Data peribadi hanya disimpan sepanjang tempoh munasabah yang diperlukan untuk audit operasi atau keperluan undang-undang, selepas itu ia akan dipadam secara selamat.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>9. Hubungi Kami</h2>
+        <p>Sebarang pertanyaan, permohonan akses data atau maklum balas berkaitan privasi boleh disalurkan kepada kami:</p>
+        <div class="info-row">
+          <div class="info-item">🏪 <strong>Premis:</strong> <span class="dyn-restaurant-name">TAKCAKAP.COM</span> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)</div>
+          <div class="info-item">📞 <strong>Telefon / WhatsApp:</strong> <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a></div>
+          <div class="info-item">✉️ <strong>E-mel:</strong> <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a></div>
+          <div class="info-item">📍 <strong>Alamat:</strong> <span class="dyn-restaurant-address">Premis Restoran</span></div>
+        </div>
+      </div>
+
+      <div class="counter-box">
+        <span class="counter-icon">🏪</span>
+        <div class="counter-text">
+          <strong>Perlukan bantuan segera?</strong><br>
+          Untuk sebarang urusan transaksi, data peribadi atau semakan resit semasa makan di kedai, sila terus ke kaunter fizikal juruwang kami.
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>10. Perubahan pada Notis Ini</h2>
+        <p>Kami berhak mengemas kini Notis Privasi ini mengikut keperluan perkhidmatan atau undang-undang semasa. Versi terkini sentiasa dipaparkan pada sistem kami dengan tarikh kemas kini di bahagian atas.</p>
+      </div>
+    </div>
+
+    <!-- EN VERSION -->
+    <div data-lang="en" style="display:none;">
+      <h1 class="page-title">Privacy Notice</h1>
+      <p class="page-sub"><span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; Self-Service e-Cashier System (PRISM)</p>
+      <span class="page-updated">Last updated: 14 November 2026</span>
+
+      <div class="policy-section">
+        <h2>1. Who We Are</h2>
+        <p>This Privacy Notice explains how <strong class="dyn-restaurant-name">TAKCAKAP.COM</strong> collects, uses, stores and protects your personal data when you use our Self-Service e-Cashier system, known as <strong>PRISM (Plate Recognition & Intelligent Scanning Mechanism)</strong>.</p>
+        <p>You can use the service without creating an account. By using the service, you may be asked to provide certain information as explained below.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>2. Personal Data We Collect</h2>
+        <p>We collect the following information directly from you or automatically through your use of the service:</p>
+        <ul>
+          <li><strong>Phone number (mandatory):</strong> Provided by you for receipt tracking and transaction-related communication.</li>
+          <li><strong>Email address (optional):</strong> Provided by you if you wish to receive an electronic receipt.</li>
+          <li><strong>Plate photo:</strong> Captured and submitted by you for food recognition, bill generation and LLM system improvement.</li>
+          <li><strong>Technical information:</strong> Such as your IP address, session information, device or browser details and system logs, collected automatically when you use the service.</li>
+        </ul>
+        <p><em>We do not require your name, identity card number or residential address.</em></p>
+      </div>
+
+      <div class="policy-section">
+        <h2>3. Purposes of Collection and Processing</h2>
+        <p>We process your information for the following purposes:</p>
+        <ul>
+          <li><strong>Phone number:</strong> To identify and track your transaction and contact you if there are issues relating to your bill or receipt.</li>
+          <li><strong>Email address:</strong> To send an electronic receipt if you choose to provide one.</li>
+          <li><strong>Plate photo:</strong> To identify food items and estimate quantities using a Large Language Model (LLM), allowing the system to generate your bill. Uploaded photos may also be retained and used for LLM training, evaluation and improvement.</li>
+          <li><strong>Technical information:</strong> To maintain system security, prevent misuse, troubleshoot technical issues and maintain service reliability.</li>
+        </ul>
+        <div class="callout-box">
+          LLM-generated food recognition results are used to assist with bill calculation. Restaurant staff may review or correct the results where necessary.
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>4. Plate Photo Storage and LLM Improvement</h2>
+        <p>Plate photos submitted through PRISM are stored and may be used by us to evaluate, train and improve our LLM-based food recognition system.</p>
+        <p>For these purposes, photos may be used by us or shared with our third-party LLM service provider for model training, testing, evaluation, reference datasets and other activities intended to improve food recognition accuracy.</p>
+        <p>By using the service and submitting a plate photo, you acknowledge that the photo may be stored and processed for these purposes.</p>
+        <p>The handling and use of photos by third-party LLM providers may also be subject to their respective terms and privacy policies.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>5. Marketing and Promotions</h2>
+        <p>Your phone number or email address will only be used for promotional messages or marketing communications if you separately agree to receive them.</p>
+        <p>You may request that we stop using your personal data for direct marketing at any time by contacting us using the details in Section 9.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>6. Disclosure and Storage of Personal Data</h2>
+        <p><strong>We do not sell your personal data.</strong></p>
+        <p>Your information may be disclosed to or processed by the following categories of service providers where necessary to operate the service:</p>
+        <ul>
+          <li><strong>LLM service providers:</strong> To analyse plate photos, identify food items and support LLM training and improvement.</li>
+          <li><strong>Hosting and infrastructure providers:</strong> To host the system and store information.</li>
+          <li><strong>Payment gateway providers:</strong> To process payments and related transactions. Phone numbers and email addresses may be shared with payment gateway providers where required for payment processing. Any information handled by these providers is also subject to their respective terms and privacy policies.</li>
+          <li><strong>Other relevant service providers:</strong> Where necessary to maintain, secure or support the service.</li>
+        </ul>
+        <p>Your personal data may be stored or processed by our hosting and infrastructure providers, including on servers located outside Malaysia, where necessary to operate the service.</p>
+        <p>Plate photos are transmitted to an external LLM service provider for food recognition and may also be processed or retained by that provider for the purposes described in Section 4, subject to its applicable terms and privacy policies.</p>
+        <p>We take reasonable steps to ensure that personal data is handled securely and in accordance with applicable data protection requirements.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>7. Mandatory and Optional Information</h2>
+        <p>Providing your phone number and plate photo is necessary to use the e-Cashier service.</p>
+        <p>If you do not provide a phone number, we may be unable to create or track your transaction through the service. If you do not submit a plate photo, the system cannot perform food recognition or generate your bill.</p>
+        <p>Providing your email address is optional. If you do not provide one, you will not receive an electronic receipt through email.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>8. Your Rights and Data Protection</h2>
+        <p>Subject to applicable law, you may:</p>
+        <ul>
+          <li>Request access to your personal data held by us.</li>
+          <li>Request correction of inaccurate or incomplete personal data.</li>
+          <li>Withdraw consent where processing is based on consent.</li>
+          <li>Request that we stop using your personal data for direct marketing.</li>
+          <li>Contact us with questions or complaints regarding the handling of your personal data.</li>
+        </ul>
+        <p>We retain personal data only for as long as necessary for the purposes for which it was collected, or as required by applicable laws. When it is no longer required, we take reasonable steps to delete or permanently destroy it.</p>
+        <p>We take reasonable technical and organisational measures to protect personal data against unauthorised access, disclosure, alteration, loss or misuse.</p>
+      </div>
+
+      <div class="policy-section">
+        <h2>9. Contact Us</h2>
+        <p>For questions, access or correction requests, or complaints regarding your personal data, please contact:</p>
+        <div class="info-row">
+          <div class="info-item">🏪 <strong>Premises:</strong> <span class="dyn-restaurant-name">TAKCAKAP.COM</span> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)</div>
+          <div class="info-item">📞 <strong>Phone / WhatsApp:</strong> <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a></div>
+          <div class="info-item">✉️ <strong>Email:</strong> <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a></div>
+          <div class="info-item">📍 <strong>Location:</strong> <span class="dyn-restaurant-address">Restaurant Premises</span></div>
+        </div>
+      </div>
+
+      <div class="counter-box">
+        <span class="counter-icon">🏪</span>
+        <div class="counter-text">
+          <strong>Need immediate help?</strong><br>
+          For on-the-spot transaction issues, personal data inquiries, or paper receipts, please approach our physical cashier counter.
+        </div>
+      </div>
+
+      <div class="policy-section">
+        <h2>10. Changes to This Notice</h2>
+        <p>We may update this Privacy Notice from time to time to reflect changes in our services, data processing practices or applicable legal requirements.</p>
+        <p>The latest version will be made available through our service, with the updated date shown at the top.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="quick-links-footer">
+    <div class="footer-links">
+      <a href="/privacy" class="footer-link"><span data-lang="bm">Dasar Privasi</span><span data-lang="en" style="display:none;">Privacy Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/terms" class="footer-link"><span data-lang="bm">Terma &amp; Syarat</span><span data-lang="en" style="display:none;">Terms &amp; Conditions</span></a>
+      <span class="dot">•</span>
+      <a href="/payment-policy" class="footer-link"><span data-lang="bm">Polisi Pembayaran</span><span data-lang="en" style="display:none;">Payment Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/contact" class="footer-link"><span data-lang="bm">Hubungi Kami</span><span data-lang="en" style="display:none;">Contact Us</span></a>
+      <span class="dot">•</span>
+      <a href="/about" class="footer-link"><span data-lang="bm">Tentang Kami</span><span data-lang="en" style="display:none;">About Us</span></a>
+      <span class="dot">•</span>
+      <a href="/pricelist" class="footer-link"><span data-lang="bm">Senarai Harga</span><span data-lang="en" style="display:none;">Menu Prices</span></a>
+    </div>
+    <div class="footer-brand">
+      &copy; 2026 <span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; PRISM e-Cashier
+    </div>
+  </footer>
+</div>
+
+<script>
+function setLanguage(lang) {
+  try { localStorage.setItem('prism_lang', lang); } catch (e) {}
+  document.querySelectorAll('[data-lang]').forEach(el => {
+    if (el.getAttribute('data-lang') === lang) {
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('lang-' + lang);
+  if (btn) btn.classList.add('active');
+  document.documentElement.lang = (lang === 'bm') ? 'ms' : 'en';
+}
+
+function initProfile() {
+  fetch('/api/public-profile')
+    .then(r => r.json())
+    .then(data => {
+      if (!data) return;
+      const rName = data.restaurant_name || 'TAKCAKAP.COM';
+      const cName = data.company_name || 'De Warisan Ibunda Enterprise';
+      const cPhone = data.company_phone || '+60 1121815101';
+      const cEmail = data.company_email || 'support@takcakap.com';
+      const rAddr = data.restaurant_address || 'Premis Restoran';
+      const gUrl = data.google_maps_url || 'https://maps.google.com';
+      const gEmbed = data.google_maps_embed_url || '';
+
+      document.querySelectorAll('.dyn-restaurant-name').forEach(el => el.textContent = rName);
+      document.querySelectorAll('.dyn-company-name').forEach(el => el.textContent = cName);
+      document.querySelectorAll('.dyn-company-phone').forEach(el => {
+        el.textContent = cPhone;
+        if (el.tagName === 'A') el.href = 'tel:' + cPhone.replace(/\s+/g, '');
+      });
+      document.querySelectorAll('.dyn-company-email').forEach(el => {
+        el.textContent = cEmail;
+        if (el.tagName === 'A') el.href = 'mailto:' + cEmail;
+      });
+      document.querySelectorAll('.dyn-restaurant-address').forEach(el => el.textContent = rAddr);
+      document.querySelectorAll('.dyn-google-maps-link').forEach(el => {
+        el.href = gUrl;
+      });
+      document.querySelectorAll('.dyn-google-maps-iframe').forEach(el => {
+        if (gEmbed) el.src = gEmbed;
+        else el.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(rName) + '&output=embed';
+      });
+    })
+    .catch(() => {});
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  let lang = 'bm';
+  try {
+    const saved = localStorage.getItem('prism_lang');
+    if (saved === 'en' || saved === 'bm') lang = saved;
+  } catch (e) {}
+  setLanguage(lang);
+  initProfile();
+});
+</script>
+</body>
+</html>

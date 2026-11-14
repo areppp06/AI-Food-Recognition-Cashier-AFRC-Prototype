@@ -755,6 +755,83 @@ NO_CACHE_HEADERS = {
 async def root():
     return FileResponse("frontend/index.html", headers=NO_CACHE_HEADERS)
 
+@app.get("/privacy")
+@app.get("/privacy-policy")
+async def privacy_page():
+    return FileResponse("frontend/privacy.html", headers=NO_CACHE_HEADERS)
+
+@app.get("/terms")
+@app.get("/terms-and-conditions")
+async def terms_page():
+    return FileResponse("frontend/terms.html", headers=NO_CACHE_HEADERS)
+
+@app.get("/payment-policy")
+@app.get("/refund-policy")
+@app.get("/payment-and-refund-policy")
+async def payment_policy_page():
+    return FileResponse("frontend/payment-policy.html", headers=NO_CACHE_HEADERS)
+
+@app.get("/contact")
+@app.get("/contact-us")
+async def contact_page():
+    return FileResponse("frontend/contact.html", headers=NO_CACHE_HEADERS)
+
+@app.get("/about")
+@app.get("/about-us")
+async def about_page():
+    return FileResponse("frontend/about.html", headers=NO_CACHE_HEADERS)
+
+@app.get("/pricelist")
+@app.get("/prices")
+async def pricelist_page():
+    return FileResponse("frontend/pricelist.html", headers=NO_CACHE_HEADERS)
+
+@app.get("/api/public-profile")
+def get_public_profile():
+    return _restaurant_profile()
+
+@app.get("/api/pricelist")
+def get_public_pricelist(db: Session = Depends(get_db)):
+    dishes = db.query(Dish).order_by(Dish.name.asc()).all()
+    latest_audit = (
+        db.query(AuditLog)
+        .filter(AuditLog.action.like("MENU_%"))
+        .order_by(AuditLog.timestamp.desc())
+        .first()
+    )
+    if latest_audit and latest_audit.timestamp:
+        last_updated = latest_audit.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        db_path = ROOT / "afrc.db"
+        if db_path.exists():
+            last_updated = datetime.fromtimestamp(db_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            last_updated = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+
+    items = []
+    for d in dishes:
+        pieces = d.pieces_per_portion or 1
+        unit = d.unit or "portion"
+        price = round(float(d.price or 0.0), 2)
+        price_per_piece = round(price / pieces, 2) if pieces > 0 else price
+        items.append({
+            "id": d.id,
+            "name": d.name,
+            "price": price,
+            "unit": unit,
+            "pieces_per_portion": pieces,
+            "price_per_piece": price_per_piece,
+            "available": bool(d.available),
+            "description": d.description or "",
+        })
+
+    prof = _restaurant_profile()
+    return {
+        "restaurant_name": prof["restaurant_name"],
+        "last_updated": last_updated,
+        "items": items,
+    }
+
 @app.get("/login")
 async def login_page(request: Request, db: Session = Depends(get_db)):
     current_admin = get_current_admin(request, db)
@@ -1128,6 +1205,9 @@ def get_client_state(
             "company_name": prof["company_name"],
             "company_phone": prof["company_phone"],
             "company_email": prof["company_email"],
+            "restaurant_address": prof.get("restaurant_address", ""),
+            "google_maps_url": prof.get("google_maps_url", ""),
+            "google_maps_embed_url": prof.get("google_maps_embed_url", ""),
             "active_bill": _bill_payload(active_bill) if active_bill else None,
         },
         headers=NO_CACHE_HEADERS,
@@ -1659,11 +1739,29 @@ def _restaurant_profile() -> dict:
         or os.getenv("COMPANY_EMAIL")
         or ""
     ).strip()
+    rest_addr = (
+        merged.get("RESTAURANT_ADDRESS")
+        or os.getenv("RESTAURANT_ADDRESS")
+        or ""
+    ).strip()
+    g_url = (
+        merged.get("GOOGLE_MAPS_URL")
+        or os.getenv("GOOGLE_MAPS_URL")
+        or (f"https://maps.google.com/?q={rest_name}" if rest_name else "https://maps.google.com")
+    ).strip()
+    g_embed = (
+        merged.get("GOOGLE_MAPS_EMBED_URL")
+        or os.getenv("GOOGLE_MAPS_EMBED_URL")
+        or (f"https://maps.google.com/maps?q={rest_name}&output=embed" if rest_name else "")
+    ).strip()
     return {
         "restaurant_name": rest_name,
         "company_name": comp_name,
         "company_phone": comp_phone,
         "company_email": comp_email,
+        "restaurant_address": rest_addr,
+        "google_maps_url": g_url,
+        "google_maps_embed_url": g_embed,
     }
 
 def _restaurant_name() -> str:
