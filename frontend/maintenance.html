@@ -94,21 +94,15 @@
       50% { opacity: 0.4; transform: scale(0.85); }
     }
     h1 {
-      font-size: 1.55rem;
+      font-size: 1.6rem;
       font-weight: 800;
       letter-spacing: -0.025em;
       color: var(--text);
-      margin-bottom: 0.5rem;
-    }
-    .restaurant-name {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #d97706;
       margin-bottom: 0.85rem;
     }
     .desc {
       color: var(--text-muted);
-      font-size: 0.92rem;
+      font-size: 0.94rem;
       line-height: 1.55;
       margin-bottom: 1.5rem;
     }
@@ -153,7 +147,6 @@
     </div>
 
     <h1>Under Maintenance</h1>
-    <div class="restaurant-name" id="maintRestName">Gerai TakCakap</div>
 
     <p class="desc">
       We are currently performing scheduled maintenance to upgrade our system. We will be back online shortly!
@@ -174,19 +167,5 @@
       </div>
     </div>
   </div>
-
-  <script>
-    async function loadInfo() {
-      try {
-        const res = await fetch("/api/client-state");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.restaurant_name) {
-          document.getElementById("maintRestName").textContent = data.restaurant_name;
-        }
-      } catch (e) {}
-    }
-    loadInfo();
-  </script>
 </body>
 </html>
