@@ -792,17 +792,14 @@ video, canvas {
 <div class="video-container" id="videoBox">
 <div class="camera-placeholder" id="camPlaceholder">
 <svg viewbox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-<span>Ready to scan plate</span>
+<span>Starting camera...</span>
 </div>
-<video autoplay="" id="video" playsinline="" style="display:none;"></video>
+<video autoplay="" playsinline="" muted="" id="video" style="display:none;"></video>
 <canvas id="canvas" style="display:none;"></canvas>
 </div>
 <div class="turnstile-slot" id="recognize-turnstile"></div>
 <div class="controls-group" id="controls">
-<button class="btn btn-secondary" id="startCam">
-<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="12" r="4"></circle></svg>
-      Start Camera
-    </button>
+
 <button class="btn" disabled="" id="capture">
 <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
       Capture Plate
@@ -836,7 +833,6 @@ video, canvas {
 <script>
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
-const startBtn = document.getElementById('startCam');
 const capBtn = document.getElementById('capture');
 const result = document.getElementById('result');
 const status = document.getElementById('status');
@@ -1465,8 +1461,13 @@ function attachStreamToVideo(mediaStream) {
   video.style.display = "block";
   videoBox.classList.add("scanner-active");
   capBtn.disabled = false;
-  startBtn.disabled = true;
   result.innerHTML = "";
+  try {
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {});
+    }
+  } catch (e) {}
 }
 
 function isIOSDevice() {
@@ -1540,21 +1541,13 @@ if (navigator.permissions && typeof navigator.permissions.query === "function") 
   }).catch(() => {});
 }
 
-startBtn.onclick = async () => {
-  try {
-    stopCameraStream();
-    // Call openMainRearCamera() IMMEDIATELY on user tap so transient user gesture is preserved!
-    const mediaStream = await openMainRearCamera();
-    const allowed = await checkClientState();
-    if (!allowed) {
-      mediaStream.getTracks().forEach(t => t.stop());
-      return;
+if (videoBox) {
+  videoBox.addEventListener("click", () => {
+    if (!stream && cameraCard.style.display !== "none") {
+      autoTriggerCameraIfAllowed();
     }
-    attachStreamToVideo(mediaStream);
-  } catch (e) {
-    showCameraPermissionHelp();
-  }
-};
+  });
+}
 
 capBtn.onclick = async () => {
   status.style.display = "inline-flex";
