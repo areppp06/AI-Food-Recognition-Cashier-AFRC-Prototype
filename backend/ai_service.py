@@ -197,9 +197,10 @@ def _recognize_with_openai_compatible(
             raise RecognitionError(
                 "AI_SERVICE_ERROR",
                 "The vision model returned invalid JSON. Please retake the photo.",
+                raw_response=content,
             )
     if data.get("error_code"):
-        raise RecognitionError(data["error_code"], data.get("error_message") or "Unable to recognize food.")
+        raise RecognitionError(data["error_code"], data.get("error_message") or "Unable to recognize food.", raw_response=content)
     items = _snap_to_menu([AIItem(name=item["name"], quantity=item["quantity"]) for item in data.get("items", [])], allowed_names)
     log.info("Menu match from %s: %s", model, [item.name for item in items])
     return items
@@ -238,9 +239,10 @@ def get_available_menu_text(menu: List[dict]) -> str:
     return "\n".join([f"- {d['name']} ({d['unit']})" for d in menu if d['available']])
 
 class RecognitionError(Exception):
-    def __init__(self, code: str, message: str):
+    def __init__(self, code: str, message: str, raw_response: str = ""):
         self.code = code
         self.message = message
+        self.raw_response = raw_response
         super().__init__(message)
 
 async def recognize_food(image_bytes: bytes, available_menu: List[dict]) -> List[AIItem]:
@@ -274,7 +276,7 @@ async def recognize_food(image_bytes: bytes, available_menu: List[dict]) -> List
             _log_ai_reply("gemini-2.5-flash", response.text or "")
             data = json.loads(response.text)
             if data.get("error_code"):
-                raise RecognitionError(data["error_code"], data.get("error_message", "Unable to recognize food."))
+                raise RecognitionError(data["error_code"], data.get("error_message", "Unable to recognize food."), raw_response=response.text or "")
             return _snap_to_menu([AIItem(name=item["name"], quantity=item["quantity"]) for item in data.get("items", [])], allowed_names)
 
         if AI_PROVIDER == "openai" and openai_client:
@@ -316,6 +318,6 @@ async def recognize_food(image_bytes: bytes, available_menu: List[dict]) -> List
     except RecognitionError:
         raise
     except Exception as e:
-        raise RecognitionError("AI_SERVICE_ERROR", f"AI service temporarily unavailable: {str(e)[:100]}")
+        raise RecognitionError("AI_SERVICE_ERROR", f"AI service temporarily unavailable: {str(e)[:100]}", raw_response=str(e))
 
     raise RecognitionError("AI_SERVICE_ERROR", "No AI provider configured.")

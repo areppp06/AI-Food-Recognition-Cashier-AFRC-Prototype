@@ -1602,6 +1602,14 @@
         <span>Audit Log</span>
       </span>
     </button>
+    <button class="nav-btn" data-tab="archives" onclick="switchTab('archives', 'Scan Archives & Failed Photos')">
+      <span class="nav-btn-left">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Archives</span>
+      </span>
+    </button>
   </div>
 
   <div class="sidebar-footer">
@@ -2059,11 +2067,167 @@
         </div>
       </div>
     </section>
+
+    <!-- TAB 6: ARCHIVES -->
+    <section class="section-pane" id="tab-archives">
+      <div class="stats-grid" style="margin-bottom: 1.25rem;">
+        <div class="stat-card">
+          <div class="stat-label">Total Failed Scans</div>
+          <div class="stat-value red" id="archiveTotalFailed">0</div>
+          <div class="stat-sub" id="archiveTotalFailedSub">All-time rejection events</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Today's Rejections</div>
+          <div class="stat-value amber" id="archiveTodayFailed">0</div>
+          <div class="stat-sub" id="archiveTodayFailedSub">Logged today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Retries Tied to Bills</div>
+          <div class="stat-value" id="archiveRetriesCount">0</div>
+          <div class="stat-sub">Failed retakes on customer bills</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Top Rejection Reason</div>
+          <div class="stat-value" style="font-size:1.2rem; word-break:break-word; color:#475569;" id="archiveTopReason">None</div>
+          <div class="stat-sub" id="archiveTopReasonSub">Most common AI error</div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-header" style="flex-wrap:wrap; gap:0.75rem;">
+          <div>
+            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
+              <svg style="width:20px;height:20px;color:#ff5e36;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Scan Archives &amp; Failed Photos</span>
+            </div>
+            <div class="stat-sub" style="margin-top:0.2rem;">Inspect AI rejections, unreadable photos, and retry history</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" type="button" onclick="loadArchives()">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              <span>Refresh Archives</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-body" style="padding-bottom:0.75rem;">
+          <!-- Filter toolbar -->
+          <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center; justify-content:space-between; margin-bottom:1.25rem;">
+            <div class="range-pills" id="archivePeriodPills">
+              <button class="range-pill" data-period="today" type="button" onclick="setArchivePeriod('today', this)">Today</button>
+              <button class="range-pill active" data-period="7d" type="button" onclick="setArchivePeriod('7d', this)">Last 7 Days</button>
+              <button class="range-pill" data-period="30d" type="button" onclick="setArchivePeriod('30d', this)">Last 30 Days</button>
+              <button class="range-pill" data-period="all" type="button" onclick="setArchivePeriod('all', this)">All Time</button>
+            </div>
+
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+              <select class="input-box" id="archiveCodeFilter" style="width:auto; min-width:160px; padding:0.4rem 0.65rem; font-size:0.82rem;" onchange="onArchiveFilterChange()">
+                <option value="all">All Rejection Types</option>
+                <option value="UNREADABLE_PHOTO">Unreadable / Blurry Photo</option>
+                <option value="NOT_A_PLATE">Not a Food Plate</option>
+                <option value="NO_FOOD_DETECTED">No Food Detected</option>
+                <option value="NO_MATCHING_DISHES">Dishes Not On Menu</option>
+                <option value="AI_SERVICE_ERROR">AI Service Error</option>
+                <option value="IMAGE_TOO_LARGE">Image Too Large</option>
+              </select>
+
+              <select class="input-box" id="archiveTypeFilter" style="width:auto; min-width:130px; padding:0.4rem 0.65rem; font-size:0.82rem;" onchange="onArchiveFilterChange()">
+                <option value="all">All Scans</option>
+                <option value="retries">Retries Only</option>
+                <option value="initial">Initial Scans</option>
+              </select>
+
+              <div style="position:relative;">
+                <input type="text" class="input-box" id="archiveSearchInput" placeholder="Search bill #, reason, IP..." style="padding:0.4rem 0.65rem 0.4rem 2rem; font-size:0.82rem; width:190px;" onkeydown="if(event.key==='Enter') onArchiveFilterChange()">
+                <svg style="position:absolute; left:0.6rem; top:50%; transform:translateY(-50%); width:14px; height:14px; color:#94a3b8;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:72px;">Photo</th>
+                  <th style="width:145px;">Timestamp</th>
+                  <th style="width:160px;">Rejection Type</th>
+                  <th>Rejection Details</th>
+                  <th style="width:160px;">Scan Context</th>
+                  <th style="text-align:right; width:170px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="archiveTableBody">
+                <tr>
+                  <td colspan="6" style="text-align:center; padding:2rem; color:#94a3b8;">Loading archives...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="audit-mobile-list" id="archiveMobileList"></div>
+
+          <div class="pagination-bar" id="archivePaginationBar" style="margin-top:1rem;">
+            <div class="pagination-info" id="archivePaginationInfo">Showing 0 archives</div>
+            <div class="pagination-controls" id="archivePaginationControls"></div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
 <div class="lightbox" id="photoModal" onclick="this.classList.remove('open')">
   <img alt="Plate photo" id="photoModalImg" src="">
+</div>
+
+<div class="modal-backdrop" id="archiveModal" onclick="if(event.target===this) closeArchiveModal()">
+  <div class="refund-modal-card" style="max-width:540px;" role="dialog" aria-modal="true" aria-labelledby="archiveModalTitle">
+    <div class="refund-modal-head">
+      <div class="refund-modal-title" id="archiveModalTitle">
+        <span>Failed Scan Inspection</span>
+        <span class="badge" id="archiveModalCodeBadge" style="background:#fee2e2; color:#b91c1c; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">CODE</span>
+      </div>
+      <button type="button" class="refund-modal-close" onclick="closeArchiveModal()" aria-label="Close archive preview">&times;</button>
+    </div>
+    <div class="refund-modal-body" style="padding:1.25rem 1.5rem 1.5rem;">
+      <div id="archiveModalImgBox" style="text-align:center; margin-bottom:1.25rem; background:#0f172a; border-radius:14px; overflow:hidden; min-height:180px; display:flex; align-items:center; justify-content:center;">
+        <img id="archiveModalImg" src="" alt="Failed Scan Photo" style="max-width:100%; max-height:340px; object-fit:contain; border-radius:14px;">
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:0.75rem; font-size:0.85rem;">
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:0.85rem 1rem;">
+          <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:0.25rem;">Rejection Reason</div>
+          <div id="archiveModalReasonText" style="color:#0f172a; font-weight:600; line-height:1.45;">---</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.65rem 0.85rem;">
+            <div style="font-size:0.72rem; color:#64748b; font-weight:600;">Timestamp (MYT)</div>
+            <div id="archiveModalTime" style="font-weight:700; color:#0f172a; margin-top:0.15rem;">---</div>
+          </div>
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:0.65rem 0.85rem;">
+            <div style="font-size:0.72rem; color:#64748b; font-weight:600;">Context</div>
+            <div id="archiveModalContext" style="font-weight:700; color:#0f172a; margin-top:0.15rem;">---</div>
+          </div>
+        </div>
+
+        <div id="archiveModalAiBox" style="display:none; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:10px; padding:0.65rem 0.85rem;">
+          <div style="font-size:0.72rem; color:#475569; font-weight:700; text-transform:uppercase; margin-bottom:0.25rem;">Raw AI Output</div>
+          <pre id="archiveModalAiPre" style="font-size:0.75rem; color:#334155; white-space:pre-wrap; word-break:break-all; max-height:100px; overflow-y:auto; margin:0; font-family:monospace;"></pre>
+        </div>
+
+        <div id="archiveModalBillActionBox" style="display:none; margin-top:0.5rem; text-align:right;">
+          <button type="button" class="btn btn-dark btn-sm" id="btnArchiveModalViewBill" style="width:100%; justify-content:center;">
+            <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span>View Bill PDF Preview</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="modal-backdrop" id="refundModal" onclick="if(event.target===this) closeRefundModal()">
   <div class="refund-modal-card" role="dialog" aria-modal="true" aria-labelledby="refundModalTitle">
@@ -2182,10 +2346,20 @@ let totalPages = 1;
 let totalItems = 0;
 let searchDebounceTimer = null;
 
+let archiveCurrentPeriod = "7d";
+let archiveCurrentPage = 1;
+const archivePageSize = 10;
+let archiveTotalPages = 1;
+let currentArchiveItems = [];
+
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[ch]));
+}
+
+function escapeHtml(value) {
+  return esc(value);
 }
 
 function showToast(msg) {
@@ -2230,6 +2404,9 @@ function switchTab(tabId, title) {
   }
   if (tabId === "restaurant") {
     loadRestaurantSettings();
+  }
+  if (tabId === "archives") {
+    loadArchives();
   }
 }
 
@@ -3536,9 +3713,8 @@ async function setBillStatus(sessionId, status) {
   }
 }
 
-function downloadBillPdf(sessionId) {
-  const billData = pageBills.find(b => b.session_id === sessionId);
-  if (!billData || !window.jspdf) return;
+function generateBillPdfDoc(billData) {
+  if (!billData || !window.jspdf) return null;
   const { jsPDF } = window.jspdf;
   const items = billData.items || [];
   const billNo = billData.bill_number || "AAA-0001";
@@ -3710,11 +3886,12 @@ function downloadBillPdf(sessionId) {
     doc.text("Payment Ref: " + billData.curlec_payment_id, 40, y, { align: "center" });
     y += 3.5;
   }
-  if (sessionId) {
+  const sid = billData.session_id || billData.id || "";
+  if (sid) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.2);
     doc.setTextColor(148, 163, 184);
-    doc.text("Session ID: " + sessionId.slice(0, 18), 40, y, { align: "center" });
+    doc.text("Session ID: " + sid.slice(0, 18), 40, y, { align: "center" });
     y += 4.5;
   } else {
     y += 1.5;
@@ -3733,7 +3910,57 @@ function downloadBillPdf(sessionId) {
     doc.text("If you have any issue regarding this payment, please head to cashier for support", 40, y, { align: "center", maxWidth: 66 });
   }
 
-  doc.save(`AFRC-Receipt-${billNo}.pdf`);
+  return doc;
+}
+
+function downloadBillPdf(sessionId) {
+  const billData = (typeof pageBills !== "undefined" && Array.isArray(pageBills)) ? pageBills.find(b => b.session_id === sessionId) : null;
+  if (!billData) return;
+  const doc = generateBillPdfDoc(billData);
+  if (doc) {
+    doc.save(`AFRC-Receipt-${billData.bill_number || "AAA-0001"}.pdf`);
+  }
+}
+
+async function viewBillPdfPreview(billIdentifier) {
+  if (!billIdentifier) {
+    showToast("No bill reference associated with this scan.");
+    return;
+  }
+  try {
+    showToast("Preparing Bill PDF Preview...");
+    let billData = null;
+    if (typeof pageBills !== "undefined" && Array.isArray(pageBills)) {
+      billData = pageBills.find(b => b.session_id === billIdentifier || b.bill_number === billIdentifier);
+    }
+    if (!billData) {
+      const cleanNo = encodeURIComponent(String(billIdentifier).replace("#", "").trim());
+      const res = await fetch(`/api/admin/bills/by-number/${cleanNo}`);
+      if (res.ok) {
+        billData = await res.json();
+      } else {
+        const sRes = await fetch(`/api/sessions/${encodeURIComponent(billIdentifier)}`);
+        if (sRes.ok) {
+          billData = await sRes.json();
+        }
+      }
+    }
+    if (!billData) {
+      showToast("Bill details could not be found for PDF generation.");
+      return;
+    }
+    const doc = generateBillPdfDoc(billData);
+    if (!doc) {
+      showToast("PDF generation engine not available.");
+      return;
+    }
+    const blob = doc.output("blob");
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, "_blank");
+  } catch (err) {
+    console.error("PDF Preview Error:", err);
+    showToast("Error generating PDF preview.");
+  }
 }
 
 /* Menu Management */
@@ -4198,7 +4425,7 @@ async function submitChangePassword(e) {
 }
 
 async function refreshAll() {
-  await Promise.all([loadAdminUser(), loadBills(), loadMenu(), loadAuditLogs()]);
+  await Promise.all([loadAdminUser(), loadBills(), loadMenu(), loadAuditLogs(), loadArchives()]);
 }
 
 refreshAll();
@@ -4405,6 +4632,333 @@ async function handleSaveOperationHours(event) {
 function setHourPreset(start, end) {
   document.getElementById("opHourStartInput").value = start;
   document.getElementById("opHourEndInput").value = end;
+}
+
+// ==================== ARCHIVES & FAILED SCANS ====================
+
+function setArchivePeriod(period, btn) {
+  archiveCurrentPeriod = period;
+  if (btn) {
+    document.querySelectorAll("#archivePeriodPills .range-pill").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+  }
+  archiveCurrentPage = 1;
+  loadArchives(1);
+}
+
+function onArchiveFilterChange() {
+  archiveCurrentPage = 1;
+  loadArchives(1);
+}
+
+function formatRejectionCode(code) {
+  if (!code || code === "None") return "None";
+  const map = {
+    UNREADABLE_PHOTO: "Unreadable / Blurry",
+    NOT_A_PLATE: "Not a Food Plate",
+    NO_FOOD_DETECTED: "No Food Detected",
+    NO_MATCHING_DISHES: "Dishes Not on Menu",
+    AI_SERVICE_ERROR: "AI Service Error",
+    IMAGE_TOO_LARGE: "Image Too Large",
+  };
+  return map[code] || code.replace(/_/g, " ");
+}
+
+function rejectionBadge(code) {
+  const c = code || "UNKNOWN";
+  let bg = "#f1f5f9";
+  let fg = "#475569";
+  let border = "#e2e8f0";
+  if (c === "UNREADABLE_PHOTO") {
+    bg = "#fef3c7"; fg = "#92400e"; border = "#fde68a";
+  } else if (c === "NOT_A_PLATE") {
+    bg = "#fee2e2"; fg = "#b91c1c"; border = "#fecaca";
+  } else if (c === "NO_FOOD_DETECTED") {
+    bg = "#ffedd5"; fg = "#c2410c"; border = "#fed7aa";
+  } else if (c === "NO_MATCHING_DISHES") {
+    bg = "#f3e8ff"; fg = "#7e22ce"; border = "#e9d5ff";
+  } else if (c === "AI_SERVICE_ERROR") {
+    bg = "#ffe4e6"; fg = "#be123c"; border = "#fecdd3";
+  }
+  return `<span class="badge" style="background:${bg}; color:${fg}; border:1px solid ${border}; font-weight:700; font-size:0.75rem; padding:0.25rem 0.55rem; border-radius:6px;">${escapeHtml(formatRejectionCode(c))}</span>`;
+}
+
+async function loadArchives(page = 1) {
+  archiveCurrentPage = page;
+  const tbody = document.getElementById("archiveTableBody");
+  const mobileList = document.getElementById("archiveMobileList");
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2.5rem; color:#94a3b8;"><div class="spinner-sm" style="display:inline-block; margin-right:0.5rem; vertical-align:middle;"></div>Loading scan archives...</td></tr>`;
+  }
+
+  const code = document.getElementById("archiveCodeFilter")?.value || "all";
+  const scanType = document.getElementById("archiveTypeFilter")?.value || "all";
+  const search = (document.getElementById("archiveSearchInput")?.value || "").trim();
+
+  const params = new URLSearchParams({
+    period: archiveCurrentPeriod,
+    code: code,
+    scan_type: scanType,
+    page: String(archiveCurrentPage),
+    page_size: String(archivePageSize),
+  });
+  if (search) params.append("q", search);
+
+  try {
+    const res = await fetch(`/api/admin/failed-scans?${params.toString()}`);
+    if (!res.ok) {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#ef4444;">Failed to load archives. Please try again.</td></tr>`;
+      return;
+    }
+    const data = await res.json();
+    currentArchiveItems = data.items || [];
+    const pagination = data.pagination || {};
+    const summary = data.summary || {};
+
+    // Update KPI cards
+    const totalEl = document.getElementById("archiveTotalFailed");
+    if (totalEl) totalEl.textContent = summary.total_failed ?? 0;
+    const todayEl = document.getElementById("archiveTodayFailed");
+    if (todayEl) todayEl.textContent = summary.today_failed ?? 0;
+    const retriesEl = document.getElementById("archiveRetriesCount");
+    if (retriesEl) retriesEl.textContent = summary.retries_failed ?? 0;
+    const topReasonEl = document.getElementById("archiveTopReason");
+    if (topReasonEl) {
+      topReasonEl.textContent = formatRejectionCode(summary.top_rejection || "None");
+    }
+
+    renderArchives(currentArchiveItems);
+    renderArchivePagination(pagination);
+  } catch (err) {
+    console.error("Load archives error:", err);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#ef4444;">Network error while loading archives.</td></tr>`;
+  }
+}
+
+function renderArchives(items) {
+  const tbody = document.getElementById("archiveTableBody");
+  const mobileList = document.getElementById("archiveMobileList");
+
+  if (!items || items.length === 0) {
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:3rem 1rem; color:#94a3b8;">
+        <div style="font-size:1rem; font-weight:600; color:#64748b; margin-bottom:0.25rem;">No failed scan records found</div>
+        <div style="font-size:0.8rem;">No rejected scans match the selected period and filters.</div>
+      </td></tr>`;
+    }
+    if (mobileList) {
+      mobileList.innerHTML = `<div style="text-align:center; padding:2.5rem 1rem; color:#94a3b8; font-size:0.85rem;">No failed scan records found</div>`;
+    }
+    return;
+  }
+
+  // Desktop Table
+  if (tbody) {
+    tbody.innerHTML = items.map(item => {
+      const imgHtml = item.has_image
+        ? `<img src="${item.image_url}" alt="Failed Scan" onclick="openArchiveDetailModal(${item.id})" style="width:48px; height:48px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid #e2e8f0; transition:transform 0.15s ease;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" loading="lazy">`
+        : `<div style="width:48px; height:48px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.68rem; font-weight:600;">No img</div>`;
+
+      const isRetryBadge = item.is_retry
+        ? `<span class="badge" style="background:#fef3c7; color:#92400e; font-weight:700; font-size:0.72rem; padding:0.15rem 0.45rem; border-radius:4px;">Retry Scan</span>`
+        : `<span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.72rem; padding:0.15rem 0.45rem; border-radius:4px;">Initial Scan</span>`;
+
+      const billHtml = item.bill_number
+        ? `<div style="margin-top:0.3rem;"><span style="font-size:0.75rem; color:#64748b;">Bill:</span> <strong style="color:#0f172a; font-size:0.82rem;">#${escapeHtml(item.bill_number)}</strong></div>`
+        : "";
+
+      const rawAiPill = item.raw_ai_response
+        ? `<span style="display:inline-block; margin-left:0.35rem; font-size:0.68rem; font-weight:700; color:#4338ca; background:#e0e7ff; padding:0.1rem 0.35rem; border-radius:4px;">AI Raw</span>`
+        : "";
+
+      const viewBillBtn = item.bill_number
+        ? `<button type="button" class="btn btn-dark btn-sm" onclick="viewBillPdfPreview('${escapeHtml(item.bill_number)}')" title="View Bill #${escapeHtml(item.bill_number)} PDF" style="gap:0.3rem; padding:0.3rem 0.6rem; font-size:0.75rem;">
+            <svg style="width:12px; height:12px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            <span>View Bill</span>
+          </button>`
+        : "";
+
+      return `
+        <tr>
+          <td style="padding:0.6rem 0.75rem; vertical-align:middle;">${imgHtml}</td>
+          <td style="padding:0.6rem 0.75rem; vertical-align:middle;">
+            <div style="font-weight:600; color:#0f172a; font-size:0.83rem;">${escapeHtml(item.created_at_local || "---")}</div>
+            <div style="font-size:0.72rem; color:#94a3b8;">MYT Server Time</div>
+          </td>
+          <td style="padding:0.6rem 0.75rem; vertical-align:middle;">
+            ${rejectionBadge(item.rejection_code)}
+          </td>
+          <td style="padding:0.6rem 0.75rem; vertical-align:middle; max-width:300px;">
+            <div style="color:#334155; font-size:0.83rem; line-height:1.4; word-break:break-word;">
+              ${escapeHtml(item.rejection_message || "Rejection without custom message")}
+              ${rawAiPill}
+            </div>
+          </td>
+          <td style="padding:0.6rem 0.75rem; vertical-align:middle;">
+            <div>${isRetryBadge}</div>
+            ${billHtml}
+            <div style="font-size:0.72rem; color:#94a3b8; margin-top:0.15rem;">IP: ${escapeHtml(item.ip || "---")}</div>
+          </td>
+          <td style="padding:0.6rem 0.75rem; text-align:right; vertical-align:middle;">
+            <div style="display:flex; justify-content:flex-end; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+              <button type="button" class="btn btn-outline btn-sm" onclick="openArchiveDetailModal(${item.id})" style="padding:0.3rem 0.6rem; font-size:0.75rem;">Inspect</button>
+              ${viewBillBtn}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // Mobile Cards
+  if (mobileList) {
+    mobileList.innerHTML = items.map(item => {
+      const imgHtml = item.has_image
+        ? `<img src="${item.image_url}" alt="Failed Scan" onclick="openArchiveDetailModal(${item.id})" style="width:64px; height:64px; object-fit:cover; border-radius:10px; cursor:pointer; border:1px solid #e2e8f0;" loading="lazy">`
+        : `<div style="width:64px; height:64px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:0.7rem; font-weight:600;">No img</div>`;
+
+      const isRetryBadge = item.is_retry
+        ? `<span class="badge" style="background:#fef3c7; color:#92400e; font-weight:700; font-size:0.7rem; padding:0.15rem 0.4rem; border-radius:4px;">Retry</span>`
+        : `<span class="badge" style="background:#f1f5f9; color:#64748b; font-size:0.7rem; padding:0.15rem 0.4rem; border-radius:4px;">Initial</span>`;
+
+      const billHtml = item.bill_number
+        ? `<div style="font-size:0.8rem; margin-top:0.25rem;"><span style="color:#64748b;">Bill:</span> <strong style="color:#0f172a;">#${escapeHtml(item.bill_number)}</strong></div>`
+        : "";
+
+      const viewBillBtn = item.bill_number
+        ? `<button type="button" class="btn btn-dark btn-sm bmc-btn" onclick="viewBillPdfPreview('${escapeHtml(item.bill_number)}')">
+            <svg style="width:12px; height:12px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            <span>View Bill</span>
+          </button>`
+        : "";
+
+      return `
+        <div class="bill-mobile-card" style="display:flex; flex-direction:column; gap:0.75rem; padding:1rem; border:1px solid #e2e8f0; border-radius:12px; background:#fff; margin-bottom:0.75rem;">
+          <div style="display:flex; gap:0.85rem; align-items:flex-start;">
+            ${imgHtml}
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem; margin-bottom:0.35rem;">
+                ${rejectionBadge(item.rejection_code)}
+                ${isRetryBadge}
+              </div>
+              <div style="font-size:0.82rem; font-weight:600; color:#0f172a;">${escapeHtml(item.created_at_local || "---")}</div>
+              ${billHtml}
+            </div>
+          </div>
+          <div style="font-size:0.82rem; color:#475569; background:#f8fafc; padding:0.6rem 0.75rem; border-radius:8px; border:1px solid #f1f5f9; line-height:1.4;">
+            ${escapeHtml(item.rejection_message || "Rejection without message")}
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; padding-top:0.25rem;">
+            <div style="font-size:0.72rem; color:#94a3b8;">IP: ${escapeHtml(item.ip || "---")}</div>
+            <div style="display:flex; gap:0.4rem;">
+              <button type="button" class="btn btn-outline btn-sm bmc-btn" onclick="openArchiveDetailModal(${item.id})">Inspect</button>
+              ${viewBillBtn}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+}
+
+function renderArchivePagination(pagination) {
+  const bar = document.getElementById("archivePaginationBar");
+  const info = document.getElementById("archivePaginationInfo");
+  const controls = document.getElementById("archivePaginationControls");
+  if (!bar || !info || !controls) return;
+
+  const total = pagination.total_items || 0;
+  const curPage = pagination.page || 1;
+  const totalPages = pagination.total_pages || 1;
+  archiveTotalPages = totalPages;
+
+  info.textContent = total > 0
+    ? `Showing page ${curPage} of ${totalPages} (${total} total records)`
+    : "Showing 0 archives";
+
+  if (totalPages <= 1) {
+    controls.innerHTML = "";
+    return;
+  }
+
+  controls.innerHTML = `
+    <button class="pagination-btn" onclick="changeArchivePage(${curPage - 1})" ${curPage <= 1 ? "disabled" : ""}>&laquo; Prev</button>
+    <span style="font-size:0.8rem; color:#64748b; font-weight:600;">Page ${curPage} / ${totalPages}</span>
+    <button class="pagination-btn" onclick="changeArchivePage(${curPage + 1})" ${curPage >= totalPages ? "disabled" : ""}>Next &raquo;</button>
+  `;
+}
+
+function changeArchivePage(newPage) {
+  if (newPage < 1 || newPage > archiveTotalPages) return;
+  loadArchives(newPage);
+}
+
+function openArchiveDetailModal(scanId) {
+  const item = currentArchiveItems.find(x => x.id === scanId);
+  if (!item) return;
+
+  const modal = document.getElementById("archiveModal");
+  if (!modal) return;
+
+  const codeBadge = document.getElementById("archiveModalCodeBadge");
+  if (codeBadge) {
+    codeBadge.textContent = formatRejectionCode(item.rejection_code);
+  }
+
+  const imgEl = document.getElementById("archiveModalImg");
+  const imgBox = document.getElementById("archiveModalImgBox");
+  if (item.has_image) {
+    imgBox.style.display = "flex";
+    imgEl.src = item.image_url;
+  } else {
+    imgBox.style.display = "none";
+    imgEl.src = "";
+  }
+
+  const reasonEl = document.getElementById("archiveModalReasonText");
+  if (reasonEl) reasonEl.textContent = item.rejection_message || "No explanation recorded";
+
+  const timeEl = document.getElementById("archiveModalTime");
+  if (timeEl) timeEl.textContent = item.created_at_local || "---";
+
+  const contextEl = document.getElementById("archiveModalContext");
+  if (contextEl) {
+    let ctxText = item.is_retry ? "Retry Attempt" : "Initial Food Scan";
+    if (item.bill_number) {
+      ctxText += ` (Bill #${item.bill_number})`;
+    }
+    contextEl.textContent = ctxText;
+  }
+
+  const aiBox = document.getElementById("archiveModalAiBox");
+  const aiPre = document.getElementById("archiveModalAiPre");
+  if (item.raw_ai_response && item.raw_ai_response.trim()) {
+    aiBox.style.display = "block";
+    aiPre.textContent = item.raw_ai_response;
+  } else {
+    aiBox.style.display = "none";
+    aiPre.textContent = "";
+  }
+
+  const billBox = document.getElementById("archiveModalBillActionBox");
+  const btnViewBill = document.getElementById("btnArchiveModalViewBill");
+  if (item.bill_number && btnViewBill) {
+    billBox.style.display = "block";
+    btnViewBill.onclick = () => viewBillPdfPreview(item.bill_number);
+    btnViewBill.innerHTML = `
+      <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      <span>View Bill #${escapeHtml(item.bill_number)} PDF Preview</span>
+    `;
+  } else if (billBox) {
+    billBox.style.display = "none";
+  }
+
+  modal.classList.add("open");
+}
+
+function closeArchiveModal() {
+  const modal = document.getElementById("archiveModal");
+  if (modal) modal.classList.remove("open");
 }
 
 </script>

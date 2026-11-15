@@ -122,6 +122,20 @@ class ScanAttempt(Base):
     session_id = Column(String, default="", index=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
+class FailedScan(Base):
+    __tablename__ = "failed_scans"
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, default="", index=True)
+    bill_number = Column(String, default="", index=True)
+    is_retry = Column(Boolean, default=False, index=True)
+    ip = Column(String, default="", index=True)
+    device_id = Column(String, default="", index=True)
+    rejection_code = Column(String, default="UNKNOWN", index=True)
+    rejection_message = Column(String, default="")
+    image_key = Column(String, default="")
+    raw_ai_response = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
 class BillRefund(Base):
     __tablename__ = "bill_refunds"
     id = Column(Integer, primary_key=True, index=True)

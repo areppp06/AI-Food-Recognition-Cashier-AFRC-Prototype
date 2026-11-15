@@ -22,7 +22,7 @@ from pathlib import Path
 from urllib.parse import quote
 from dotenv import dotenv_values
 
-from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, BillRefund, AdminUser, AdminSession, next_bill_number
+from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, FailedScan, BillRefund, AdminUser, AdminSession, next_bill_number
 from .auth import hash_password, verify_password, create_admin_session, get_current_admin, require_admin_api, revoke_session, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS, get_or_create_setup_token, burn_setup_token
 from .schemas import Dish as DishSchema, BillResponse, BillItem, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
@@ -188,6 +188,54 @@ async def _fetch_plate_from_r2(key: str):
     except Exception:
         pass
     return None
+
+async def _record_failed_scan(
+    db: Session,
+    image_bytes: bytes,
+    rejection_code: str,
+    rejection_message: str,
+    raw_ai: str = "",
+    session_id: str = "",
+    bill_number: str = "",
+    is_retry: bool = False,
+    ip: str = "",
+    device_id: str = "",
+) -> FailedScan:
+    scan_uid = str(uuid.uuid4())
+    failed_dir = UPLOAD_DIR / "failed_scans"
+    try:
+        failed_dir.mkdir(parents=True, exist_ok=True)
+        if image_bytes and len(image_bytes) > 0:
+            (failed_dir / f"{scan_uid}.jpg").write_bytes(image_bytes)
+            (failed_dir / f"{rejection_code}_{scan_uid}.jpg").write_bytes(image_bytes)
+    except OSError:
+        pass
+
+    r2_key = f"failed_scans/{rejection_code}_{scan_uid}.jpg" if (image_bytes and len(image_bytes) > 0) else ""
+    if r2_key:
+        try:
+            uploaded = await _upload_plate_to_r2(r2_key, image_bytes)
+            if not uploaded:
+                r2_key = f"failed_scans/{scan_uid}.jpg"
+        except Exception:
+            r2_key = f"failed_scans/{scan_uid}.jpg"
+
+    rec = FailedScan(
+        session_id=session_id or "",
+        bill_number=bill_number or "",
+        is_retry=bool(is_retry),
+        ip=ip or "",
+        device_id=device_id or "",
+        rejection_code=rejection_code or "UNKNOWN",
+        rejection_message=rejection_message or "",
+        image_key=r2_key,
+        raw_ai_response=raw_ai or "",
+        created_at=datetime.utcnow(),
+    )
+    db.add(rec)
+    db.commit()
+    db.refresh(rec)
+    return rec
 
 # Serve frontend
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
@@ -1390,6 +1438,15 @@ async def recognize(
     )
 
     target_bill_id = target_bill.id if target_bill else ""
+    is_retry_scan = bool(target_bill or retake_sid)
+    scan_bill_no = (target_bill.bill_number or "") if target_bill else ""
+    if not scan_bill_no and retake_sid:
+        b_prev = db.query(SessionBill.bill_number).filter(SessionBill.id == retake_sid).first()
+        if b_prev and b_prev[0]:
+            scan_bill_no = b_prev[0]
+    scan_sid_val = target_bill_id or retake_sid or effective_sid
+    client_ip_val = _client_ip(request)
+
     available = [_dish_json(d) for d in db.query(Dish).filter(Dish.available == True).all()]
     # The menu is now a plain list. End the read so Grok runs without holding a transaction.
     db.rollback()
@@ -1397,18 +1454,54 @@ async def recognize(
     try:
         ai_items = await recognize_food(image_bytes, available)
     except RecognitionError as e:
+        await _record_failed_scan(
+            db=db,
+            image_bytes=image_bytes,
+            rejection_code=e.code,
+            rejection_message=e.message,
+            raw_ai=getattr(e, "raw_response", ""),
+            session_id=scan_sid_val,
+            bill_number=scan_bill_no,
+            is_retry=is_retry_scan,
+            ip=client_ip_val,
+            device_id=d_id,
+        )
         raise HTTPException(status_code=422, detail=ErrorResponse(
             error_code=e.code,
             message=e.message,
             retake_required=True
         ).dict())
     except Exception as e:
+        await _record_failed_scan(
+            db=db,
+            image_bytes=image_bytes,
+            rejection_code="AI_SERVICE_ERROR",
+            rejection_message="AI service is temporarily down. Please try again in a moment.",
+            raw_ai=str(e)[:500],
+            session_id=scan_sid_val,
+            bill_number=scan_bill_no,
+            is_retry=is_retry_scan,
+            ip=client_ip_val,
+            device_id=d_id,
+        )
         raise HTTPException(status_code=503, detail=ErrorResponse(
             error_code="AI_SERVICE_ERROR",
             message="AI service is temporarily down. Please try again in a moment."
         ).dict())
 
     if not ai_items:
+        await _record_failed_scan(
+            db=db,
+            image_bytes=image_bytes,
+            rejection_code="NO_FOOD_DETECTED",
+            rejection_message="No matching dishes found on the plate. Please retake or check today's menu.",
+            raw_ai="",
+            session_id=scan_sid_val,
+            bill_number=scan_bill_no,
+            is_retry=is_retry_scan,
+            ip=client_ip_val,
+            device_id=d_id,
+        )
         raise HTTPException(status_code=422, detail=ErrorResponse(
             error_code="NO_FOOD_DETECTED",
             message="No matching dishes found on the plate. Please retake or check today's menu."
@@ -1439,6 +1532,18 @@ async def recognize(
         ))
 
     if not bill_items:
+        await _record_failed_scan(
+            db=db,
+            image_bytes=image_bytes,
+            rejection_code="NO_MATCHING_DISHES",
+            rejection_message="Recognized items are not on today's menu. Please retake or ask staff.",
+            raw_ai=json.dumps([i.dict() for i in ai_items]),
+            session_id=scan_sid_val,
+            bill_number=scan_bill_no,
+            is_retry=is_retry_scan,
+            ip=client_ip_val,
+            device_id=d_id,
+        )
         raise HTTPException(status_code=422, detail=ErrorResponse(
             error_code="NO_MATCHING_DISHES",
             message="Recognized items are not on today's menu. Please retake or ask staff."
@@ -2980,6 +3085,25 @@ def _build_refund_info(bill: SessionBill, db: Session, sync_curlec_contact: bool
         "refunds": refunds_history,
     }
 
+@app.get("/api/admin/bills/by-number/{bill_number}")
+def get_admin_bill_by_number(bill_number: str, request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
+    _expire_stale_bills(db)
+    clean_no = bill_number.strip().lstrip("#")
+    bill = db.query(SessionBill).filter(
+        or_(
+            func.lower(SessionBill.bill_number) == clean_no.lower(),
+            func.lower(SessionBill.bill_number) == bill_number.strip().lower()
+        )
+    ).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    refunded_amt = db.query(func.coalesce(func.sum(BillRefund.refund_amount), 0.0)).filter(
+        BillRefund.session_id == bill.id,
+        BillRefund.status == "completed"
+    ).scalar() or 0.0
+    return JSONResponse(content=_bill_payload(bill, float(refunded_amt), is_owner_or_admin=True), headers=NO_CACHE_HEADERS)
+
 @app.get("/api/admin/bills/{session_id}/refund-info")
 def get_admin_bill_refund_info(session_id: str, request: Request, db: Session = Depends(get_db)):
     require_admin_api(request, db)
@@ -3232,3 +3356,148 @@ async def update_admin_restaurant_settings(request: Request, db: Session = Depen
         "restaurant_name": prof["restaurant_name"],
         "company_name": prof["company_name"],
     }
+
+
+@app.get("/api/admin/failed-scans")
+def list_failed_scans(
+    request: Request,
+    period: str = "7d",
+    rejection_code: str = "all",
+    scan_type: str = "all",
+    search: str = "",
+    page: int = 1,
+    page_size: int = 20,
+    db: Session = Depends(get_db),
+):
+    current_admin = require_admin_api(request, db)
+    offset_hours = timedelta(hours=8)
+    now_local = datetime.utcnow() + offset_hours
+    today_date = now_local.date()
+
+    query = db.query(FailedScan)
+
+    p_norm = (period or "7d").lower()
+    if p_norm == "today":
+        start_utc = datetime.combine(today_date, datetime.min.time()) - offset_hours
+        query = query.filter(FailedScan.created_at >= start_utc)
+    elif p_norm == "7d":
+        start_date = today_date - timedelta(days=6)
+        start_utc = datetime.combine(start_date, datetime.min.time()) - offset_hours
+        query = query.filter(FailedScan.created_at >= start_utc)
+    elif p_norm == "30d":
+        start_date = today_date - timedelta(days=29)
+        start_utc = datetime.combine(start_date, datetime.min.time()) - offset_hours
+        query = query.filter(FailedScan.created_at >= start_utc)
+
+    if rejection_code and rejection_code != "all":
+        query = query.filter(FailedScan.rejection_code == rejection_code.strip())
+
+    if scan_type == "retries":
+        query = query.filter(FailedScan.is_retry == True)
+    elif scan_type == "initial":
+        query = query.filter(FailedScan.is_retry == False)
+
+    s_term = (search or "").strip()
+    if s_term:
+        query = query.filter(
+            or_(
+                FailedScan.bill_number.ilike(f"%{s_term}%"),
+                FailedScan.session_id.ilike(f"%{s_term}%"),
+                FailedScan.rejection_message.ilike(f"%{s_term}%"),
+                FailedScan.rejection_code.ilike(f"%{s_term}%"),
+                FailedScan.ip.ilike(f"%{s_term}%"),
+            )
+        )
+
+    total_items = query.count()
+    total_pages = max(1, math.ceil(total_items / page_size))
+    cur_page = max(1, min(page, total_pages))
+    offset_idx = (cur_page - 1) * page_size
+
+    rows = query.order_by(FailedScan.created_at.desc()).offset(offset_idx).limit(page_size).all()
+
+    total_all = db.query(FailedScan).count()
+    start_today_utc = datetime.combine(today_date, datetime.min.time()) - offset_hours
+    today_count = db.query(FailedScan).filter(FailedScan.created_at >= start_today_utc).count()
+    retries_count = db.query(FailedScan).filter(FailedScan.is_retry == True).count()
+
+    code_counts = {}
+    for (c,) in db.query(FailedScan.rejection_code).all():
+        code_counts[c] = code_counts.get(c, 0) + 1
+
+    top_rejection = max(code_counts.items(), key=lambda x: x[1])[0] if code_counts else "None"
+
+    items = []
+    for r in rows:
+        dt_local = (r.created_at or datetime.utcnow()) + offset_hours
+        items.append({
+            "id": r.id,
+            "session_id": r.session_id,
+            "bill_number": r.bill_number,
+            "is_retry": bool(r.is_retry),
+            "rejection_code": r.rejection_code,
+            "rejection_message": r.rejection_message,
+            "has_image": bool(r.image_key),
+            "image_url": f"/api/admin/failed-scans/{r.id}/image" if r.image_key else "",
+            "raw_ai_response": r.raw_ai_response or "",
+            "ip": r.ip or "",
+            "device_id": r.device_id or "",
+            "created_at_local": dt_local.strftime("%Y-%m-%d %H:%M:%S"),
+        })
+
+    return JSONResponse(
+        content={
+            "items": items,
+            "pagination": {
+                "page": cur_page,
+                "page_size": page_size,
+                "total_items": total_items,
+                "total_pages": total_pages,
+                "has_prev": cur_page > 1,
+                "has_next": cur_page < total_pages,
+            },
+            "summary": {
+                "total_failed": total_all,
+                "today_failed": today_count,
+                "retries_failed": retries_count,
+                "top_rejection": top_rejection,
+                "code_counts": code_counts,
+            },
+        },
+        headers=NO_CACHE_HEADERS,
+    )
+
+
+@app.get("/api/admin/failed-scans/{scan_id}/image")
+async def get_failed_scan_image(
+    scan_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    require_admin_api(request, db)
+    scan = db.query(FailedScan).filter(FailedScan.id == scan_id).first()
+    if not scan or not scan.image_key:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    filename = Path(scan.image_key).name
+    failed_dir = UPLOAD_DIR / "failed_scans"
+    local_path = failed_dir / filename
+    if local_path.is_file() and local_path.stat().st_size > 0:
+        return FileResponse(local_path, media_type="image/jpeg", headers=NO_CACHE_HEADERS)
+
+    if "_" in filename:
+        uuid_part = filename.rsplit("_", 1)[-1]
+        alt_path = failed_dir / uuid_part
+        if alt_path.is_file() and alt_path.stat().st_size > 0:
+            return FileResponse(alt_path, media_type="image/jpeg", headers=NO_CACHE_HEADERS)
+
+    r2_bytes = await _fetch_plate_from_r2(scan.image_key)
+    if r2_bytes:
+        try:
+            failed_dir.mkdir(parents=True, exist_ok=True)
+            local_path.write_bytes(r2_bytes)
+        except OSError:
+            pass
+        return Response(content=r2_bytes, media_type="image/jpeg", headers=NO_CACHE_HEADERS)
+
+    raise HTTPException(status_code=404, detail="Image could not be retrieved")
