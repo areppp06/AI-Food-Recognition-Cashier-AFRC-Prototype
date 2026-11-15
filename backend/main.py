@@ -715,6 +715,28 @@ async def _stale_bills_watcher():
     except asyncio.CancelledError:
         return
 
+def _sync_legacy_scans_sync():
+    db = SessionLocal()
+    try:
+        existing_sids = set(
+            r[0] for r in db.query(ScanAttempt.session_id).filter(ScanAttempt.session_id != "").all()
+        )
+        sessions = db.query(SessionBill).all()
+        to_add = []
+        for s in sessions:
+            if s.id not in existing_sids:
+                dt = s.created_at or s.updated_at or datetime.utcnow()
+                to_add.append(ScanAttempt(session_id=s.id, ip="127.0.0.1", device_id="legacy", created_at=dt))
+                for i in range(int(s.retake_count or 0)):
+                    to_add.append(ScanAttempt(session_id=s.id, ip="127.0.0.1", device_id="legacy", created_at=dt))
+        if to_add:
+            db.add_all(to_add)
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
 def _track_task(coro) -> asyncio.Task:
     task = asyncio.create_task(coro)
     _BACKGROUND_TASKS.add(task)
@@ -724,6 +746,7 @@ def _track_task(coro) -> asyncio.Task:
 @app.on_event("startup")
 async def startup():
     init_db()
+    await asyncio.to_thread(_sync_legacy_scans_sync)
     await asyncio.to_thread(_run_stale_bills_cleanup_sync)
     _track_task(_sync_r2_objects_async(force=True))
     _track_task(_stale_bills_watcher())
@@ -2234,6 +2257,7 @@ def _compute_overview_data(
                 "void_count": 0,
                 "open_count": 0,
                 "total_count": 0,
+                "scan_count": 0,
             }
 
     if p_norm == "today":
@@ -2505,6 +2529,29 @@ def _compute_overview_data(
                 "curlec_payment_id": curlec_payment_id or "",
             })
 
+    scan_rows = (
+        db.query(
+            ScanAttempt.created_at,
+        )
+        .all()
+    )
+
+    today_scans = 0
+    period_scans = 0
+    total_scans = len(scan_rows)
+
+    for (s_created,) in scan_rows:
+        s_utc = s_created or datetime.utcnow()
+        s_local = s_utc + offset
+        s_d = s_local.date()
+        if s_d == today_date:
+            today_scans += 1
+        if _in_date_range(s_d):
+            period_scans += 1
+            skey, slbl = _bucket_info(s_local)
+            _add_bucket(skey, slbl)
+            buckets[skey]["scan_count"] = buckets[skey].get("scan_count", 0) + 1
+
     if p_norm == "all":
         bucket_order = sorted(buckets.keys())
 
@@ -2540,6 +2587,8 @@ def _compute_overview_data(
         "today_bills": today_bills,
         "today_pending_count": today_pending_count,
         "today_void_count": today_void_count,
+        "today_scans": today_scans,
+        "total_scans": total_scans,
         "all_time_revenue": round(all_time_revenue, 2),
         "total_revenue": round(all_time_revenue, 2),
         "total_bills": len(rows),
@@ -2570,6 +2619,7 @@ def _compute_overview_data(
             "void_count": period_void,
             "void_value": round(period_void_value, 2),
             "total_bills": period_paid + period_open + period_void,
+            "scan_count": period_scans,
         },
         "series": series,
         "top_dishes": top_dishes,
@@ -2744,13 +2794,16 @@ def export_admin_sales_csv(
     writer.writerow([f"Period Paid Bills - {analytics['period_label']}", pt["paid_count"]])
     writer.writerow([f"Period Voided Bills - {analytics['period_label']}", pt["void_count"]])
     writer.writerow([f"Period Voided Value - {analytics['period_label']} (RM)", f"{pt['void_value']:.2f}"])
+    writer.writerow([f"Period Scanned Images - {analytics['period_label']}", pt.get("scan_count", 0)])
+    writer.writerow(["Today's Scanned Images", summary.get("today_scans", 0)])
+    writer.writerow(["All-Time Scanned Images", summary.get("total_scans", 0)])
     writer.writerow(["All-Time Revenue (RM)", f"{summary['all_time_revenue']:.2f}"])
     writer.writerow(["All-Time Total Bills", summary["total_bills"]])
     writer.writerow([])
 
     writer.writerow(["SALES TIMELINE BREAKDOWN"])
     time_col = "Hour" if analytics["granularity"] == "hour" else ("Month" if analytics["granularity"] == "month" else ("Quarter" if analytics["granularity"] == "quarter" else "Date"))
-    writer.writerow([time_col, "Paid Revenue (RM)", "Paid Bills", "Pending Bills", "Voided Bills", "Total Bills"])
+    writer.writerow([time_col, "Paid Revenue (RM)", "Paid Bills", "Pending Bills", "Voided Bills", "Total Bills", "Scanned Images"])
     for row in analytics["series"]:
         writer.writerow([
             row["label"] if analytics["granularity"] == "hour" else row["key"],
@@ -2759,6 +2812,7 @@ def export_admin_sales_csv(
             row["open_count"],
             row["void_count"],
             row["total_count"],
+            row.get("scan_count", 0),
         ])
     writer.writerow([])
 
