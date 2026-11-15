@@ -253,31 +253,21 @@ body {
     <!-- BM HEADER -->
     <div data-lang="bm">
       <h1 class="page-title">Senarai Harga Menu</h1>
-      <div class="legal-header-info">
-        <div class="header-rest-name dyn-restaurant-name">TAKCAKAP.COM</div>
-        <div class="header-comp-name dyn-company-name">De Warisan Ibunda Enterprise</div>
-        <div class="header-comp-reg dyn-business-reg" style="display:none;"></div>
-      </div>
     </div>
 
     <!-- EN HEADER -->
     <div data-lang="en" style="display:none;">
       <h1 class="page-title">Menu Prices</h1>
-      <div class="legal-header-info">
-        <div class="header-rest-name dyn-restaurant-name">TAKCAKAP.COM</div>
-        <div class="header-comp-name dyn-company-name">De Warisan Ibunda Enterprise</div>
-        <div class="header-comp-reg dyn-business-reg" style="display:none;"></div>
-      </div>
     </div>
 
-    <!-- LAST UPDATED WITHOUT CONTAINER -->
-    <div style="font-size:0.82rem; color:#64748b; margin-bottom:1.25rem;">
+    <!-- LAST UPDATED: SMALLER AND NOT BOLD -->
+    <div style="font-size:0.75rem; color:#94a3b8; margin-top:0.25rem; margin-bottom:1.25rem; font-weight:normal;">
       <span data-lang="bm">Kemas Kini Terakhir:</span>
       <span data-lang="en" style="display:none;">Last Updated:</span>
-      <strong id="menuLastUpdated" style="color:#0f172a; margin-left:0.25rem;">Memuatkan...</strong>
+      <span id="menuLastUpdated" style="color:#64748b; margin-left:0.25rem; font-weight:normal;">Memuatkan...</span>
     </div>
 
-    <!-- SIMPLE DISH LIST (NO INDIVIDUAL CONTAINERS, NO SEARCH, NO FILTERS) -->
+    <!-- SIMPLE DISH LIST (NO DESCRIPTION, NO CARDS, NO EMOJIS) -->
     <div id="dishList" style="display:flex; flex-direction:column;">
       <div style="text-align:center; padding:2rem; color:#94a3b8; font-size:0.88rem;">
         Memuatkan senarai menu terkini...
@@ -310,7 +300,6 @@ body {
           portionDetail = `<div style="font-size:0.8rem; color:#64748b; margin-top:0.15rem;">${pieces} ${isBM ? 'ketul sepinggan' : 'pcs per portion'}</div>`;
         }
 
-        const desc = d.description ? `<div style="font-size:0.8rem; color:#94a3b8; margin-top:0.15rem;">${d.description}</div>` : '';
         const borderBottom = (index === dishes.length - 1) ? '' : 'border-bottom: 1px solid #f1f5f9;';
 
         return `
@@ -318,7 +307,6 @@ body {
             <div style="padding-right:1rem;">
               <div style="font-weight:600; color:#0f172a; font-size:0.95rem;">${d.name}</div>
               ${portionDetail}
-              ${desc}
             </div>
             <div style="font-weight:700; color:#ff5e36; font-size:1.05rem; white-space:nowrap;">
               RM ${price}
