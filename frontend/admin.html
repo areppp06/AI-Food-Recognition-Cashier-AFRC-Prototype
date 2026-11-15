@@ -1904,73 +1904,8 @@
 
     <!-- TAB 4: RESTAURANT'S -->
     <section class="section-pane" id="tab-restaurant">
-      <!-- Status & Availability Panel -->
-      <div class="panel-card" style="margin-bottom: 1.5rem;">
-        <div class="panel-header" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
-          <div>
-            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
-              <svg style="width:20px;height:20px;color:#ff5e36;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>
-              <span>System &amp; Kiosk Availability</span>
-            </div>
-            <p style="font-size:0.82rem; color:#64748b; margin-top:0.25rem;">
-              Control public access to the customer scanner kiosk. High-impact switches require exact passphrase confirmation.
-            </p>
-          </div>
-        </div>
-
-        <div class="panel-body" style="padding: 1.5rem 1rem;">
-          <div style="display: flex; flex-direction: column; gap: 1.25rem;">
-            
-            <!-- Coming Soon Switch Row -->
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
-              <div style="flex:1;">
-                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
-                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Coming Soon Feature</span>
-                  <span id="badgeComingSoon" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
-                </div>
-                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
-                  When enabled, visiting the main customer page (<code style="background:#e2e8f0;padding:2px 4px;border-radius:4px;">/</code>) automatically redirects visitors to the <strong>Coming Soon</strong> page.
-                </p>
-              </div>
-              <div style="flex-shrink:0;">
-                <label class="switch-wrap" style="cursor:pointer;" onclick="onComingSoonClick(event)">
-                  <span class="switch-toggle">
-                    <input type="checkbox" id="toggleComingSoon" class="switch-input" style="pointer-events:none;">
-                    <span class="switch-slider"></span>
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Maintenance Mode Switch Row -->
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
-              <div style="flex:1;">
-                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
-                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Maintenance Mode</span>
-                  <span id="badgeMaintenance" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
-                </div>
-                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
-                  When switched on, redirects customer kiosk visitors to the <strong>Maintenance</strong> page and pauses scanning for system upkeep.
-                </p>
-              </div>
-              <div style="flex-shrink:0;">
-                <label class="switch-wrap" style="cursor:pointer;" onclick="onMaintenanceClick(event)">
-                  <span class="switch-toggle">
-                    <input type="checkbox" id="toggleMaintenance" class="switch-input" style="pointer-events:none;">
-                    <span class="switch-slider"></span>
-                  </span>
-                </label>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
       <!-- Operating Hours Panel -->
-      <div class="panel-card">
+      <div class="panel-card" style="margin-bottom: 1.5rem;">
         <div class="panel-header" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
           <div>
             <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
@@ -2023,6 +1958,71 @@
               <span>Save Operating Hours</span>
             </button>
           </form>
+        </div>
+      </div>
+
+      <!-- Status & Availability Panel -->
+      <div class="panel-card">
+        <div class="panel-header" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+          <div>
+            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
+              <svg style="width:20px;height:20px;color:#ff5e36;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>System &amp; Kiosk Availability</span>
+            </div>
+            <p style="font-size:0.82rem; color:#64748b; margin-top:0.25rem;">
+              Control public access to the customer scanner kiosk.
+            </p>
+          </div>
+        </div>
+
+        <div class="panel-body" style="padding: 1.5rem 1rem;">
+          <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            
+            <!-- Maintenance Mode Switch Row -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Maintenance Mode</span>
+                  <span id="badgeMaintenance" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
+                </div>
+                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
+                  When switched on, redirects customer kiosk visitors to the <strong>Maintenance</strong> page and pauses scanning for system upkeep.
+                </p>
+              </div>
+              <div style="flex-shrink:0;">
+                <label class="switch-wrap" style="cursor:pointer;" onclick="onMaintenanceClick(event)">
+                  <span class="switch-toggle">
+                    <input type="checkbox" id="toggleMaintenance" class="switch-input" style="pointer-events:none;">
+                    <span class="switch-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Coming Soon Switch Row -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Coming Soon Feature</span>
+                  <span id="badgeComingSoon" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
+                </div>
+                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
+                  When enabled, automatically redirects visitors to the <strong>Coming Soon</strong> page.
+                </p>
+              </div>
+              <div style="flex-shrink:0;">
+                <label class="switch-wrap" style="cursor:pointer;" onclick="onComingSoonClick(event)">
+                  <span class="switch-toggle">
+                    <input type="checkbox" id="toggleComingSoon" class="switch-input" style="pointer-events:none;">
+                    <span class="switch-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     </section>
