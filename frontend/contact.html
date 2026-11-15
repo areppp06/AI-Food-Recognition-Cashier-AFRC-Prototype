@@ -84,9 +84,9 @@ body {
   background: transparent;
   font-family: inherit;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #64748b;
-  padding: 0.35rem 0.75rem;
+  padding: 0.35rem 0.8rem;
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -99,37 +99,37 @@ body {
 .content-card {
   background: #ffffff;
   border-radius: 20px;
-  padding: 1.6rem 1.4rem;
+  padding: 1.75rem 1.4rem;
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05);
   margin-bottom: 1.5rem;
-}
-.page-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.65rem;
-  background: #fff5f2;
-  color: #ff5e36;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-radius: 9999px;
-  margin-bottom: 0.65rem;
 }
 .page-title {
   font-size: 1.45rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.02em;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.4rem;
   line-height: 1.25;
 }
-.page-sub {
-  font-size: 0.85rem;
+.legal-header-info {
+  margin: 0.35rem 0 1.25rem;
+  line-height: 1.45;
+  color: #475569;
+  font-size: 0.88rem;
+}
+.legal-header-info .header-rest-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.legal-header-info .header-comp-name {
+  font-size: 0.88rem;
+  color: #475569;
+}
+.legal-header-info .header-comp-reg {
+  font-size: 0.82rem;
   color: #64748b;
-  margin-bottom: 0.35rem;
 }
 .page-updated {
   font-size: 0.75rem;
@@ -145,9 +145,6 @@ body {
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 0.5rem;
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
 }
 .policy-section p {
   font-size: 0.88rem;
@@ -169,13 +166,11 @@ body {
   margin-bottom: 0.45rem;
 }
 .policy-section ul li::before {
-  content: "•";
+  content: "-";
   color: #ff5e36;
   font-weight: bold;
-  font-size: 1.1rem;
   position: absolute;
-  left: 0.25rem;
-  top: -0.1rem;
+  left: 0.35rem;
 }
 .callout-box {
   background: #f8fafc;
@@ -186,47 +181,6 @@ body {
   font-size: 0.86rem;
   line-height: 1.55;
   color: #1e293b;
-}
-.counter-box {
-  background: #fff8f5;
-  border: 1px solid #ffd8cc;
-  border-radius: 14px;
-  padding: 1rem;
-  margin: 1.25rem 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-.counter-icon {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-.counter-text {
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: #9a3412;
-}
-.info-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 0.9rem;
-  margin: 0.75rem 0;
-  border: 1px solid #e2e8f0;
-}
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: #334155;
-}
-.info-item a {
-  color: #ff5e36;
-  text-decoration: none;
-  font-weight: 600;
 }
 .btn-primary {
   display: inline-flex;
@@ -294,34 +248,44 @@ body {
       <span data-lang="en" style="display:none;">Home</span>
     </a>
     <div class="lang-toggle" role="tablist">
-      <button type="button" class="lang-btn active" id="lang-bm" onclick="setLanguage('bm')">🇲🇾 BM</button>
-      <button type="button" class="lang-btn" id="lang-en" onclick="setLanguage('en')">🇬🇧 EN</button>
+      <button type="button" class="lang-btn active" id="lang-bm" onclick="setLanguage('bm')">BM</button>
+      <button type="button" class="lang-btn" id="lang-en" onclick="setLanguage('en')">EN</button>
     </div>
   </div>
 
   <div class="content-card">
-    <div class="page-badge">PRISM &bull; <span data-lang="bm">Hubungi Kami</span><span data-lang="en" style="display:none;">Contact Us</span></div>
 
     <!-- BM VERSION -->
     <div data-lang="bm">
       <h1 class="page-title">Hubungi Kami</h1>
-      <p class="page-sub"><strong class="dyn-restaurant-name">TAKCAKAP.COM</strong> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)</p>
+      <div class="legal-header-info">
+        <div class="header-rest-name dyn-restaurant-name">TAKCAKAP.COM</div>
+        <div class="header-comp-name dyn-company-name">De Warisan Ibunda Enterprise</div>
+        <div class="header-comp-reg dyn-business-reg" style="display:none;"></div>
+      </div>
 
-      <div class="counter-box" style="margin-top:0.75rem;">
-        <span class="counter-icon">🏪</span>
-        <div class="counter-text">
-          Untuk sebarang pertanyaan mengenai Dasar Privasi, Terma dan Syarat &amp; Polisi Pembayaran &amp; Bayaran Balik, data peribadi anda, atau isu berkaitan transaksi anda, <strong>sila hadir terus ke kaunter fizikal kami</strong>.
+      <!-- PREMISES DETAILS ABOVE GOOGLE MAP -->
+      <div class="policy-section" style="margin-top:1.25rem;">
+        <h2>Maklumat Premis</h2>
+        <div style="display:flex; flex-direction:column; gap:0.45rem; font-size:0.9rem; color:#334155; line-height:1.6; margin-top:0.5rem;">
+          <div><strong>Nama Gerai / Restoran:</strong> <span class="dyn-restaurant-name">TAKCAKAP.COM</span></div>
+          <div><strong>Syarikat:</strong> <span class="dyn-company-name">De Warisan Ibunda Enterprise</span></div>
+          <div class="dyn-reg-row" style="display:none;"><strong>No. Pendaftaran:</strong> <span class="dyn-business-reg-val"></span></div>
+          <div><strong>Telefon:</strong> <a href="tel:+601121815101" class="dyn-company-phone" style="color:#ff5e36; text-decoration:none;">+60 1121815101</a></div>
+          <div><strong>E-mel:</strong> <a href="mailto:support@takcakap.com" class="dyn-company-email" style="color:#ff5e36; text-decoration:none;">support@takcakap.com</a></div>
+          <div><strong>Alamat Fizikal:</strong> <span class="dyn-restaurant-address">TakCakap Nasi Campur (De Warisan Ibunda), Penang, Malaysia</span></div>
         </div>
       </div>
 
-      <div class="policy-section" style="margin-top:1.25rem;">
+      <!-- GOOGLE MAP UNDER PREMISES DETAILS -->
+      <div class="policy-section" style="margin-top:1.5rem;">
         <h2>Cari kami di Google Maps:</h2>
-        <div style="width:100%; height:260px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin:0.85rem 0 1rem; background:#e2e8f0;">
-          <iframe class="dyn-google-maps-iframe" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=De+Warisan+Ibunda&output=embed"></iframe>
+        <div style="width:100%; height:320px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin:0.85rem 0 1rem; background:#f1f5f9;">
+          <iframe class="dyn-google-maps-iframe" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d87976.50620304717!2d100.38085804863282!3d5.325134800000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x304ac814ae9d8007%3A0x4ba659682bb01a8d!2sTakCakap%20Nasi%20Campur%20(De%20Warisan%20Ibunda)!5e1!3m2!1sen!2smy!4v1794758235590!5m2!1sen!2smy"></iframe>
         </div>
         
-        <div style="margin: 0.75rem 0 1.25rem;">
-          <a href="https://maps.google.com/?q=De+Warisan+Ibunda" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
+        <div style="margin: 0.75rem 0 0.85rem;">
+          <a href="https://maps.app.goo.gl/Zemkra7AmRtoGj6Z9" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
             Buka di Google Maps
           </a>
@@ -330,39 +294,39 @@ body {
           Semua butiran lokasi tepat dan nombor hubungan boleh didapati di penyenaraian Google Maps kami.
         </p>
       </div>
-
-      <div class="policy-section">
-        <h2>Maklumat Premis</h2>
-        <div class="info-row">
-          <div class="info-item">🏪 <strong>Nama Gerai / Restoran:</strong> <span class="dyn-restaurant-name">TAKCAKAP.COM</span></div>
-          <div class="info-item">🏢 <strong>Syarikat:</strong> <span class="dyn-company-name">De Warisan Ibunda Enterprise</span></div>
-          <div class="info-item">📞 <strong>Telefon:</strong> <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a></div>
-          <div class="info-item">✉️ <strong>E-mel:</strong> <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a></div>
-          <div class="info-item">📍 <strong>Alamat Fizikal:</strong> <span class="dyn-restaurant-address">De Warisan Ibunda Enterprise, Kuala Lumpur, Malaysia</span></div>
-        </div>
-      </div>
     </div>
 
     <!-- EN VERSION -->
     <div data-lang="en" style="display:none;">
       <h1 class="page-title">Contact Us</h1>
-      <p class="page-sub"><strong class="dyn-restaurant-name">TAKCAKAP.COM</strong> (<span class="dyn-company-name">De Warisan Ibunda Enterprise</span>)</p>
+      <div class="legal-header-info">
+        <div class="header-rest-name dyn-restaurant-name">TAKCAKAP.COM</div>
+        <div class="header-comp-name dyn-company-name">De Warisan Ibunda Enterprise</div>
+        <div class="header-comp-reg dyn-business-reg" style="display:none;"></div>
+      </div>
 
-      <div class="counter-box" style="margin-top:0.75rem;">
-        <span class="counter-icon">🏪</span>
-        <div class="counter-text">
-          For any questions about Privacy Policy, Terms and conditions &amp; Payment Refund Policy, your personal data, or issues with your transaction, <strong>please head directly to our physical counter</strong>.
+      <!-- PREMISES DETAILS ABOVE GOOGLE MAP -->
+      <div class="policy-section" style="margin-top:1.25rem;">
+        <h2>Premises Details</h2>
+        <div style="display:flex; flex-direction:column; gap:0.45rem; font-size:0.9rem; color:#334155; line-height:1.6; margin-top:0.5rem;">
+          <div><strong>Restaurant / Stall:</strong> <span class="dyn-restaurant-name">TAKCAKAP.COM</span></div>
+          <div><strong>Registered Company:</strong> <span class="dyn-company-name">De Warisan Ibunda Enterprise</span></div>
+          <div class="dyn-reg-row" style="display:none;"><strong>Registration No:</strong> <span class="dyn-business-reg-val"></span></div>
+          <div><strong>Phone:</strong> <a href="tel:+601121815101" class="dyn-company-phone" style="color:#ff5e36; text-decoration:none;">+60 1121815101</a></div>
+          <div><strong>Email:</strong> <a href="mailto:support@takcakap.com" class="dyn-company-email" style="color:#ff5e36; text-decoration:none;">support@takcakap.com</a></div>
+          <div><strong>Premises Address:</strong> <span class="dyn-restaurant-address">TakCakap Nasi Campur (De Warisan Ibunda), Penang, Malaysia</span></div>
         </div>
       </div>
 
-      <div class="policy-section" style="margin-top:1.25rem;">
+      <!-- GOOGLE MAP UNDER PREMISES DETAILS -->
+      <div class="policy-section" style="margin-top:1.5rem;">
         <h2>Find us on Google Maps:</h2>
-        <div style="width:100%; height:260px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin:0.85rem 0 1rem; background:#e2e8f0;">
-          <iframe class="dyn-google-maps-iframe" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=De+Warisan+Ibunda&output=embed"></iframe>
+        <div style="width:100%; height:320px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin:0.85rem 0 1rem; background:#f1f5f9;">
+          <iframe class="dyn-google-maps-iframe" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d87976.50620304717!2d100.38085804863282!3d5.325134800000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x304ac814ae9d8007%3A0x4ba659682bb01a8d!2sTakCakap%20Nasi%20Campur%20(De%20Warisan%20Ibunda)!5e1!3m2!1sen!2smy!4v1794758235590!5m2!1sen!2smy"></iframe>
         </div>
         
-        <div style="margin: 0.75rem 0 1.25rem;">
-          <a href="https://maps.google.com/?q=De+Warisan+Ibunda" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
+        <div style="margin: 0.75rem 0 0.85rem;">
+          <a href="https://maps.app.goo.gl/Zemkra7AmRtoGj6Z9" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
             Open in Google Maps
           </a>
@@ -370,17 +334,6 @@ body {
         <p style="font-size:0.85rem; color:#64748b; line-height:1.5;">
           All location details and contact numbers are available on our Google Maps listing.
         </p>
-      </div>
-
-      <div class="policy-section">
-        <h2>Premises Details</h2>
-        <div class="info-row">
-          <div class="info-item">🏪 <strong>Restaurant / Stall:</strong> <span class="dyn-restaurant-name">TAKCAKAP.COM</span></div>
-          <div class="info-item">🏢 <strong>Registered Company:</strong> <span class="dyn-company-name">De Warisan Ibunda Enterprise</span></div>
-          <div class="info-item">📞 <strong>Phone:</strong> <a href="tel:+601121815101" class="dyn-company-phone">+60 1121815101</a></div>
-          <div class="info-item">✉️ <strong>Email:</strong> <a href="mailto:support@takcakap.com" class="dyn-company-email">support@takcakap.com</a></div>
-          <div class="info-item">📍 <strong>Premises Address:</strong> <span class="dyn-restaurant-address">De Warisan Ibunda Enterprise, Kuala Lumpur, Malaysia</span></div>
-        </div>
       </div>
     </div>
   </div>
@@ -428,6 +381,7 @@ function initProfile() {
       if (!data) return;
       const rName = data.restaurant_name || 'TAKCAKAP.COM';
       const cName = data.company_name || 'De Warisan Ibunda Enterprise';
+      const bReg = data.business_reg_number || '';
       const cPhone = data.company_phone || '+60 1121815101';
       const cEmail = data.company_email || 'support@takcakap.com';
       const rAddr = data.restaurant_address || 'Premis Restoran';
@@ -436,6 +390,18 @@ function initProfile() {
 
       document.querySelectorAll('.dyn-restaurant-name').forEach(el => el.textContent = rName);
       document.querySelectorAll('.dyn-company-name').forEach(el => el.textContent = cName);
+      document.querySelectorAll('.dyn-business-reg').forEach(el => {
+        if (bReg) {
+          el.textContent = bReg;
+          el.style.display = '';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+      document.querySelectorAll('.dyn-business-reg-val').forEach(el => el.textContent = bReg);
+      document.querySelectorAll('.dyn-reg-row').forEach(el => {
+        el.style.display = bReg ? '' : 'none';
+      });
       document.querySelectorAll('.dyn-company-phone').forEach(el => {
         el.textContent = cPhone;
         if (el.tagName === 'A') el.href = 'tel:' + cPhone.replace(/\s+/g, '');
@@ -450,7 +416,6 @@ function initProfile() {
       });
       document.querySelectorAll('.dyn-google-maps-iframe').forEach(el => {
         if (gEmbed) el.src = gEmbed;
-        else el.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(rName) + '&output=embed';
       });
     })
     .catch(() => {});

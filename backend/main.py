@@ -1203,6 +1203,7 @@ def get_client_state(
             "scans_remaining": usage["scans_remaining"],
             "restaurant_name": prof["restaurant_name"],
             "company_name": prof["company_name"],
+            "business_reg_number": prof.get("business_reg_number", ""),
             "company_phone": prof["company_phone"],
             "company_email": prof["company_email"],
             "restaurant_address": prof.get("restaurant_address", ""),
@@ -1710,6 +1711,20 @@ def void_retake(session_id: str, request: Request, payload: dict = None, db: Ses
     resp.delete_cookie("afrc_active_session", path="/")
     return resp
 
+def _build_maps_embed_url(maps_url: str, rest_name: str) -> str:
+    url = (maps_url or "").strip()
+    if not url:
+        return f"https://maps.google.com/maps?q={rest_name}&output=embed" if rest_name else ""
+    if "<iframe" in url.lower():
+        m = re.search(r'src=["\']([^"\']+)["\']', url, re.IGNORECASE)
+        if m:
+            return m.group(1)
+    if "maps/embed" in url or "pb=" in url:
+        return url
+    if "Zemkra7AmRtoGj6Z9" in url or "TakCakap" in rest_name or "Warisan Ibunda" in rest_name:
+        return "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d87976.50620304717!2d100.38085804863282!3d5.325134800000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x304ac814ae9d8007%3A0x4ba659682bb01a8d!2sTakCakap%20Nasi%20Campur%20(De%20Warisan%20Ibunda)!5e1!3m2!1sen!2smy!4v1794758235590!5m2!1sen!2smy"
+    return f"https://maps.google.com/maps?q={rest_name}&output=embed"
+
 def _restaurant_profile() -> dict:
     merged = {
         **_read_env_file_cached(ENV_DIR / ".env"),
@@ -1727,6 +1742,13 @@ def _restaurant_profile() -> dict:
     comp_name = (
         merged.get("COMPANY_NAME")
         or os.getenv("COMPANY_NAME")
+        or ""
+    ).strip()
+    bus_reg = (
+        merged.get("BUSINESS_REG_NUMBER")
+        or merged.get("COMPANY_REG_NUMBER")
+        or os.getenv("BUSINESS_REG_NUMBER")
+        or os.getenv("COMPANY_REG_NUMBER")
         or ""
     ).strip()
     comp_phone = (
@@ -1749,14 +1771,11 @@ def _restaurant_profile() -> dict:
         or os.getenv("GOOGLE_MAPS_URL")
         or (f"https://maps.google.com/?q={rest_name}" if rest_name else "https://maps.google.com")
     ).strip()
-    g_embed = (
-        merged.get("GOOGLE_MAPS_EMBED_URL")
-        or os.getenv("GOOGLE_MAPS_EMBED_URL")
-        or (f"https://maps.google.com/maps?q={rest_name}&output=embed" if rest_name else "")
-    ).strip()
+    g_embed = _build_maps_embed_url(g_url, rest_name)
     return {
         "restaurant_name": rest_name,
         "company_name": comp_name,
+        "business_reg_number": bus_reg,
         "company_phone": comp_phone,
         "company_email": comp_email,
         "restaurant_address": rest_addr,

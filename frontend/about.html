@@ -84,9 +84,9 @@ body {
   background: transparent;
   font-family: inherit;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #64748b;
-  padding: 0.35rem 0.75rem;
+  padding: 0.35rem 0.8rem;
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -99,37 +99,37 @@ body {
 .content-card {
   background: #ffffff;
   border-radius: 20px;
-  padding: 1.6rem 1.4rem;
+  padding: 1.75rem 1.4rem;
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05);
   margin-bottom: 1.5rem;
-}
-.page-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.65rem;
-  background: #fff5f2;
-  color: #ff5e36;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-radius: 9999px;
-  margin-bottom: 0.65rem;
 }
 .page-title {
   font-size: 1.45rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.02em;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.4rem;
   line-height: 1.25;
 }
-.page-sub {
-  font-size: 0.85rem;
+.legal-header-info {
+  margin: 0.35rem 0 1.25rem;
+  line-height: 1.45;
+  color: #475569;
+  font-size: 0.88rem;
+}
+.legal-header-info .header-rest-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.legal-header-info .header-comp-name {
+  font-size: 0.88rem;
+  color: #475569;
+}
+.legal-header-info .header-comp-reg {
+  font-size: 0.82rem;
   color: #64748b;
-  margin-bottom: 0.35rem;
 }
 .page-updated {
   font-size: 0.75rem;
@@ -145,9 +145,6 @@ body {
   font-weight: 700;
   color: #1e293b;
   margin-bottom: 0.5rem;
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
 }
 .policy-section p {
   font-size: 0.88rem;
@@ -169,13 +166,11 @@ body {
   margin-bottom: 0.45rem;
 }
 .policy-section ul li::before {
-  content: "•";
+  content: "-";
   color: #ff5e36;
   font-weight: bold;
-  font-size: 1.1rem;
   position: absolute;
-  left: 0.25rem;
-  top: -0.1rem;
+  left: 0.35rem;
 }
 .callout-box {
   background: #f8fafc;
@@ -186,47 +181,6 @@ body {
   font-size: 0.86rem;
   line-height: 1.55;
   color: #1e293b;
-}
-.counter-box {
-  background: #fff8f5;
-  border: 1px solid #ffd8cc;
-  border-radius: 14px;
-  padding: 1rem;
-  margin: 1.25rem 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-.counter-icon {
-  font-size: 1.35rem;
-  line-height: 1;
-}
-.counter-text {
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: #9a3412;
-}
-.info-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 0.9rem;
-  margin: 0.75rem 0;
-  border: 1px solid #e2e8f0;
-}
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  color: #334155;
-}
-.info-item a {
-  color: #ff5e36;
-  text-decoration: none;
-  font-weight: 600;
 }
 .btn-primary {
   display: inline-flex;
@@ -294,18 +248,21 @@ body {
       <span data-lang="en" style="display:none;">Home</span>
     </a>
     <div class="lang-toggle" role="tablist">
-      <button type="button" class="lang-btn active" id="lang-bm" onclick="setLanguage('bm')">🇲🇾 BM</button>
-      <button type="button" class="lang-btn" id="lang-en" onclick="setLanguage('en')">🇬🇧 EN</button>
+      <button type="button" class="lang-btn active" id="lang-bm" onclick="setLanguage('bm')">BM</button>
+      <button type="button" class="lang-btn" id="lang-en" onclick="setLanguage('en')">EN</button>
     </div>
   </div>
 
   <div class="content-card">
-    <div class="page-badge">PRISM &bull; <span data-lang="bm">Tentang Kami</span><span data-lang="en" style="display:none;">About Us</span></div>
 
     <!-- BM VERSION -->
     <div data-lang="bm">
       <h1 class="page-title">Tentang Kami</h1>
-      <p class="page-sub"><strong class="dyn-restaurant-name">TAKCAKAP.COM</strong></p>
+      <div class="legal-header-info">
+        <div class="header-rest-name dyn-restaurant-name">TAKCAKAP.COM</div>
+        <div class="header-comp-name dyn-company-name">De Warisan Ibunda Enterprise</div>
+        <div class="header-comp-reg dyn-business-reg" style="display:none;"></div>
+      </div>
 
       <div class="policy-section" style="margin-top:0.75rem;">
         <p style="font-size:0.98rem; font-weight:600; color:#0f172a;">
@@ -317,7 +274,7 @@ body {
       </div>
 
       <div class="policy-section">
-        <h2>Cara Ia Berfungsi:</h2>
+        <h2>Cara Ia Berfungsi</h2>
         
         <div style="display:grid; grid-template-columns:1fr; gap:0.75rem; margin:0.85rem 0;">
           <div style="display:flex; align-items:flex-start; gap:0.75rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:0.85rem 1rem;">
@@ -360,18 +317,12 @@ body {
 
       <div class="policy-section">
         <h2>Perlukan Bantuan?</h2>
-        <div class="counter-box">
-          <span class="counter-icon">🏪</span>
-          <div class="counter-text">
-            Sebarang isu atau pertanyaan hendaklah dirujuk terus kepada kakitangan kami di <strong>kaunter fizikal kedai</strong>.
-          </div>
-        </div>
-
-        <p style="font-size:0.88rem; color:#334155; margin-bottom:0.75rem;">
+        <p>Sebarang isu atau pertanyaan hendaklah dirujuk terus kepada kakitangan kami di kaunter fizikal kedai.</p>
+        <p style="font-size:0.88rem; color:#334155; margin:0.65rem 0 0.85rem;">
           Anda boleh mencari lokasi dan nombor hubungan kami di Google Maps:
         </p>
 
-        <a href="https://maps.google.com/?q=De+Warisan+Ibunda" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
+        <a href="https://maps.app.goo.gl/Zemkra7AmRtoGj6Z9" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
           Buka di Google Maps
         </a>
@@ -381,7 +332,11 @@ body {
     <!-- EN VERSION -->
     <div data-lang="en" style="display:none;">
       <h1 class="page-title">About Us</h1>
-      <p class="page-sub"><strong class="dyn-restaurant-name">TAKCAKAP.COM</strong></p>
+      <div class="legal-header-info">
+        <div class="header-rest-name dyn-restaurant-name">TAKCAKAP.COM</div>
+        <div class="header-comp-name dyn-company-name">De Warisan Ibunda Enterprise</div>
+        <div class="header-comp-reg dyn-business-reg" style="display:none;"></div>
+      </div>
 
       <div class="policy-section" style="margin-top:0.75rem;">
         <p style="font-size:0.98rem; font-weight:600; color:#0f172a;">
@@ -393,7 +348,7 @@ body {
       </div>
 
       <div class="policy-section">
-        <h2>How It Works:</h2>
+        <h2>How It Works</h2>
         
         <div style="display:grid; grid-template-columns:1fr; gap:0.75rem; margin:0.85rem 0;">
           <div style="display:flex; align-items:flex-start; gap:0.75rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:0.85rem 1rem;">
@@ -436,18 +391,12 @@ body {
 
       <div class="policy-section">
         <h2>Need Help?</h2>
-        <div class="counter-box">
-          <span class="counter-icon">🏪</span>
-          <div class="counter-text">
-            Any issue or question should be handled directly at our <strong>physical cashier counter</strong>.
-          </div>
-        </div>
-
-        <p style="font-size:0.88rem; color:#334155; margin-bottom:0.75rem;">
+        <p>Any issue or question should be handled directly at our physical cashier counter.</p>
+        <p style="font-size:0.88rem; color:#334155; margin:0.65rem 0 0.85rem;">
           You can find our location and contact number on Google Maps:
         </p>
 
-        <a href="https://maps.google.com/?q=De+Warisan+Ibunda" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
+        <a href="https://maps.app.goo.gl/Zemkra7AmRtoGj6Z9" target="_blank" rel="noopener noreferrer" class="btn-primary dyn-google-maps-link" style="width:100%; text-align:center;">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
           Open in Google Maps
         </a>
@@ -498,6 +447,7 @@ function initProfile() {
       if (!data) return;
       const rName = data.restaurant_name || 'TAKCAKAP.COM';
       const cName = data.company_name || 'De Warisan Ibunda Enterprise';
+      const bReg = data.business_reg_number || '';
       const cPhone = data.company_phone || '+60 1121815101';
       const cEmail = data.company_email || 'support@takcakap.com';
       const rAddr = data.restaurant_address || 'Premis Restoran';
@@ -506,6 +456,18 @@ function initProfile() {
 
       document.querySelectorAll('.dyn-restaurant-name').forEach(el => el.textContent = rName);
       document.querySelectorAll('.dyn-company-name').forEach(el => el.textContent = cName);
+      document.querySelectorAll('.dyn-business-reg').forEach(el => {
+        if (bReg) {
+          el.textContent = bReg;
+          el.style.display = '';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+      document.querySelectorAll('.dyn-business-reg-val').forEach(el => el.textContent = bReg);
+      document.querySelectorAll('.dyn-reg-row').forEach(el => {
+        el.style.display = bReg ? '' : 'none';
+      });
       document.querySelectorAll('.dyn-company-phone').forEach(el => {
         el.textContent = cPhone;
         if (el.tagName === 'A') el.href = 'tel:' + cPhone.replace(/\s+/g, '');
@@ -520,7 +482,6 @@ function initProfile() {
       });
       document.querySelectorAll('.dyn-google-maps-iframe').forEach(el => {
         if (gEmbed) el.src = gEmbed;
-        else el.src = 'https://maps.google.com/maps?q=' + encodeURIComponent(rName) + '&output=embed';
       });
     })
     .catch(() => {});
