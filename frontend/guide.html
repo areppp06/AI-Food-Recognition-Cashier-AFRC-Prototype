@@ -112,26 +112,6 @@ body {
   margin-bottom: 1.35rem;
   line-height: 1.25;
 }
-.legal-header-info {
-  margin: 0.35rem 0 1.15rem;
-  line-height: 1.5;
-  color: #475569;
-  font-size: 0.88rem;
-  font-weight: 400;
-}
-.legal-header-info .header-rest-name,
-.legal-header-info .header-comp-name,
-.legal-header-info .header-comp-reg {
-  font-size: 0.88rem;
-  font-weight: 400;
-  color: #475569;
-}
-.page-intro {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: #334155;
-  margin-bottom: 1.35rem;
-}
 
 /* Steps list */
 .step-item {
@@ -171,7 +151,33 @@ body {
   font-size: 0.92rem;
   line-height: 1.55;
   color: #334155;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.65rem;
+}
+
+/* Checklist for step 4 */
+.step-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0.65rem 0 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.step-checklist li {
+  position: relative;
+  padding-left: 1.35rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #334155;
+}
+.step-checklist li::before {
+  content: "•";
+  position: absolute;
+  left: 0.35rem;
+  top: -1px;
+  color: #ff5e36;
+  font-size: 1.25rem;
+  line-height: 1.35;
 }
 
 /* Photo angle guide (Betul vs Salah) */
@@ -258,7 +264,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
-  margin-top: 0.75rem;
+  margin-top: 0.5rem;
 }
 .pay-pill {
   display: inline-flex;
@@ -278,19 +284,6 @@ body {
   height: 8px;
   border-radius: 50%;
   background: #ff5e36;
-}
-
-/* Poster preview card */
-.poster-preview-card {
-  text-align: center;
-  margin-top: 1rem;
-}
-.poster-img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 14px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
 /* Action button */
@@ -401,6 +394,44 @@ body {
             Serve your rice and select your dishes. Ensure every dish and portion is placed clearly without overlapping before taking the photo.
           </span>
         </p>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-item">
+      <div class="step-num-badge">2</div>
+      <div class="step-body">
+        <h2 class="step-title">
+          <span data-lang="bm">Tap NFC Atau Imbas QR Di Meja</span>
+          <span data-lang="en" style="display:none;">Tap NFC Or Scan QR At Table</span>
+        </h2>
+        <p class="step-desc">
+          <span data-lang="bm">
+            Tahniah, anda berjaya untuk langkah kedua.
+          </span>
+          <span data-lang="en" style="display:none;">
+            Congrats, you just did step 2.
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-item">
+      <div class="step-num-badge">3</div>
+      <div class="step-body">
+        <h2 class="step-title">
+          <span data-lang="bm">Imbas Makanan / Lauk Yang Anda Ambil</span>
+          <span data-lang="en" style="display:none;">Scan The Food / Dishes You Selected</span>
+        </h2>
+        <p class="step-desc">
+          <span data-lang="bm">
+            Arahkan kamera tepat ke pinggan anda mengikut panduan sudut di bawah, kemudian tekan butang <strong>"Capture Plate"</strong>. Sistem AI akan mengecam setiap jenis lauk dan menjana bil anda secara automatik dalam beberapa saat.
+          </span>
+          <span data-lang="en" style="display:none;">
+            Aim your camera directly at your plate following the angle guide below, then tap <strong>"Capture Plate"</strong>. The AI system will detect each dish and generate your bill automatically in seconds.
+          </span>
+        </p>
 
         <!-- BETUL VS SALAH -->
         <div class="angle-guide-grid">
@@ -474,75 +505,40 @@ body {
       </div>
     </div>
 
-    <!-- STEP 2 -->
+    <!-- STEP 4 -->
     <div class="step-item">
-      <div class="step-num-badge">2</div>
-      <div class="step-body">
-        <h2 class="step-title">
-          <span data-lang="bm">Tap NFC Atau Imbas QR Di Meja</span>
-          <span data-lang="en" style="display:none;">Tap NFC Or Scan QR At Table</span>
-        </h2>
-        <p class="step-desc">
-          <span data-lang="bm">
-            Sentuhkan (tap) telefon anda pada tag NFC di meja, atau imbas kod QR menggunakan kamera telefon anda. Sistem pengimbas e-Cashier akan terbuka secara automatik tanpa perlu memuat turun aplikasi.
-          </span>
-          <span data-lang="en" style="display:none;">
-            Tap your smartphone against the table NFC tag, or scan the QR code with your camera. The e-Cashier web scanner opens automatically without any app download.
-          </span>
-        </p>
-        <p class="step-desc">
-          <span data-lang="bm">
-            Pastikan kamera telefon diaktifkan, halakan kamera terus ke pinggan anda mengikut panduan sudut di atas, kemudian tekan butang <strong>"Capture Plate"</strong>. Sistem AI akan mengecam setiap jenis lauk dan menjana bil anda secara automatik dalam masa beberapa saat.
-          </span>
-          <span data-lang="en" style="display:none;">
-            With your camera ready, frame your plate following the top-down guide above, then tap <strong>"Capture Plate"</strong>. The AI model detects each food portion and calculates your bill automatically in seconds.
-          </span>
-        </p>
-      </div>
-    </div>
-
-    <!-- STEP 3 -->
-    <div class="step-item">
-      <div class="step-num-badge">3</div>
+      <div class="step-num-badge">4</div>
       <div class="step-body">
         <h2 class="step-title">
           <span data-lang="bm">Buat Pembayaran</span>
           <span data-lang="en" style="display:none;">Make Payment</span>
         </h2>
-        <p class="step-desc">
-          <span data-lang="bm">
-            Semak senarai lauk dan jumlah bil anda pada skrin. Tekan butang bayar untuk memilih kaedah pembayaran tanpa tunai pilihan anda. Setelah bayaran berjaya disahkan, resit digital akan dipaparkan.
-          </span>
-          <span data-lang="en" style="display:none;">
-            Review your dish breakdown and total bill on screen. Proceed to pay using your preferred cashless payment method. Once confirmed, your digital payment receipt will be displayed.
-          </span>
-        </p>
+        <ul class="step-checklist">
+          <li>
+            <span data-lang="bm">Semak senarai lauk dan jumlah bil, pastikan sama seperti apa yang dipinggan anda.</span>
+            <span data-lang="en" style="display:none;">Review the dish list and total bill, make sure it matches what is on your plate.</span>
+          </li>
+          <li>
+            <span data-lang="bm">Masukkan nombor telefon dan emel jika mahu resit dihantar melalui emel.</span>
+            <span data-lang="en" style="display:none;">Enter your phone number and email if you want the receipt sent via email.</span>
+          </li>
+          <li>
+            <span data-lang="bm">Lakukan pembayaran, kami terima: Touch &apos;n Go eWallet, GrabPay, Boost, DuitNow QR (Akan datang), Visa &amp; Mastercard.</span>
+            <span data-lang="en" style="display:none;">Complete payment, we accept: Touch &apos;n Go eWallet, GrabPay, Boost, DuitNow QR (Coming soon), Visa &amp; Mastercard.</span>
+          </li>
+        </ul>
 
         <!-- Payment methods list -->
-        <div style="margin-top:0.8rem;">
-          <div style="font-size:0.82rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.45rem;">
-            <span data-lang="bm">Kaedah Pembayaran Diterima</span>
-            <span data-lang="en" style="display:none;">Accepted Payment Methods</span>
-          </div>
+        <div style="margin-top:0.85rem;">
           <div class="payment-methods-grid">
             <span class="pay-pill"><span class="pay-pill-dot"></span>Touch &apos;n Go eWallet</span>
             <span class="pay-pill"><span class="pay-pill-dot"></span>GrabPay</span>
             <span class="pay-pill"><span class="pay-pill-dot"></span>Boost</span>
-            <span class="pay-pill"><span class="pay-pill-dot"></span>DuitNow QR</span>
-            <span class="pay-pill"><span class="pay-pill-dot"></span>Online Banking (FPX)</span>
+            <span class="pay-pill" style="opacity:0.85;"><span class="pay-pill-dot" style="background:#94a3b8;"></span>DuitNow QR <span style="font-size:0.72rem; color:#64748b; font-weight:600; margin-left:2px;">(Coming soon)</span></span>
             <span class="pay-pill"><span class="pay-pill-dot"></span>Visa &amp; Mastercard</span>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- PHYSICAL POSTER REFERENCE -->
-    <div class="poster-preview-card">
-      <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:0.5rem; text-align:left;">
-        <span data-lang="bm">Rujukan Poster Meja Fizikal</span>
-        <span data-lang="en" style="display:none;">Physical Table Poster Reference</span>
-      </div>
-      <img src="/static/guide-poster.jpg" alt="Poster Panduan Imbas Pinggan & Bayar" class="poster-img" loading="lazy">
     </div>
 
     <!-- NEED HELP -->
