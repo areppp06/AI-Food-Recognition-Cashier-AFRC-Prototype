@@ -353,6 +353,40 @@ EOF
   $SUDO systemctl enable afrc.service >/dev/null
   $SUDO systemctl restart afrc.service
 
+  # Setup automated SQLite backup service & timer to Cloudflare R2
+  BACKUP_SERVICE_FILE="/etc/systemd/system/afrc-db-backup.service"
+  BACKUP_TIMER_FILE="/etc/systemd/system/afrc-db-backup.timer"
+
+  echo "[*] Setting up automated DB backup timer ($BACKUP_TIMER_FILE) ..."
+  $SUDO tee "$BACKUP_SERVICE_FILE" >/dev/null <<EOF
+[Unit]
+Description=AFRC SQLite Database Backup to Cloudflare R2
+After=network.target
+
+[Service]
+Type=oneshot
+User=${SERVICE_USER}
+WorkingDirectory=${ROOT_DIR}
+ExecStart=${ROOT_DIR}/venv/bin/python3 ${ROOT_DIR}/scripts/backup_to_r2.py
+StandardOutput=append:/var/log/afrc_backup.log
+StandardError=append:/var/log/afrc_backup.log
+EOF
+
+  $SUDO tee "$BACKUP_TIMER_FILE" >/dev/null <<EOF
+[Unit]
+Description=Run AFRC DB Backup every Wednesday and Saturday at 12:02 AM Singapore Time
+
+[Timer]
+OnCalendar=Wed,Sat *-*-* 00:02:00 Asia/Singapore
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+  $SUDO systemctl daemon-reload
+  $SUDO systemctl enable --now afrc-db-backup.timer >/dev/null 2>&1 || true
+
   echo ""
   if [[ -n "${SETUP_CADDY_DOMAIN:-}" ]]; then
     echo "[✓] AFRC is now running in the background via systemd behind Caddy HTTPS:"
@@ -365,6 +399,9 @@ EOF
   echo "    - View logs    : sudo journalctl -u afrc -f"
   echo "    - Restart app  : sudo systemctl restart afrc"
   echo "    - Stop app     : sudo systemctl stop afrc"
+  echo "    - DB Backup    : Wed & Sat 12:02 AM Singapore Time (Cloudflare R2)"
+  echo "    - Backup timer : sudo systemctl list-timers afrc-db-backup.timer"
+  echo "    - Backup logs  : tail -f /var/log/afrc_backup.log"
   if [[ -n "${SETUP_CADDY_DOMAIN:-}" ]]; then
     echo "    - Caddy status : sudo systemctl status caddy"
     echo "    - Caddy logs   : sudo journalctl -u caddy -f"
