@@ -270,12 +270,33 @@ def _dish_json(dish: Dish) -> dict:
     return {
         "id": dish.id,
         "name": dish.name,
+        "alias": dish.alias or "",
+        "display_name": (dish.alias or "").strip() or dish.name,
         "price": dish.price,
         "available": dish.available,
         "unit": dish.unit,
         "description": dish.description or "",
         "pieces_per_portion": dish.pieces_per_portion or 1,
     }
+
+def _dish_alias_map(db: Session = None) -> dict[str, str]:
+    close_after = False
+    if db is None:
+        db = SessionLocal()
+        close_after = True
+    try:
+        dishes = db.query(Dish.name, Dish.alias).all()
+        mapping = {}
+        for name, alias in dishes:
+            if name:
+                disp = (alias or "").strip() or name
+                mapping[name] = disp
+                mapping[name.casefold()] = disp
+                mapping[" ".join(name.strip().casefold().split())] = disp
+        return mapping
+    finally:
+        if close_after:
+            db.close()
 
 def get_db():
     db = SessionLocal()
@@ -905,9 +926,12 @@ def get_public_pricelist(db: Session = Depends(get_db)):
         unit = d.unit or "portion"
         price = round(float(d.price or 0.0), 2)
         price_per_piece = round(price / pieces, 2) if pieces > 0 else price
+        display_name = (d.alias or "").strip() or d.name
         items.append({
             "id": d.id,
-            "name": d.name,
+            "name": display_name,
+            "raw_name": d.name,
+            "alias": d.alias or "",
             "price": price,
             "unit": unit,
             "pieces_per_portion": pieces,
@@ -1186,6 +1210,8 @@ def update_menu(dishes: List[dict], request: Request, db: Session = Depends(get_
         dish = db.query(Dish).filter(Dish.id == d["id"]).first()
         if dish:
             dish.available = d.get("available", dish.available)
+            if "alias" in d:
+                dish.alias = str(d.get("alias") or "").strip()
             if "price" in d:
                 try:
                     p = float(d["price"])
@@ -1223,8 +1249,10 @@ def add_menu_item(payload: dict, request: Request, db: Session = Depends(get_db)
     if existing:
         raise HTTPException(status_code=409, detail="A dish with this name already exists")
     unit = str(payload.get("unit") or "portion").strip() or "portion"
+    alias = str(payload.get("alias") or "").strip()
     dish = Dish(
         name=name,
+        alias=alias,
         price=round(price, 2),
         available=bool(payload.get("available", True)),
         unit=unit,
@@ -1300,7 +1328,7 @@ def get_client_state(
             "restaurant_address": prof.get("restaurant_address", ""),
             "google_maps_url": prof.get("google_maps_url", ""),
             "google_maps_embed_url": prof.get("google_maps_embed_url", ""),
-            "active_bill": _bill_payload(active_bill) if active_bill else None,
+            "active_bill": _bill_payload(active_bill, alias_map=_dish_alias_map(db)) if active_bill else None,
             "operation_hours": {
                 "start": _restaurant_settings()["operation_hours_start"],
                 "end": _restaurant_settings()["operation_hours_end"],
@@ -1523,8 +1551,9 @@ async def recognize(
             continue
         sub = dish.price * billed_qty
         total += sub
+        display_name = (dish.alias or "").strip() or dish.name
         bill_items.append(BillItem(
-            name=dish.name,
+            name=display_name,
             quantity=billed_qty,
             unit_price=dish.price,
             subtotal=round(sub, 2),
@@ -1618,12 +1647,21 @@ async def recognize(
     resp.set_cookie("afrc_active_session", session_id, max_age=3600, path="/", samesite="lax")
     return resp
 
-def _bill_payload(session: SessionBill, refunded_amount: float = 0.0, is_owner_or_admin: bool = True) -> dict:
+def _bill_payload(session: SessionBill, refunded_amount: float = 0.0, is_owner_or_admin: bool = True, alias_map: dict = None) -> dict:
     prof = _restaurant_profile()
     try:
         items = json.loads(session.final_bill or "[]")
     except Exception:
         items = []
+    if alias_map is None:
+        alias_map = _dish_alias_map()
+    if alias_map:
+        for item in items:
+            raw_n = str(item.get("name") or "").strip()
+            if raw_n in alias_map:
+                item["name"] = alias_map[raw_n]
+            elif raw_n.casefold() in alias_map:
+                item["name"] = alias_map[raw_n.casefold()]
     total = round(sum(float(item.get("subtotal") or 0) for item in items), 2)
     img_path = UPLOAD_DIR / f"{session.id}.jpg"
     retakes_used = int(session.retake_count or 0)
@@ -1689,7 +1727,7 @@ def get_session(session_id: str, request: Request, db: Session = Depends(get_db)
         changed = True
     if changed:
         db.commit()
-    resp = JSONResponse(content=_bill_payload(bill), headers=NO_CACHE_HEADERS)
+    resp = JSONResponse(content=_bill_payload(bill, alias_map=_dish_alias_map(db)), headers=NO_CACHE_HEADERS)
     resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
     if bill.status in ("open", "pending"):
         resp.set_cookie("afrc_active_session", bill.id, max_age=3600, path="/", samesite="lax")
@@ -2518,6 +2556,7 @@ def _compute_overview_data(
     dish_agg: dict[str, dict] = {}
     void_agg: dict[str, dict] = {}
     export_bills: list[dict] = []
+    alias_map = _dish_alias_map(db)
 
     for row in rows:
         (
@@ -2593,7 +2632,8 @@ def _compute_overview_data(
             buckets[pkey]["paid_count"] += 1
             buckets[pkey]["total_count"] += 1
             for item in items:
-                d_name = str(item.get("name") or "Unknown").strip() or "Unknown"
+                raw_d = str(item.get("name") or "Unknown").strip() or "Unknown"
+                d_name = alias_map.get(raw_d) or alias_map.get(raw_d.casefold()) or raw_d
                 qty = float(item.get("quantity") or 0)
                 sub = float(item.get("subtotal") or 0)
                 entry = dish_agg.setdefault(d_name, {"name": d_name, "quantity": 0.0, "revenue": 0.0})
@@ -2618,7 +2658,7 @@ def _compute_overview_data(
 
         if include_export_bills and (in_period_created or in_period_paid):
             item_desc = "; ".join(
-                f"{i.get('name', '')} x{i.get('quantity', 0)}"
+                f"{(alias_map.get(i.get('name', '')) or alias_map.get(str(i.get('name', '')).casefold()) or i.get('name', ''))} x{i.get('quantity', 0)}"
                 for i in items
             )
             export_bills.append({
@@ -2803,7 +2843,8 @@ def list_admin_bills(
             .all()
         )
         refunded_map = {sid: float(amt or 0.0) for sid, amt in refund_rows}
-    bills = [_bill_payload(s, refunded_amount=refunded_map.get(s.id, 0.0)) for s in page_rows]
+    alias_map = _dish_alias_map(db)
+    bills = [_bill_payload(s, refunded_amount=refunded_map.get(s.id, 0.0), alias_map=alias_map) for s in page_rows]
 
     payload = {
         "bills": bills,
@@ -3102,7 +3143,7 @@ def get_admin_bill_by_number(bill_number: str, request: Request, db: Session = D
         BillRefund.session_id == bill.id,
         BillRefund.status == "completed"
     ).scalar() or 0.0
-    return JSONResponse(content=_bill_payload(bill, float(refunded_amt), is_owner_or_admin=True), headers=NO_CACHE_HEADERS)
+    return JSONResponse(content=_bill_payload(bill, float(refunded_amt), is_owner_or_admin=True, alias_map=_dish_alias_map(db)), headers=NO_CACHE_HEADERS)
 
 @app.get("/api/admin/bills/{session_id}/refund-info")
 def get_admin_bill_refund_info(session_id: str, request: Request, db: Session = Depends(get_db)):

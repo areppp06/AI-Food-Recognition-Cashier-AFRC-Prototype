@@ -50,6 +50,7 @@ class Dish(Base):
     __tablename__ = "dishes"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
+    alias = Column(String, default="")
     price = Column(Float)
     available = Column(Boolean, default=True)
     unit = Column(String, default="portion")
@@ -180,6 +181,8 @@ def init_db():
     Base.metadata.create_all(bind=engine)
     with engine.begin() as conn:
         columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(dishes)")]
+        if "alias" not in columns:
+            conn.exec_driver_sql("ALTER TABLE dishes ADD COLUMN alias TEXT DEFAULT ''")
         if "description" not in columns:
             conn.exec_driver_sql("ALTER TABLE dishes ADD COLUMN description TEXT DEFAULT ''")
         if "pieces_per_portion" not in columns:
