@@ -11,6 +11,7 @@ import csv
 import io
 import math
 import os
+import re
 import uuid
 import json
 import hashlib
@@ -753,7 +754,20 @@ NO_CACHE_HEADERS = {
 
 @app.get("/")
 async def root():
+    settings = _restaurant_settings()
+    if settings["maintenance_mode"]:
+        return RedirectResponse("/maintenance", status_code=307)
+    if settings["coming_soon"]:
+        return RedirectResponse("/coming-soon", status_code=307)
     return FileResponse("frontend/index.html", headers=NO_CACHE_HEADERS)
+
+@app.get("/coming-soon")
+async def coming_soon_page():
+    return FileResponse("frontend/coming_soon.html", headers=NO_CACHE_HEADERS)
+
+@app.get("/maintenance")
+async def maintenance_page():
+    return FileResponse("frontend/maintenance.html", headers=NO_CACHE_HEADERS)
 
 @app.get("/privacy")
 @app.get("/privacy-policy")
@@ -1216,6 +1230,15 @@ def get_client_state(
             "google_maps_url": prof.get("google_maps_url", ""),
             "google_maps_embed_url": prof.get("google_maps_embed_url", ""),
             "active_bill": _bill_payload(active_bill) if active_bill else None,
+            "operation_hours": {
+                "start": _restaurant_settings()["operation_hours_start"],
+                "end": _restaurant_settings()["operation_hours_end"],
+                "is_open": _restaurant_settings()["is_open"],
+                "text": _restaurant_settings()["operation_hour_text"],
+                "current_server_time": _restaurant_settings()["current_server_time"],
+            },
+            "coming_soon": _restaurant_settings()["coming_soon"],
+            "maintenance_mode": _restaurant_settings()["maintenance_mode"],
         },
         headers=NO_CACHE_HEADERS,
     )
@@ -1240,6 +1263,24 @@ async def recognize(
     browser_session_id: Annotated[str, Form()] = "",
     db: Session = Depends(get_db),
 ):
+    settings = _restaurant_settings()
+    if settings["maintenance_mode"]:
+        raise HTTPException(
+            status_code=503,
+            detail="System is currently under maintenance. Please try again later."
+        )
+    if settings["coming_soon"]:
+        raise HTTPException(
+            status_code=503,
+            detail="System is not yet launched. Coming soon!"
+        )
+    if not settings["is_open"]:
+        op_text = settings["operation_hour_text"]
+        raise HTTPException(
+            status_code=403,
+            detail=f"You are outside our operation hour. Our operation hour is {op_text} please comeback later."
+        )
+
     await asyncio.to_thread(_require_turnstile, cf_turnstile_response, "recognize", request)
     _expire_stale_bills(db)
 
@@ -1791,6 +1832,91 @@ def _restaurant_profile() -> dict:
 
 def _restaurant_name() -> str:
     return _restaurant_profile()["restaurant_name"]
+
+def _is_within_hours(current_str: str, start_str: str, end_str: str) -> bool:
+    try:
+        cur_h, cur_m = map(int, current_str.split(":"))
+        st_h, st_m = map(int, start_str.split(":"))
+        en_h, en_m = map(int, end_str.split(":"))
+        cur = cur_h * 60 + cur_m
+        st = st_h * 60 + st_m
+        en = en_h * 60 + en_m
+        if st <= en:
+            return st <= cur <= en
+        else:
+            return cur >= st or cur <= en
+    except Exception:
+        return True
+
+def _restaurant_settings() -> dict:
+    env_data = {
+        **_read_env_file_cached(ENV_DIR / ".env"),
+        **_read_env_file_cached(ROOT / ".env"),
+        **_read_env_file_cached(ENV_DIR / "restaurant.env"),
+        **_read_env_file_cached(ROOT / "restaurant.env"),
+    }
+    coming_soon = env_data.get("COMING_SOON", "false").strip().lower() in ("true", "1", "yes")
+    maintenance = env_data.get("MAINTENANCE_MODE", "false").strip().lower() in ("true", "1", "yes")
+    op_start = env_data.get("OPERATION_HOURS_START", "08:00").strip() or "08:00"
+    op_end = env_data.get("OPERATION_HOURS_END", "17:00").strip() or "17:00"
+    
+    now_local = datetime.utcnow() + _local_tz_offset()
+    current_time_str = now_local.strftime("%H:%M")
+    is_open = _is_within_hours(current_time_str, op_start, op_end)
+    op_text = f"{op_start} - {op_end}"
+    
+    return {
+        "coming_soon": coming_soon,
+        "maintenance_mode": maintenance,
+        "operation_hours_start": op_start,
+        "operation_hours_end": op_end,
+        "is_open": is_open,
+        "operation_hour_text": op_text,
+        "current_server_time": current_time_str,
+    }
+
+def _save_restaurant_settings(updates: dict) -> dict:
+    env_path = ENV_DIR / "restaurant.env"
+    existing_lines = []
+    if env_path.exists():
+        with open(env_path, "r", encoding="utf-8") as f:
+            existing_lines = f.readlines()
+            
+    keys_map = {}
+    if "coming_soon" in updates:
+        keys_map["COMING_SOON"] = "true" if updates["coming_soon"] else "false"
+    if "maintenance_mode" in updates:
+        keys_map["MAINTENANCE_MODE"] = "true" if updates["maintenance_mode"] else "false"
+    if "operation_hours_start" in updates and updates["operation_hours_start"]:
+        keys_map["OPERATION_HOURS_START"] = str(updates["operation_hours_start"]).strip()
+    if "operation_hours_end" in updates and updates["operation_hours_end"]:
+        keys_map["OPERATION_HOURS_END"] = str(updates["operation_hours_end"]).strip()
+        
+    new_lines = []
+    handled_keys = set()
+    for line in existing_lines:
+        s_line = line.strip()
+        if s_line and not s_line.startswith("#") and "=" in s_line:
+            k, _ = s_line.split("=", 1)
+            k = k.strip()
+            if k in keys_map:
+                new_lines.append(f"{k}={keys_map[k]}\n")
+                handled_keys.add(k)
+                continue
+        new_lines.append(line)
+        
+    for k, v in keys_map.items():
+        if k not in handled_keys:
+            if new_lines and not new_lines[-1].endswith("\n"):
+                new_lines.append("\n")
+            new_lines.append(f"{k}={v}\n")
+            
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.writelines(new_lines)
+        
+    _RL_FILE_CACHE.pop(str(env_path), None)
+    return _restaurant_settings()
+
 
 def _curlec_client():
     key_id = os.getenv("CURLEC_KEY_ID", "").strip()
@@ -2999,3 +3125,56 @@ def list_audit_logs(
         },
         headers=NO_CACHE_HEADERS,
     )
+
+
+@app.get("/api/admin/restaurant/settings")
+def get_admin_restaurant_settings(request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
+    prof = _restaurant_profile()
+    settings = _restaurant_settings()
+    return {
+        **settings,
+        "restaurant_name": prof["restaurant_name"],
+        "company_name": prof["company_name"],
+    }
+
+@app.post("/api/admin/restaurant/settings")
+async def update_admin_restaurant_settings(request: Request, db: Session = Depends(get_db)):
+    current_admin = require_admin_api(request, db)
+    data = await request.json()
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400, detail="Invalid request body")
+    
+    op_start = data.get("operation_hours_start")
+    op_end = data.get("operation_hours_end")
+    time_re = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")
+    if op_start is not None and not time_re.match(str(op_start).strip()):
+        raise HTTPException(status_code=400, detail="Invalid operation_hours_start (format HH:MM required)")
+    if op_end is not None and not time_re.match(str(op_end).strip()):
+        raise HTTPException(status_code=400, detail="Invalid operation_hours_end (format HH:MM required)")
+    
+    updated = _save_restaurant_settings(data)
+    
+    changes = []
+    if "coming_soon" in data:
+        changes.append(f"coming_soon={'ENABLED' if updated['coming_soon'] else 'DISABLED'}")
+    if "maintenance_mode" in data:
+        changes.append(f"maintenance_mode={'ENABLED' if updated['maintenance_mode'] else 'DISABLED'}")
+    if op_start is not None or op_end is not None:
+        changes.append(f"operation_hours={updated['operation_hours_start']}-{updated['operation_hours_end']}")
+        
+    change_desc = ", ".join(changes) or "no changes"
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="RESTAURANT_SETTINGS_UPDATE",
+        details=f"Admin '{current_admin.username}' updated restaurant settings: {change_desc}"
+    ))
+    db.commit()
+    
+    prof = _restaurant_profile()
+    return {
+        **updated,
+        "restaurant_name": prof["restaurant_name"],
+        "company_name": prof["company_name"],
+    }

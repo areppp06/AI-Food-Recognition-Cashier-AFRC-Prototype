@@ -222,7 +222,8 @@
     </div>
     <h1>Payment Successful</h1>
     <div id="billNo" class="bill-pill">Bill #AAA-0001</div>
-    <p class="subtitle">Selamat Menjamu Selera!</p>
+    <p class="subtitle" style="margin-bottom: 0.35rem;">Selamat Menjamu Selera!</p>
+    <div id="paymentDateTime" style="font-weight: 800; font-size: 0.95rem; color: #0f172a; margin-bottom: 1.25rem;"></div>
     
     <div class="amount-card">
       <div class="amount-label">Total Amount Paid</div>
@@ -281,6 +282,13 @@
         }
         if (data.total !== undefined) {
           document.getElementById("total").textContent = "RM " + Number(data.total).toFixed(2);
+        }
+        const pdtEl = document.getElementById("paymentDateTime");
+        if (pdtEl) {
+          const dt = (data.paid_at || data.created_at) ? new Date(data.paid_at || data.created_at) : new Date();
+          const dateStr = dt.toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" });
+          const timeStr = dt.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+          pdtEl.innerHTML = `<b>${dateStr}, ${timeStr}</b>`;
         }
       } catch (e) {}
     }

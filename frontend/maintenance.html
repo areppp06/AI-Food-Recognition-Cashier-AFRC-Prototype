@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Under Maintenance - AFRC Smart Cashier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --amber: #f59e0b;
+      --amber-light: #fffbeb;
+      --amber-border: #fef3c7;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem 1rem;
+    }
+    .maint-card {
+      background: var(--card-bg);
+      border-radius: 28px;
+      padding: 2.5rem 1.75rem 2rem;
+      box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+      border: 1px solid var(--border);
+      text-align: center;
+      width: 100%;
+      max-width: 440px;
+      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: translateY(16px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .icon-badge {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      background: var(--amber-light);
+      color: #d97706;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 12px var(--amber-border);
+    }
+    .icon-badge svg {
+      width: 38px;
+      height: 38px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      color: #b45309;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      margin-bottom: 0.85rem;
+    }
+    .pill-dot {
+      width: 6px;
+      height: 6px;
+      background: #d97706;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    h1 {
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+    .restaurant-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #d97706;
+      margin-bottom: 0.85rem;
+    }
+    .desc {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      margin-bottom: 1.75rem;
+    }
+    .info-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.15rem 1.1rem;
+      margin-bottom: 1.5rem;
+      text-align: left;
+    }
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      color: #334155;
+    }
+    .info-row:not(:last-child) {
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .info-icon {
+      width: 18px;
+      height: 18px;
+      color: #64748b;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .info-label {
+      font-weight: 700;
+      color: var(--text);
+    }
+    .footer-admin {
+      margin-top: 1.5rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .footer-admin a {
+      color: #475569;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s;
+    }
+    .footer-admin a:hover {
+      color: #d97706;
+    }
+  </style>
+</head>
+<body>
+  <div class="maint-card">
+    <div class="icon-badge">
+      <svg viewBox="0 0 24 24">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+      </svg>
+    </div>
+    
+    <div class="pill">
+      <span class="pill-dot"></span>
+      <span>System Maintenance</span>
+    </div>
+
+    <h1>Under Maintenance</h1>
+    <div class="restaurant-name" id="maintRestName">Gerai TakCakap</div>
+
+    <p class="desc">
+      We are currently performing scheduled maintenance to upgrade our system and improve your dining experience. We will be back online shortly!
+    </p>
+
+    <div class="info-box">
+      <div class="info-row">
+        <svg class="info-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <div>
+          <div class="info-label">Daily Operating Hours</div>
+          <div id="maintOpHours" style="color:#64748b; font-size:0.82rem; margin-top:0.15rem;">08:00 - 17:00</div>
+        </div>
+      </div>
+      <div class="info-row" id="maintCashierRow">
+        <svg class="info-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <div>
+          <div class="info-label">Counter Service Available</div>
+          <div style="color:#64748b; font-size:0.82rem; margin-top:0.15rem;">Please proceed directly to the cashier counter for food payment and assistance.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-admin">
+      <a href="/login?next=/admin">Admin Dashboard &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    async function loadInfo() {
+      try {
+        const res = await fetch("/api/client-state");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.restaurant_name) {
+          document.getElementById("maintRestName").textContent = data.restaurant_name;
+        }
+        if (data.operation_hours && data.operation_hours.text) {
+          document.getElementById("maintOpHours").textContent = data.operation_hours.text;
+        }
+      } catch (e) {}
+    }
+    loadInfo();
+  </script>
+</body>
+</html>

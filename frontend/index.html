@@ -941,6 +941,36 @@ function stopCameraStream() {
   }
 }
 
+function showOperationHoursLock(opHourText) {
+  stopCameraStream();
+  cameraCard.style.display = "none";
+  result.innerHTML = "";
+  const hourDisplay = opHourText || "08:00 - 17:00";
+  stateLockBox.innerHTML = `
+    <div class="op-hours-lock-card" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:24px;padding:2.25rem 1.5rem;text-align:center;box-shadow:0 10px 25px -5px rgba(0,0,0,0.05);max-width:440px;margin:1.5rem auto;">
+      <div style="width:68px;height:68px;border-radius:50%;background:#fff7ed;color:#ea580c;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;box-shadow:0 0 0 8px #ffedd5;">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </div>
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#ea580c;margin-bottom:0.35rem;">
+        Restaurant Closed
+      </div>
+      <h2 style="font-size:1.35rem;font-weight:800;color:#0f172a;letter-spacing:-0.02em;margin-bottom:0.75rem;">
+        Outside Operation Hours
+      </h2>
+      <p style="font-size:0.95rem;color:#475569;line-height:1.55;margin-bottom:1.25rem;">
+        You are outside our operation hour. Our operation hour is <strong style="color:#0f172a;">${esc(hourDisplay)}</strong> please comeback later.
+      </p>
+      <div style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:14px;padding:0.75rem 1rem;font-size:0.84rem;color:#64748b;display:inline-flex;align-items:center;gap:0.5rem;">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;"></span>
+        <span>Operating hours: <strong>${esc(hourDisplay)}</strong></span>
+      </div>
+    </div>
+  `;
+}
+
 function showRateLimitLock(mins, reason) {
   stopCameraStream();
   cameraCard.style.display = "none";
@@ -1184,6 +1214,11 @@ async function checkClientState() {
     if (state.device_id) {
       try { localStorage.setItem("afrc_device_id", state.device_id); } catch (e) {}
       setCookie("afrc_device_id", state.device_id, 86400 * 365);
+    }
+    if (state.operation_hours && state.operation_hours.is_open === false) {
+      clearSavedActiveSession();
+      showOperationHoursLock(state.operation_hours.text || "08:00 - 17:00");
+      return false;
     }
     if (state.cooldown_active) {
       clearSavedActiveSession();
@@ -1662,7 +1697,12 @@ capBtn.onclick = async () => {
           await checkClientState();
           return;
         }
-        if (res.status === 403 || detail === "forbidden") {
+        if (typeof detail === "string" && detail.includes("outside our operation hour")) {
+          showOperationHoursLock();
+          await checkClientState();
+          return;
+        }
+        if (detail === "forbidden") {
           showError("CAPTCHA_FAILED", "Captcha verification failed. Please try again.");
         } else {
           const message = typeof detail === "string" ? detail : (detail.message || "Something went wrong. Please retake the photo.");

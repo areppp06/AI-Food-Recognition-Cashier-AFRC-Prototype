@@ -1584,6 +1584,14 @@
         <span>Daily Menu</span>
       </span>
     </button>
+    <button class="nav-btn" data-tab="restaurant" onclick="switchTab('restaurant', 'Restaurant Settings')">
+      <span class="nav-btn-left">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Restaurant's</span>
+      </span>
+    </button>
     <button class="nav-btn" data-tab="audit" onclick="switchTab('audit', 'Audit Log')">
       <span class="nav-btn-left">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
@@ -1894,7 +1902,132 @@
       </div>
     </section>
 
-    <!-- TAB 4: AUDIT LOG -->
+    <!-- TAB 4: RESTAURANT'S -->
+    <section class="section-pane" id="tab-restaurant">
+      <!-- Status & Availability Panel -->
+      <div class="panel-card" style="margin-bottom: 1.5rem;">
+        <div class="panel-header" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+          <div>
+            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
+              <svg style="width:20px;height:20px;color:#ff5e36;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>System &amp; Kiosk Availability</span>
+            </div>
+            <p style="font-size:0.82rem; color:#64748b; margin-top:0.25rem;">
+              Control public access to the customer scanner kiosk. High-impact switches require exact passphrase confirmation.
+            </p>
+          </div>
+        </div>
+
+        <div class="panel-body" style="padding: 1.5rem 1rem;">
+          <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            
+            <!-- Coming Soon Switch Row -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Coming Soon Feature</span>
+                  <span id="badgeComingSoon" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
+                </div>
+                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
+                  When enabled, visiting the main customer page (<code style="background:#e2e8f0;padding:2px 4px;border-radius:4px;">/</code>) automatically redirects visitors to the <strong>Coming Soon</strong> page.
+                </p>
+              </div>
+              <div style="flex-shrink:0;">
+                <label class="switch-wrap" style="cursor:pointer;" onclick="onComingSoonClick(event)">
+                  <span class="switch-toggle">
+                    <input type="checkbox" id="toggleComingSoon" class="switch-input" style="pointer-events:none;">
+                    <span class="switch-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Maintenance Mode Switch Row -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Maintenance Mode</span>
+                  <span id="badgeMaintenance" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
+                </div>
+                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
+                  When switched on, redirects customer kiosk visitors to the <strong>Maintenance</strong> page and pauses scanning for system upkeep.
+                </p>
+              </div>
+              <div style="flex-shrink:0;">
+                <label class="switch-wrap" style="cursor:pointer;" onclick="onMaintenanceClick(event)">
+                  <span class="switch-toggle">
+                    <input type="checkbox" id="toggleMaintenance" class="switch-input" style="pointer-events:none;">
+                    <span class="switch-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Operating Hours Panel -->
+      <div class="panel-card">
+        <div class="panel-header" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+          <div>
+            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
+              <svg style="width:20px;height:20px;color:#ff5e36;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Daily Operating Hours</span>
+            </div>
+            <p style="font-size:0.82rem; color:#64748b; margin-top:0.25rem;">
+              Set restaurant operating hours (default 08:00 to 17:00). Outside these hours, AI scanning is disabled on server side.
+            </p>
+          </div>
+        </div>
+
+        <div class="panel-body" style="padding: 1.5rem 1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; background:#fff7ed; border:1px solid #ffedd5; border-radius:14px; padding:0.85rem 1.15rem; margin-bottom:1.5rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="font-size:0.82rem; font-weight:700; color:#c2410c;">Server Time (UTC+8):</span>
+              <strong id="adminServerTimeDisplay" style="font-size:0.95rem; color:#9a3412;">--:--</strong>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <span style="font-size:0.82rem; color:#7c2d12;">Current Status:</span>
+              <span id="adminLiveOpenBadge" class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.75rem; padding:0.25rem 0.65rem; border-radius:999px; font-weight:700;">Closed</span>
+            </div>
+          </div>
+
+          <form onsubmit="handleSaveOperationHours(event)" style="max-width:560px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
+              <label class="field-label">Opening Time
+                <input type="time" class="input-box" id="opHourStartInput" value="08:00" required>
+              </label>
+              <label class="field-label">Closing Time
+                <input type="time" class="input-box" id="opHourEndInput" value="17:00" required>
+              </label>
+            </div>
+
+            <!-- Quick presets -->
+            <div style="margin-bottom:1.5rem;">
+              <span style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:0.4rem;">Quick Presets</span>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button type="button" class="btn-sm btn-ghost" style="border:1px solid #cbd5e1; font-size:0.78rem;" onclick="setHourPreset('08:00', '17:00')">Default (08:00 - 17:00)</button>
+                <button type="button" class="btn-sm btn-ghost" style="border:1px solid #cbd5e1; font-size:0.78rem;" onclick="setHourPreset('07:00', '22:00')">Full Day (07:00 - 22:00)</button>
+                <button type="button" class="btn-sm btn-ghost" style="border:1px solid #cbd5e1; font-size:0.78rem;" onclick="setHourPreset('00:00', '23:59')">24 Hours (00:00 - 23:59)</button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-dark" id="btnSaveOpHours">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              <span>Save Operating Hours</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: AUDIT LOG -->
     <section class="section-pane" id="tab-audit">
       <div class="panel-card">
         <div class="panel-header">
@@ -1977,6 +2110,38 @@
     </form>
   </div>
 </div>
+
+<div class="modal-backdrop" id="restaurantConfirmModal" onclick="if(event.target===this) closeRestaurantConfirmModal()">
+  <div class="refund-modal-card" style="max-width: 480px;" role="dialog" aria-modal="true">
+    <div class="refund-modal-head" style="display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:1px solid #f1f5f9;">
+      <div class="refund-modal-title" style="font-size:1.1rem; font-weight:700; color:#0f172a;" id="restaurantConfirmTitle">
+        Confirmation Required
+      </div>
+      <button type="button" class="btn-sm btn-ghost" style="padding:0.25rem 0.5rem;" onclick="closeRestaurantConfirmModal()">✕</button>
+    </div>
+    <div class="refund-modal-body" style="padding: 1.5rem;">
+      <p id="restaurantConfirmDesc" style="font-size: 0.9rem; color: #475569; margin-bottom: 1.15rem; line-height: 1.5;">
+        Please confirm this action.
+      </p>
+      <div style="background: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 1.25rem;">
+        <div style="font-size: 0.72rem; font-weight: 700; color: #c2410c; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+          Type this exact phrase below to confirm:
+        </div>
+        <div id="restaurantConfirmPhrase" style="font-family: monospace; font-size: 0.95rem; font-weight: 800; color: #9a3412; word-break: break-all; user-select: all;">
+          COMFIRM ENABLE COOMING SOON
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 0.5rem;">
+        <label class="form-label" style="font-weight: 600; font-size: 0.82rem; margin-bottom: 0.35rem; display:block;">Confirmation Input (ALL CAPS):</label>
+        <input type="text" id="restaurantConfirmInput" class="input-box" style="font-family: monospace; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;" placeholder="Type the phrase above..." oninput="checkRestaurantConfirmMatch()" autocomplete="off">
+      </div>
+    </div>
+    <div class="refund-modal-foot" style="display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; border-radius: 0 0 14px 14px;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeRestaurantConfirmModal()">Cancel</button>
+      <button type="button" class="btn btn-sm" id="restaurantConfirmBtn" style="background: #ff5e36;" onclick="executeRestaurantConfirmAction()" disabled>Confirm &amp; Enable</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
@@ -2057,6 +2222,9 @@ function switchTab(tabId, title) {
   }
   if (tabId === "audit") {
     loadAuditLogs(auditCurrentPage, auditPageSize);
+  }
+  if (tabId === "restaurant") {
+    loadRestaurantSettings();
   }
 }
 
@@ -3992,6 +4160,211 @@ async function refreshAll() {
 }
 
 refreshAll();
+
+
+// ==================== RESTAURANT SETTINGS & SWITCHES ====================
+let currentRestaurantConfirmAction = null;
+let currentTargetPhrase = "";
+
+async function loadRestaurantSettings() {
+  try {
+    const res = await fetch("/api/admin/restaurant/settings");
+    if (!res.ok) return;
+    const data = await res.json();
+    
+    const csToggle = document.getElementById("toggleComingSoon");
+    const csBadge = document.getElementById("badgeComingSoon");
+    if (csToggle) csToggle.checked = !!data.coming_soon;
+    if (csBadge) {
+      if (data.coming_soon) {
+        csBadge.textContent = "Active";
+        csBadge.style.background = "#eff6ff";
+        csBadge.style.color = "#1d4ed8";
+      } else {
+        csBadge.textContent = "Disabled";
+        csBadge.style.background = "#e2e8f0";
+        csBadge.style.color = "#475569";
+      }
+    }
+
+    const maintToggle = document.getElementById("toggleMaintenance");
+    const maintBadge = document.getElementById("badgeMaintenance");
+    if (maintToggle) maintToggle.checked = !!data.maintenance_mode;
+    if (maintBadge) {
+      if (data.maintenance_mode) {
+        maintBadge.textContent = "Active";
+        maintBadge.style.background = "#fef3c7";
+        maintBadge.style.color = "#b45309";
+      } else {
+        maintBadge.textContent = "Disabled";
+        maintBadge.style.background = "#e2e8f0";
+        maintBadge.style.color = "#475569";
+      }
+    }
+
+    if (data.operation_hours_start) {
+      document.getElementById("opHourStartInput").value = data.operation_hours_start;
+    }
+    if (data.operation_hours_end) {
+      document.getElementById("opHourEndInput").value = data.operation_hours_end;
+    }
+    if (data.current_server_time) {
+      document.getElementById("adminServerTimeDisplay").textContent = data.current_server_time;
+    }
+    const openBadge = document.getElementById("adminLiveOpenBadge");
+    if (openBadge) {
+      if (data.is_open) {
+        openBadge.textContent = "Currently Open";
+        openBadge.style.background = "#dcfce7";
+        openBadge.style.color = "#15803d";
+      } else {
+        openBadge.textContent = "Currently Closed";
+        openBadge.style.background = "#fee2e2";
+        openBadge.style.color = "#b91c1c";
+      }
+    }
+  } catch (e) {
+    showToast("Failed to load restaurant settings");
+  }
+}
+
+function onComingSoonClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const toggle = document.getElementById("toggleComingSoon");
+  if (toggle.checked) {
+    if (confirm("Disable Coming Soon mode and restore normal customer kiosk?")) {
+      updateRestaurantSetting({ coming_soon: false }, "Coming Soon mode disabled!");
+    }
+  } else {
+    openRestaurantConfirmModal("coming_soon");
+  }
+}
+
+function onMaintenanceClick(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  const toggle = document.getElementById("toggleMaintenance");
+  if (toggle.checked) {
+    if (confirm("Disable Maintenance mode and resume normal kiosk ordering?")) {
+      updateRestaurantSetting({ maintenance_mode: false }, "Maintenance mode disabled!");
+    }
+  } else {
+    openRestaurantConfirmModal("maintenance");
+  }
+}
+
+function openRestaurantConfirmModal(actionType) {
+  currentRestaurantConfirmAction = actionType;
+  const modal = document.getElementById("restaurantConfirmModal");
+  const title = document.getElementById("restaurantConfirmTitle");
+  const desc = document.getElementById("restaurantConfirmDesc");
+  const phraseEl = document.getElementById("restaurantConfirmPhrase");
+  const inputEl = document.getElementById("restaurantConfirmInput");
+  const confirmBtn = document.getElementById("restaurantConfirmBtn");
+
+  inputEl.value = "";
+  confirmBtn.disabled = true;
+
+  if (actionType === "coming_soon") {
+    title.textContent = "Enable Coming Soon Feature";
+    desc.textContent = "Enabling this will immediately redirect all visitors from the main page (/) to the Coming Soon page. To confirm, type the phrase below in ALL CAPS:";
+    currentTargetPhrase = "COMFIRM ENABLE COOMING SOON";
+    phraseEl.textContent = currentTargetPhrase;
+    confirmBtn.textContent = "Confirm & Enable Coming Soon";
+  } else if (actionType === "maintenance") {
+    title.textContent = "Enable Maintenance Mode";
+    desc.textContent = "Enabling this will immediately redirect all visitors from the main page (/) to the Maintenance page and temporarily pause customer ordering. To confirm, type the phrase below in ALL CAPS:";
+    currentTargetPhrase = "COMFIRM ENABLE MAINTAINANCE MODE";
+    phraseEl.textContent = currentTargetPhrase;
+    confirmBtn.textContent = "Confirm & Enable Maintenance";
+  }
+
+  modal.classList.add("open");
+  setTimeout(() => inputEl.focus(), 100);
+}
+
+function closeRestaurantConfirmModal() {
+  document.getElementById("restaurantConfirmModal").classList.remove("open");
+  currentRestaurantConfirmAction = null;
+  currentTargetPhrase = "";
+  loadRestaurantSettings();
+}
+
+function checkRestaurantConfirmMatch() {
+  const inputEl = document.getElementById("restaurantConfirmInput");
+  const confirmBtn = document.getElementById("restaurantConfirmBtn");
+  const val = inputEl.value.trim().toUpperCase();
+  
+  let isMatch = false;
+  if (currentRestaurantConfirmAction === "coming_soon") {
+    isMatch = (val === "COMFIRM ENABLE COOMING SOON" || val === "CONFIRM ENABLE COMING SOON");
+  } else if (currentRestaurantConfirmAction === "maintenance") {
+    isMatch = (val === "COMFIRM ENABLE MAINTAINANCE MODE" || val === "CONFIRM ENABLE MAINTENANCE MODE");
+  }
+
+  confirmBtn.disabled = !isMatch;
+}
+
+async function executeRestaurantConfirmAction() {
+  const confirmBtn = document.getElementById("restaurantConfirmBtn");
+  if (confirmBtn.disabled) return;
+  
+  if (currentRestaurantConfirmAction === "coming_soon") {
+    document.getElementById("restaurantConfirmModal").classList.remove("open");
+    await updateRestaurantSetting({ coming_soon: true }, "Coming Soon mode enabled!");
+  } else if (currentRestaurantConfirmAction === "maintenance") {
+    document.getElementById("restaurantConfirmModal").classList.remove("open");
+    await updateRestaurantSetting({ maintenance_mode: true }, "Maintenance mode enabled!");
+  }
+}
+
+async function updateRestaurantSetting(updates, msg) {
+  try {
+    const res = await fetch("/api/admin/restaurant/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showToast(err.detail || "Failed to update settings");
+      loadRestaurantSettings();
+      return;
+    }
+    showToast(msg || "Settings updated successfully");
+    loadRestaurantSettings();
+  } catch (e) {
+    showToast("Network error updating settings");
+    loadRestaurantSettings();
+  }
+}
+
+async function handleSaveOperationHours(event) {
+  if (event) event.preventDefault();
+  const start = document.getElementById("opHourStartInput").value;
+  const end = document.getElementById("opHourEndInput").value;
+  if (!start || !end) {
+    alert("Please specify both opening and closing times.");
+    return;
+  }
+  const btn = document.getElementById("btnSaveOpHours");
+  if (btn) btn.disabled = true;
+  try {
+    await updateRestaurantSetting({
+      operation_hours_start: start,
+      operation_hours_end: end
+    }, "Operating hours saved successfully!");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function setHourPreset(start, end) {
+  document.getElementById("opHourStartInput").value = start;
+  document.getElementById("opHourEndInput").value = end;
+}
+
 </script>
 </body>
 </html>
