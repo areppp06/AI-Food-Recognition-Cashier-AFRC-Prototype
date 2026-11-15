@@ -114,22 +114,17 @@ body {
 }
 .legal-header-info {
   margin: 0.35rem 0 1.25rem;
-  line-height: 1.45;
+  line-height: 1.5;
   color: #475569;
   font-size: 0.88rem;
+  font-weight: 400;
 }
-.legal-header-info .header-rest-name {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-.legal-header-info .header-comp-name {
-  font-size: 0.88rem;
-  color: #475569;
-}
+.legal-header-info .header-rest-name,
+.legal-header-info .header-comp-name,
 .legal-header-info .header-comp-reg {
-  font-size: 0.82rem;
-  color: #64748b;
+  font-size: 0.88rem;
+  font-weight: 400;
+  color: #475569;
 }
 .page-updated {
   font-size: 0.75rem;
@@ -378,7 +373,7 @@ body {
       <a href="/pricelist" class="footer-link"><span data-lang="bm">Senarai Harga</span><span data-lang="en" style="display:none;">Menu Prices</span></a>
     </div>
     <div class="footer-brand">
-      &copy; 2026 <span class="dyn-restaurant-name">TAKCAKAP.COM</span> &bull; PRISM e-Cashier
+      &copy; 2026 <span class="dyn-restaurant-name">Gerai TakCakap</span> &bull; PRISM e-Cashier
     </div>
   </footer>
 </div>
@@ -404,7 +399,7 @@ function initProfile() {
     .then(r => r.json())
     .then(data => {
       if (!data) return;
-      const rName = data.restaurant_name || 'TAKCAKAP.COM';
+      const rName = data.restaurant_name || 'Gerai TakCakap';
       const cName = data.company_name || 'De Warisan Ibunda Enterprise';
       const bReg = data.business_reg_number || '';
       const cPhone = data.company_phone || '+60 1121815101';
