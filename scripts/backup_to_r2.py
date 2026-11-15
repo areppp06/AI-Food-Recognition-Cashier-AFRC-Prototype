@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 AFRC Automated SQLite Backup to Cloudflare R2
-- Uses SQLite Online Backup API for 100% consistent point-in-time snapshots
+- Uses existing env/cloudflare.env credentials (CLOUDFLARE_API_TOKEN & CLOUDFLARE_ACCOUNT_ID)
+- Uses SQLite Online Backup API for 100% consistent, zero-lock point-in-time snapshots
 - Compresses with gzip (level 9)
-- Uploads to Cloudflare R2 under folder DB_backups/
-- Automatically prunes backups older than RETENTION_DAYS (default: 90)
+- Uploads directly to Cloudflare R2 under DB_backups/
+- Automatically prunes backups older than RETENTION_DAYS (default: 90 days)
 """
 
 import os
@@ -16,14 +17,7 @@ import tempfile
 import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-
-try:
-    import boto3
-    from botocore.config import Config
-    from botocore.exceptions import ClientError
-except ImportError:
-    print("Error: boto3 is required. Run 'pip install boto3'")
-    sys.exit(1)
+import requests
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,9 +26,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger("afrc_backup")
 
-def load_env_file(filepath: Path):
+def load_env_file(filepath: Path) -> dict:
+    env_vars = {}
     if not filepath.is_file():
-        return
+        return env_vars
     with open(filepath, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -43,60 +38,45 @@ def load_env_file(filepath: Path):
             k, v = line.split("=", 1)
             k = k.strip()
             v = v.strip().strip("'\"")
-            if k and k not in os.environ:
-                os.environ[k] = v
+            if k and v:
+                env_vars[k] = v
+                if not os.environ.get(k):
+                    os.environ[k] = v
+    return env_vars
 
 def main():
     script_dir = Path(__file__).resolve().parent
     repo_dir = script_dir.parent
 
-    # Search for backup env config
-    possible_envs = [
-        Path("/root/.r2_backup.env"),
-        repo_dir / ".r2_backup.env",
-        repo_dir / ".env",
-    ]
-    for p in possible_envs:
-        if p.exists():
-            load_env_file(p)
+    # 1. Load cloudflare.env and fallback configs
+    cf_env_path = repo_dir / "env" / "cloudflare.env"
+    load_env_file(cf_env_path)
+    load_env_file(Path("/root/.r2_backup.env"))
+    load_env_file(repo_dir / ".r2_backup.env")
+    load_env_file(repo_dir / ".env")
 
-    account_id = os.getenv("R2_ACCOUNT_ID", "").strip()
-    bucket_name = os.getenv("R2_BUCKET_NAME", "").strip()
-    access_key_id = os.getenv("R2_ACCESS_KEY_ID", "").strip()
-    secret_access_key = os.getenv("R2_SECRET_ACCESS_KEY", "").strip()
-    folder_prefix = os.getenv("R2_FOLDER_PREFIX", "DB_backups").strip().strip("/")
+    account_id = (os.getenv("CLOUDFLARE_ACCOUNT_ID") or os.getenv("R2_ACCOUNT_ID") or "").strip()
+    api_token = (os.getenv("CLOUDFLARE_API_TOKEN") or "").strip()
+    bucket_name = (os.getenv("R2_BUCKET_NAME") or "afrc-plates").strip()
+    folder_prefix = (os.getenv("R2_FOLDER_PREFIX") or "DB_backups").strip().strip("/")
     db_path = Path(os.getenv("AFRC_DB_PATH", str(repo_dir / "afrc.db")))
-    retention_days = int(os.getenv("R2_RETENTION_DAYS", "90"))
+    retention_days = int(os.getenv("R2_RETENTION_DAYS") or "90")
 
-    missing = []
-    if not account_id: missing.append("R2_ACCOUNT_ID")
-    if not bucket_name: missing.append("R2_BUCKET_NAME")
-    if not access_key_id: missing.append("R2_ACCESS_KEY_ID")
-    if not secret_access_key: missing.append("R2_SECRET_ACCESS_KEY")
-
-    if missing:
-        logger.error(f"Missing required Cloudflare R2 credentials: {', '.join(missing)}")
-        logger.info("Please set them in /root/.r2_backup.env")
+    if not account_id:
+        logger.error("CLOUDFLARE_ACCOUNT_ID is missing from env/cloudflare.env")
         sys.exit(1)
-
+    if not api_token:
+        logger.error("CLOUDFLARE_API_TOKEN is missing from env/cloudflare.env")
+        sys.exit(1)
     if not db_path.exists():
         logger.error(f"Database file not found at: {db_path}")
         sys.exit(1)
 
-    endpoint_url = f"https://{account_id}.r2.cloudflarestorage.com"
-    s3_client = boto3.client(
-        "s3",
-        endpoint_url=endpoint_url,
-        aws_access_key_id=access_key_id,
-        aws_secret_access_key=secret_access_key,
-        region_name="auto",
-        config=Config(retries={"max_attempts": 3, "mode": "standard"}),
-    )
+    logger.info(f"Target Bucket: {bucket_name} | Folder: {folder_prefix}/ | Retention: {retention_days} days")
 
-    # 1. Create temporary directory
+    # 2. Online atomic snapshot
     temp_dir = tempfile.mkdtemp(prefix="afrc_backup_")
     now_utc = datetime.now(timezone.utc)
-    # Format filename with Singapore date/time for easy readability (UTC+8)
     now_sg = now_utc + timedelta(hours=8)
     ts_str = now_sg.strftime("%Y%m%d_%H%M%S")
     backup_filename = f"afrc_backup_{ts_str}.db"
@@ -106,7 +86,6 @@ def main():
     temp_gz = Path(temp_dir) / backup_gz_filename
 
     try:
-        # 2. Perform SQLite online backup
         logger.info(f"Taking live online snapshot of {db_path}...")
         src_conn = sqlite3.connect(str(db_path))
         dst_conn = sqlite3.connect(str(temp_raw))
@@ -132,38 +111,65 @@ def main():
         gz_size = temp_gz.stat().st_size
         logger.info(f"Compressed to {gz_size:,} bytes ({round((1 - gz_size / raw_size) * 100, 1)}% reduction).")
 
-        # 4. Upload to Cloudflare R2
+        # 4. Upload to Cloudflare R2 via REST API
         r2_key = f"{folder_prefix}/{backup_gz_filename}"
-        logger.info(f"Uploading to Cloudflare R2: s3://{bucket_name}/{r2_key}...")
-        s3_client.upload_file(
-            Filename=str(temp_gz),
-            Bucket=bucket_name,
-            Key=r2_key,
-            ExtraArgs={"ContentType": "application/gzip"},
-        )
+        upload_url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket_name}/objects/{r2_key}"
+        headers = {
+            "Authorization": f"Bearer {api_token}",
+            "Content-Type": "application/gzip",
+        }
+
+        logger.info(f"Uploading to Cloudflare R2: {bucket_name}/{r2_key}...")
+        with open(temp_gz, "rb") as gz_file:
+            resp = requests.put(upload_url, headers=headers, data=gz_file, timeout=60)
+
+        if resp.status_code not in (200, 201):
+            raise RuntimeError(f"R2 upload failed ({resp.status_code}): {resp.text}")
+
         logger.info(f"Successfully uploaded backup to R2: {r2_key}")
 
         # 5. Prune backups older than retention_days
         logger.info(f"Checking for backups in '{folder_prefix}/' older than {retention_days} days...")
         cutoff_date = now_utc - timedelta(days=retention_days)
-        paginator = s3_client.get_paginator("list_objects_v2")
+        list_url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket_name}/objects"
+        list_resp = requests.get(
+            list_url,
+            headers={"Authorization": f"Bearer {api_token}"},
+            params={"prefix": f"{folder_prefix}/"},
+            timeout=30,
+        )
+
         deleted_count = 0
-
-        for page in paginator.paginate(Bucket=bucket_name, Prefix=f"{folder_prefix}/"):
-            for obj in page.get("Contents", []):
-                key = obj["Key"]
-                if key == f"{folder_prefix}/":
+        if list_resp.status_code == 200:
+            objects = list_resp.json().get("result", [])
+            for obj in objects:
+                key = obj.get("key", "")
+                if key == f"{folder_prefix}/" or not key:
                     continue
-                last_modified = obj["LastModified"]
-                if last_modified < cutoff_date:
-                    logger.info(f"Deleting expired backup (> {retention_days} days old): {key} (Modified: {last_modified})")
-                    s3_client.delete_object(Bucket=bucket_name, Key=key)
-                    deleted_count += 1
-
-        if deleted_count > 0:
-            logger.info(f"Retention prune complete: removed {deleted_count} expired backup(s).")
+                
+                # Check upload date
+                uploaded_str = obj.get("uploaded")
+                if uploaded_str:
+                    try:
+                        # Parse ISO 8601 string
+                        uploaded_dt = datetime.fromisoformat(uploaded_str.replace("Z", "+00:00"))
+                        if uploaded_dt < cutoff_date:
+                            logger.info(f"Deleting expired backup (> {retention_days} days old): {key} (Uploaded: {uploaded_str})")
+                            del_url = f"https://api.cloudflare.com/client/v4/accounts/{account_id}/r2/buckets/{bucket_name}/objects/{key}"
+                            del_resp = requests.delete(del_url, headers={"Authorization": f"Bearer {api_token}"}, timeout=30)
+                            if del_resp.status_code in (200, 204):
+                                deleted_count += 1
+                            else:
+                                logger.warning(f"Failed to delete {key}: {del_resp.status_code} {del_resp.text}")
+                    except Exception as pe:
+                        logger.warning(f"Could not parse object date for {key}: {pe}")
+            
+            if deleted_count > 0:
+                logger.info(f"Retention prune complete: removed {deleted_count} expired backup(s).")
+            else:
+                logger.info(f"Retention prune complete: no backups exceeded {retention_days} days.")
         else:
-            logger.info("Retention prune complete: no backups exceeded 90 days.")
+            logger.warning(f"Could not list objects for pruning ({list_resp.status_code}): {list_resp.text}")
 
         logger.info("AFRC DB backup completed successfully!")
 
