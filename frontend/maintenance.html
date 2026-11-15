@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Under Maintenance - AFRC Smart Cashier</title>
+  <title>Under Maintenance - AFRC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -33,7 +33,7 @@
     .maint-card {
       background: var(--card-bg);
       border-radius: 28px;
-      padding: 2.5rem 1.75rem 2rem;
+      padding: 2.75rem 1.75rem 2.25rem;
       box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
       border: 1px solid var(--border);
       text-align: center;
@@ -110,14 +110,13 @@
       color: var(--text-muted);
       font-size: 0.92rem;
       line-height: 1.55;
-      margin-bottom: 1.75rem;
+      margin-bottom: 1.5rem;
     }
     .info-box {
       background: #f8fafc;
       border: 1px solid var(--border);
       border-radius: 18px;
       padding: 1.15rem 1.1rem;
-      margin-bottom: 1.5rem;
       text-align: left;
     }
     .info-row {
@@ -126,11 +125,6 @@
       gap: 0.75rem;
       font-size: 0.85rem;
       color: #334155;
-    }
-    .info-row:not(:last-child) {
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px dashed #e2e8f0;
     }
     .info-icon {
       width: 18px;
@@ -142,20 +136,6 @@
     .info-label {
       font-weight: 700;
       color: var(--text);
-    }
-    .footer-admin {
-      margin-top: 1.5rem;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
-    .footer-admin a {
-      color: #475569;
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.15s;
-    }
-    .footer-admin a:hover {
-      color: #d97706;
     }
   </style>
 </head>
@@ -176,21 +156,11 @@
     <div class="restaurant-name" id="maintRestName">Gerai TakCakap</div>
 
     <p class="desc">
-      We are currently performing scheduled maintenance to upgrade our system and improve your dining experience. We will be back online shortly!
+      We are currently performing scheduled maintenance to upgrade our system. We will be back online shortly!
     </p>
 
     <div class="info-box">
       <div class="info-row">
-        <svg class="info-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        <div>
-          <div class="info-label">Daily Operating Hours</div>
-          <div id="maintOpHours" style="color:#64748b; font-size:0.82rem; margin-top:0.15rem;">08:00 - 17:00</div>
-        </div>
-      </div>
-      <div class="info-row" id="maintCashierRow">
         <svg class="info-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
           <circle cx="9" cy="7" r="4"></circle>
@@ -203,10 +173,6 @@
         </div>
       </div>
     </div>
-
-    <div class="footer-admin">
-      <a href="/login?next=/admin">Admin Dashboard &rarr;</a>
-    </div>
   </div>
 
   <script>
@@ -217,9 +183,6 @@
         const data = await res.json();
         if (data.restaurant_name) {
           document.getElementById("maintRestName").textContent = data.restaurant_name;
-        }
-        if (data.operation_hours && data.operation_hours.text) {
-          document.getElementById("maintOpHours").textContent = data.operation_hours.text;
         }
       } catch (e) {}
     }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Coming Soon - AFRC Smart Cashier</title>
+  <title>Cooming Soon - AFRC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -33,7 +33,7 @@
     .coming-card {
       background: var(--card-bg);
       border-radius: 28px;
-      padding: 2.5rem 1.75rem 2rem;
+      padding: 3rem 2rem 2.5rem;
       box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
       border: 1px solid var(--border);
       text-align: center;
@@ -47,8 +47,8 @@
     }
     .icon-badge {
       position: relative;
-      width: 80px;
-      height: 80px;
+      width: 84px;
+      height: 84px;
       margin: 0 auto 1.5rem;
       background: var(--orange-light);
       color: var(--orange);
@@ -59,103 +59,33 @@
       box-shadow: 0 0 0 12px var(--orange-border);
     }
     .icon-badge svg {
-      width: 38px;
-      height: 38px;
+      width: 40px;
+      height: 40px;
       stroke: currentColor;
       stroke-width: 2.2;
       stroke-linecap: round;
       stroke-linejoin: round;
       fill: none;
     }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      color: #1d4ed8;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding: 0.35rem 0.9rem;
-      border-radius: 9999px;
-      margin-bottom: 0.85rem;
-    }
-    .pill-dot {
-      width: 6px;
-      height: 6px;
-      background: #2563eb;
-      border-radius: 50%;
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.85rem;
       font-weight: 800;
-      letter-spacing: -0.025em;
+      letter-spacing: -0.03em;
       color: var(--text);
       margin-bottom: 0.5rem;
     }
     .restaurant-name {
-      font-size: 1.05rem;
+      font-size: 1.08rem;
       font-weight: 700;
       color: var(--orange);
-      margin-bottom: 0.85rem;
+      margin-bottom: 1rem;
     }
     .desc {
       color: var(--text-muted);
-      font-size: 0.92rem;
-      line-height: 1.55;
-      margin-bottom: 1.75rem;
-    }
-    .info-box {
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 1.15rem 1.1rem;
-      margin-bottom: 1.5rem;
-      text-align: left;
-    }
-    .info-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      font-size: 0.85rem;
-      color: #334155;
-    }
-    .info-row:not(:last-child) {
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px dashed #e2e8f0;
-    }
-    .info-icon {
-      width: 18px;
-      height: 18px;
-      color: #64748b;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-    .info-label {
-      font-weight: 700;
-      color: var(--text);
-    }
-    .footer-admin {
-      margin-top: 1.5rem;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
-    .footer-admin a {
-      color: #475569;
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.15s;
-    }
-    .footer-admin a:hover {
-      color: var(--orange);
+      font-size: 0.98rem;
+      line-height: 1.6;
+      margin: 0 auto;
+      max-width: 340px;
     }
   </style>
 </head>
@@ -166,45 +96,13 @@
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
       </svg>
     </div>
-    
-    <div class="pill">
-      <span class="pill-dot"></span>
-      <span>Coming Soon</span>
-    </div>
 
-    <h1 id="comingTitle">We're Launching Soon!</h1>
+    <h1>Cooming Soon</h1>
     <div class="restaurant-name" id="comingRestName">Gerai TakCakap</div>
 
-    <p class="desc" id="comingDesc">
-      Our smart AI Food Recognition Cashier is currently being prepared for service. We look forward to serving you very soon!
+    <p class="desc">
+      This E-cashier self service feature is coming soon, stay tuned.
     </p>
-
-    <div class="info-box">
-      <div class="info-row">
-        <svg class="info-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        <div>
-          <div class="info-label">Operating Hours</div>
-          <div id="comingOpHours" style="color:#64748b; font-size:0.82rem; margin-top:0.15rem;">08:00 - 17:00</div>
-        </div>
-      </div>
-      <div class="info-row" id="comingAddrRow">
-        <svg class="info-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-          <circle cx="12" cy="10" r="3"></circle>
-        </svg>
-        <div>
-          <div class="info-label">Location</div>
-          <div id="comingAddr" style="color:#64748b; font-size:0.82rem; margin-top:0.15rem;">TakCakap Nasi Campur, Penang, Malaysia</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer-admin">
-      <a href="/login?next=/admin">Admin Dashboard &rarr;</a>
-    </div>
   </div>
 
   <script>
@@ -215,12 +113,6 @@
         const data = await res.json();
         if (data.restaurant_name) {
           document.getElementById("comingRestName").textContent = data.restaurant_name;
-        }
-        if (data.restaurant_address) {
-          document.getElementById("comingAddr").textContent = data.restaurant_address;
-        }
-        if (data.operation_hours && data.operation_hours.text) {
-          document.getElementById("comingOpHours").textContent = data.operation_hours.text;
         }
       } catch (e) {}
     }
