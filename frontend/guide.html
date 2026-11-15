@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panduan Penggunaan | User Guide - PRISM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html {
+  overflow-x: hidden;
+  width: 100%;
+  background: #f1f5f9;
+}
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: #f1f5f9;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: hidden;
+}
+.page-container {
+  width: 100%;
+  max-width: 680px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3.5rem;
+  background: #f8fafc;
+  box-shadow: 0 0 40px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.back-link:hover {
+  color: #ff5e36;
+  border-color: #ff5e36;
+  background: #fff5f2;
+}
+.back-link svg {
+  width: 16px;
+  height: 16px;
+}
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.lang-btn {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.lang-btn.active {
+  background: #ff5e36;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(255, 94, 54, 0.35);
+}
+.content-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.6rem 1.35rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.05);
+  margin-bottom: 1.25rem;
+}
+.page-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.35rem;
+  line-height: 1.25;
+}
+.legal-header-info {
+  margin: 0.35rem 0 1.15rem;
+  line-height: 1.5;
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 400;
+}
+.legal-header-info .header-rest-name,
+.legal-header-info .header-comp-name,
+.legal-header-info .header-comp-reg {
+  font-size: 0.88rem;
+  font-weight: 400;
+  color: #475569;
+}
+.page-intro {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #334155;
+  margin-bottom: 1.35rem;
+}
+
+/* Steps list */
+.step-item {
+  position: relative;
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+.step-item:last-child {
+  margin-bottom: 0.5rem;
+}
+.step-num-badge {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #ff5e36;
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(255, 94, 54, 0.35);
+}
+.step-body {
+  flex: 1;
+}
+.step-title {
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+  letter-spacing: -0.01em;
+}
+.step-desc {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #334155;
+  margin-bottom: 0.85rem;
+}
+
+/* Photo angle guide (Betul vs Salah) */
+.angle-guide-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  margin: 0.95rem 0 0.5rem;
+}
+@media (max-width: 520px) {
+  .angle-guide-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.angle-card {
+  border-radius: 14px;
+  padding: 1rem 0.9rem;
+  border: 1.5px solid;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease;
+}
+.angle-card.correct {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.angle-card.wrong {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+.angle-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+  margin-bottom: 0.65rem;
+  align-self: flex-start;
+}
+.angle-badge.correct {
+  background: #16a34a;
+  color: #ffffff;
+}
+.angle-badge.wrong {
+  background: #dc2626;
+  color: #ffffff;
+}
+.angle-badge svg {
+  width: 14px;
+  height: 14px;
+}
+.angle-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+}
+.angle-card-desc {
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: #475569;
+}
+.angle-vis {
+  margin: 0.7rem 0 0.4rem;
+  height: 72px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px dashed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.angle-card.correct .angle-vis {
+  border-color: #86efac;
+}
+.angle-card.wrong .angle-vis {
+  border-color: #fca5a5;
+}
+
+/* Payment badges */
+.payment-methods-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+.pay-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.pay-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff5e36;
+}
+
+/* Poster preview card */
+.poster-preview-card {
+  text-align: center;
+  margin-top: 1rem;
+}
+.poster-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Action button */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #ff5e36;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.85rem 1.5rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 14px rgba(255, 94, 54, 0.35);
+  width: 100%;
+}
+.btn-primary:hover {
+  background: #e04823;
+  transform: translateY(-1px);
+}
+
+.help-block {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #475569;
+}
+.help-block strong {
+  color: #0f172a;
+}
+
+.quick-links-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.7;
+}
+.quick-links-footer .footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin-bottom: 0.65rem;
+}
+.quick-links-footer .footer-link {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+.quick-links-footer .footer-link:hover {
+  color: #ff5e36;
+  text-decoration: underline;
+}
+.quick-links-footer .dot {
+  color: #cbd5e1;
+  font-size: 0.6rem;
+}
+.quick-links-footer .footer-brand {
+  font-size: 0.68rem;
+  color: #94a3b8;
+}
+</style>
+</head>
+<body>
+<div class="page-container">
+  <nav class="top-nav">
+    <a href="/" class="back-link">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+      <span data-lang="bm">Pengimbas</span>
+      <span data-lang="en" style="display:none;">Scanner</span>
+    </a>
+    <div class="lang-toggle">
+      <button type="button" class="lang-btn active" id="lang-bm" onclick="setLanguage('bm')">BM</button>
+      <button type="button" class="lang-btn" id="lang-en" onclick="setLanguage('en')">EN</button>
+    </div>
+  </nav>
+
+  <main class="content-card">
+    <h1 class="page-title">
+      <span data-lang="bm">Panduan Penggunaan</span>
+      <span data-lang="en" style="display:none;">User Guide</span>
+    </h1>
+
+    <div class="legal-header-info">
+      <div class="dyn-restaurant-name header-rest-name">Gerai TakCakap</div>
+      <div class="dyn-company-name header-comp-name">De Warisan Ibunda Enterprise</div>
+      <div class="dyn-business-reg header-comp-reg">10807978777</div>
+    </div>
+
+    <p class="page-intro">
+      <span data-lang="bm">
+        Sistem e-Cashier PRISM menggunakan teknologi kecerdasan buatan (AI) untuk mengimbas makanan anda dan menjana bil bayaran secara automatik. Ikuti 3 langkah mudah di bawah untuk memastikan pengesanan lauk tepat dan pantas.
+      </span>
+      <span data-lang="en" style="display:none;">
+        The PRISM e-Cashier system uses artificial intelligence (AI) to scan your food plate and calculate your bill automatically. Follow these 3 simple steps below for accurate and instant dish detection.
+      </span>
+    </p>
+
+    <!-- STEP 1 -->
+    <div class="step-item">
+      <div class="step-num-badge">1</div>
+      <div class="step-body">
+        <h2 class="step-title">
+          <span data-lang="bm">Pilih Lauk Yang Anda Mahu</span>
+          <span data-lang="en" style="display:none;">Select Your Desired Dishes</span>
+        </h2>
+        <p class="step-desc">
+          <span data-lang="bm">
+            Ambil nasi dan susun lauk-pauk pilihan anda. Pastikan setiap jenis lauk diletakkan secara jelas dan tidak bertindih sepenuhnya sebelum mengambil foto.
+          </span>
+          <span data-lang="en" style="display:none;">
+            Serve your rice and select your dishes. Ensure every dish and portion is placed clearly without overlapping before taking the photo.
+          </span>
+        </p>
+
+        <!-- BETUL VS SALAH -->
+        <div class="angle-guide-grid">
+          <!-- Betul -->
+          <div class="angle-card correct">
+            <span class="angle-badge correct">
+              <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+              <span data-lang="bm">Betul! (dari atas)</span>
+              <span data-lang="en" style="display:none;">Correct! (top-down)</span>
+            </span>
+            <div class="angle-vis">
+              <svg width="150" height="54" viewBox="0 0 150 54" fill="none">
+                <!-- Phone overhead 90 deg -->
+                <rect x="52" y="4" width="46" height="20" rx="4" fill="#0f172a" stroke="#16a34a" stroke-width="2"/>
+                <circle cx="75" cy="14" r="3" fill="#86efac"/>
+                <!-- Ray cone -->
+                <path d="M56 24L38 46M94 24L112 46" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="3 2"/>
+                <!-- Plate -->
+                <ellipse cx="75" cy="46" rx="42" ry="7" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+                <circle cx="63" cy="46" r="3" fill="#ea580c"/>
+                <circle cx="75" cy="45" r="3.5" fill="#ca8a04"/>
+                <circle cx="87" cy="46" r="3" fill="#15803d"/>
+              </svg>
+            </div>
+            <div class="angle-card-title">
+              <span data-lang="bm">Sudut 90° Dari Atas</span>
+              <span data-lang="en" style="display:none;">90° Top-Down Angle</span>
+            </div>
+            <p class="angle-card-desc">
+              <span data-lang="bm">
+                Pegang telefon secara mendatar terus di atas pinggan supaya keseluruhan pinggan dan semua lauk kelihatan dalam skrin.
+              </span>
+              <span data-lang="en" style="display:none;">
+                Hold your phone flat directly above the plate so the whole plate and every dish is visible on screen.
+              </span>
+            </p>
+          </div>
+
+          <!-- Salah -->
+          <div class="angle-card wrong">
+            <span class="angle-badge wrong">
+              <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+              <span data-lang="bm">Salah! (dari sisi)</span>
+              <span data-lang="en" style="display:none;">Wrong! (from side)</span>
+            </span>
+            <div class="angle-vis">
+              <svg width="150" height="54" viewBox="0 0 150 54" fill="none">
+                <!-- Phone tilted side -->
+                <rect x="96" y="10" width="42" height="18" rx="4" transform="rotate(-25 96 10)" fill="#0f172a" stroke="#dc2626" stroke-width="2"/>
+                <!-- Ray cone angled -->
+                <path d="M92 24L48 45M120 38L80 48" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="3 2"/>
+                <!-- Plate -->
+                <ellipse cx="58" cy="46" rx="38" ry="6" fill="#fee2e2" stroke="#dc2626" stroke-width="2"/>
+                <circle cx="48" cy="46" r="3" fill="#991b1b"/>
+              </svg>
+            </div>
+            <div class="angle-card-title">
+              <span data-lang="bm">Sudut Condong / Sisi</span>
+              <span data-lang="en" style="display:none;">Tilted / Side Angle</span>
+            </div>
+            <p class="angle-card-desc">
+              <span data-lang="bm">
+                Mengambil foto dari tepi atau sudut rendah menyebabkan lauk di bahagian belakang terlindung dan tidak dapat dikesan oleh AI.
+              </span>
+              <span data-lang="en" style="display:none;">
+                Capturing from the side or a low angle hides dishes placed at the back, preventing AI from detecting them.
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step-item">
+      <div class="step-num-badge">2</div>
+      <div class="step-body">
+        <h2 class="step-title">
+          <span data-lang="bm">Tap NFC Atau Imbas QR Di Meja</span>
+          <span data-lang="en" style="display:none;">Tap NFC Or Scan QR At Table</span>
+        </h2>
+        <p class="step-desc">
+          <span data-lang="bm">
+            Sentuhkan (tap) telefon anda pada tag NFC di meja, atau imbas kod QR menggunakan kamera telefon anda. Sistem pengimbas e-Cashier akan terbuka secara automatik tanpa perlu memuat turun aplikasi.
+          </span>
+          <span data-lang="en" style="display:none;">
+            Tap your smartphone against the table NFC tag, or scan the QR code with your camera. The e-Cashier web scanner opens automatically without any app download.
+          </span>
+        </p>
+        <p class="step-desc">
+          <span data-lang="bm">
+            Pastikan kamera telefon diaktifkan, halakan kamera terus ke pinggan anda mengikut panduan sudut di atas, kemudian tekan butang <strong>"Capture Plate"</strong>. Sistem AI akan mengecam setiap jenis lauk dan menjana bil anda secara automatik dalam masa beberapa saat.
+          </span>
+          <span data-lang="en" style="display:none;">
+            With your camera ready, frame your plate following the top-down guide above, then tap <strong>"Capture Plate"</strong>. The AI model detects each food portion and calculates your bill automatically in seconds.
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step-item">
+      <div class="step-num-badge">3</div>
+      <div class="step-body">
+        <h2 class="step-title">
+          <span data-lang="bm">Buat Pembayaran</span>
+          <span data-lang="en" style="display:none;">Make Payment</span>
+        </h2>
+        <p class="step-desc">
+          <span data-lang="bm">
+            Semak senarai lauk dan jumlah bil anda pada skrin. Tekan butang bayar untuk memilih kaedah pembayaran tanpa tunai pilihan anda. Setelah bayaran berjaya disahkan, resit digital akan dipaparkan.
+          </span>
+          <span data-lang="en" style="display:none;">
+            Review your dish breakdown and total bill on screen. Proceed to pay using your preferred cashless payment method. Once confirmed, your digital payment receipt will be displayed.
+          </span>
+        </p>
+
+        <!-- Payment methods list -->
+        <div style="margin-top:0.8rem;">
+          <div style="font-size:0.82rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.45rem;">
+            <span data-lang="bm">Kaedah Pembayaran Diterima</span>
+            <span data-lang="en" style="display:none;">Accepted Payment Methods</span>
+          </div>
+          <div class="payment-methods-grid">
+            <span class="pay-pill"><span class="pay-pill-dot"></span>Touch &apos;n Go eWallet</span>
+            <span class="pay-pill"><span class="pay-pill-dot"></span>GrabPay</span>
+            <span class="pay-pill"><span class="pay-pill-dot"></span>Boost</span>
+            <span class="pay-pill"><span class="pay-pill-dot"></span>DuitNow QR</span>
+            <span class="pay-pill"><span class="pay-pill-dot"></span>Online Banking (FPX)</span>
+            <span class="pay-pill"><span class="pay-pill-dot"></span>Visa &amp; Mastercard</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHYSICAL POSTER REFERENCE -->
+    <div class="poster-preview-card">
+      <div style="font-size:0.88rem; font-weight:700; color:#0f172a; margin-bottom:0.5rem; text-align:left;">
+        <span data-lang="bm">Rujukan Poster Meja Fizikal</span>
+        <span data-lang="en" style="display:none;">Physical Table Poster Reference</span>
+      </div>
+      <img src="/static/guide-poster.jpg" alt="Poster Panduan Imbas Pinggan & Bayar" class="poster-img" loading="lazy">
+    </div>
+
+    <!-- NEED HELP -->
+    <div class="help-block">
+      <div style="font-weight:700; color:#0f172a; margin-bottom:0.35rem;">
+        <span data-lang="bm">Perlukan Bantuan?</span>
+        <span data-lang="en" style="display:none;">Need Assistance?</span>
+      </div>
+      <p>
+        <span data-lang="bm">
+          Jika kamera telefon anda tidak dapat diaktifkan, bil memerlukan pembetulan, atau anda ingin membuat pembayaran secara tunai, sila terus ke <strong>kaunter fizikal Gerai TakCakap</strong>. Kakitangan kami sentiasa sedia membantu anda.
+        </span>
+        <span data-lang="en" style="display:none;">
+          If your device camera cannot open, your bill needs adjustment, or you prefer to pay with cash, please proceed directly to the <strong>physical cashier counter at Gerai TakCakap</strong>. Our staff is always ready to assist you.
+        </span>
+      </p>
+    </div>
+
+    <div style="margin-top:1.5rem;">
+      <a href="/" class="btn-primary">
+        <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+        <span data-lang="bm">Buka Pengimbas Pinggan</span>
+        <span data-lang="en" style="display:none;">Open Plate Scanner</span>
+      </a>
+    </div>
+  </main>
+
+  <footer class="quick-links-footer">
+    <div class="footer-links">
+      <a href="/privacy" class="footer-link"><span data-lang="bm">Dasar Privasi</span><span data-lang="en" style="display:none;">Privacy Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/terms" class="footer-link"><span data-lang="bm">Terma &amp; Syarat</span><span data-lang="en" style="display:none;">Terms &amp; Conditions</span></a>
+      <span class="dot">•</span>
+      <a href="/payment-policy" class="footer-link"><span data-lang="bm">Polisi Pembayaran</span><span data-lang="en" style="display:none;">Payment Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/contact" class="footer-link"><span data-lang="bm">Hubungi Kami</span><span data-lang="en" style="display:none;">Contact Us</span></a>
+      <span class="dot">•</span>
+      <a href="/about" class="footer-link"><span data-lang="bm">Tentang Kami</span><span data-lang="en" style="display:none;">About Us</span></a>
+      <span class="dot">•</span>
+      <a href="/pricelist" class="footer-link"><span data-lang="bm">Senarai Harga</span><span data-lang="en" style="display:none;">Menu Prices</span></a>
+      <span class="dot">•</span>
+      <a href="/guide" class="footer-link"><span data-lang="bm">Panduan</span><span data-lang="en" style="display:none;">How to Use</span></a>
+    </div>
+    <div class="footer-brand">
+      &copy; 2026 <span class="dyn-restaurant-name">Gerai TakCakap</span> &bull; <span class="dyn-company-name">De Warisan Ibunda Enterprise</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+function setLanguage(lang) {
+  try { localStorage.setItem('prism_lang', lang); } catch (e) {}
+  document.querySelectorAll('[data-lang]').forEach(el => {
+    if (el.getAttribute('data-lang') === lang) {
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  });
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('lang-' + lang);
+  if (btn) btn.classList.add('active');
+  document.documentElement.lang = (lang === 'bm') ? 'ms' : 'en';
+}
+
+function initProfile() {
+  fetch('/api/public-profile')
+    .then(r => r.json())
+    .then(data => {
+      if (!data) return;
+      const rName = data.restaurant_name || 'Gerai TakCakap';
+      const cName = data.company_name || 'De Warisan Ibunda Enterprise';
+      const bReg = data.business_reg_number || '';
+
+      document.querySelectorAll('.dyn-restaurant-name').forEach(el => el.textContent = rName);
+      document.querySelectorAll('.dyn-company-name').forEach(el => el.textContent = cName);
+      document.querySelectorAll('.dyn-business-reg').forEach(el => {
+        if (bReg) {
+          el.textContent = bReg;
+          el.style.display = '';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+    })
+    .catch(() => {});
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  let lang = 'bm';
+  try {
+    const saved = localStorage.getItem('prism_lang');
+    if (saved === 'en' || saved === 'bm') lang = saved;
+  } catch (e) {}
+  setLanguage(lang);
+  initProfile();
+});
+</script>
+</body>
+</html>

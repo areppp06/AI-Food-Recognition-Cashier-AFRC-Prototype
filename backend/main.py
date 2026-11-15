@@ -786,6 +786,12 @@ async def about_page():
 async def pricelist_page():
     return FileResponse("frontend/pricelist.html", headers=NO_CACHE_HEADERS)
 
+@app.get("/guide")
+@app.get("/how-to-use")
+@app.get("/learn")
+async def guide_page():
+    return FileResponse("frontend/guide.html", headers=NO_CACHE_HEADERS)
+
 @app.get("/api/public-profile")
 def get_public_profile():
     return _restaurant_profile()
