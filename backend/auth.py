@@ -1,4 +1,6 @@
 from pathlib import Path
+import os
+import re
 import bcrypt
 import secrets
 import sys
@@ -135,18 +137,30 @@ def print_setup_qr_cli(base_url: str = ""):
         token = get_or_create_setup_token()
         if not base_url:
             domain = ""
-            caddy_file = Path("/etc/caddy/Caddyfile")
-            if caddy_file.is_file():
+            env_file = ENV_DIR / ".env"
+            if env_file.is_file():
                 try:
-                    for line in caddy_file.read_text().splitlines():
-                        line = line.strip()
-                        if line and not line.startswith("#") and "{" in line:
-                            d = line.split("{")[0].strip()
-                            if not d.startswith(":") and not d.startswith("http"):
-                                domain = d
-                            break
+                    for el in env_file.read_text(encoding="utf-8").splitlines():
+                        if el.startswith("DOMAIN="):
+                            raw_d = el.split("=", 1)[1].strip()
+                            if raw_d:
+                                domain = re.split(r"[,;\s]+", raw_d)[0].strip()
+                                break
                 except Exception:
                     pass
+            if not domain:
+                caddy_file = Path("/etc/caddy/Caddyfile")
+                if caddy_file.is_file():
+                    try:
+                        for line in caddy_file.read_text().splitlines():
+                            line = line.strip()
+                            if line and not line.startswith("#") and "{" in line:
+                                d = line.split("{")[0].strip()
+                                if not d.startswith(":") and not d.startswith("http"):
+                                    domain = re.split(r"[,;\s]+", d)[0].strip()
+                                break
+                    except Exception:
+                        pass
             if domain:
                 base_url = f"https://{domain}"
             else:

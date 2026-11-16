@@ -389,8 +389,10 @@ SETUP_CADDY_DOMAIN=""
 if [[ -f "$MAIN_ENV" ]]; then
   ENV_HOST="$(grep -E '^[[:space:]]*HOST=' "$MAIN_ENV" 2>/dev/null | cut -d= -f2- | tr -d ' "\r' || true)"
   ENV_PORT="$(grep -E '^[[:space:]]*PORT=' "$MAIN_ENV" 2>/dev/null | cut -d= -f2- | tr -d ' "\r' || true)"
+  ENV_DOMAIN="$(grep -E '^[[:space:]]*DOMAIN=' "$MAIN_ENV" 2>/dev/null | cut -d= -f2- | tr -d '"\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' || true)"
   [[ -n "$ENV_HOST" ]] && HOST="$ENV_HOST"
   [[ -n "$ENV_PORT" ]] && PORT="$ENV_PORT"
+  [[ -n "$ENV_DOMAIN" ]] && SETUP_CADDY_DOMAIN="$ENV_DOMAIN"
 fi
 
 sync_env_port_and_host() {
@@ -407,10 +409,81 @@ sync_env_port_and_host() {
     else
       echo "HOST=${HOST}" >> "$MAIN_ENV"
     fi
+    if [[ -n "${SETUP_CADDY_DOMAIN:-}" ]]; then
+      if grep -q '^[[:space:]]*DOMAIN=' "$MAIN_ENV" 2>/dev/null; then
+        sed -i.bak -e "s|^[[:space:]]*DOMAIN=.*|DOMAIN=${SETUP_CADDY_DOMAIN}|" "$MAIN_ENV" 2>/dev/null || true
+        rm -f "${MAIN_ENV}.bak" 2>/dev/null || true
+      else
+        echo "DOMAIN=${SETUP_CADDY_DOMAIN}" >> "$MAIN_ENV"
+      fi
+    fi
   fi
 }
 
-if [[ -t 0 ]]; then
+apply_caddy_config() {
+  local domains="$1"
+  local target_port="$2"
+
+  if ! command -v caddy >/dev/null 2>&1; then
+    echo "[*] Installing Caddy web server..."
+    if command -v apt-get >/dev/null 2>&1; then
+      $SUDO apt-get update -y >/dev/null 2>&1 || true
+      $SUDO apt-get install -y caddy >/dev/null 2>&1 || {
+        $SUDO apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1 || true
+        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | $SUDO gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg --yes 2>/dev/null || true
+        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | $SUDO tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null 2>&1 || true
+        $SUDO apt-get update -y >/dev/null 2>&1 || true
+        $SUDO apt-get install -y caddy >/dev/null 2>&1 || true
+      }
+    elif command -v dnf >/dev/null 2>&1; then
+      $SUDO dnf install -y 'dnf-command(copr)' 2>/dev/null || true
+      $SUDO dnf copr enable -y @caddy/caddy 2>/dev/null || true
+      $SUDO dnf install -y caddy 2>/dev/null || true
+    fi
+  fi
+
+  if command -v caddy >/dev/null 2>&1; then
+    $SUDO mkdir -p /etc/caddy
+    if [[ -f /etc/caddy/Caddyfile ]]; then
+      $SUDO cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak 2>/dev/null || true
+    fi
+    $SUDO tee /etc/caddy/Caddyfile >/dev/null <<EOF
+${domains} {
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+        -Server
+    }
+    request_body {
+        max_size 2MB
+    }
+    reverse_proxy 127.0.0.1:${target_port} {
+        header_up -CF-Connecting-IP
+        trusted_proxies 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+    }
+}
+EOF
+    if command -v systemctl >/dev/null 2>&1; then
+      $SUDO systemctl enable caddy >/dev/null 2>&1 || true
+      $SUDO systemctl restart caddy 2>/dev/null || $SUDO systemctl reload caddy 2>/dev/null || true
+    fi
+    echo "[✓] Caddy configured and SSL active for https://${domains} -> 127.0.0.1:${target_port}"
+  else
+    echo "[!] Caddy could not be installed automatically. Binding to 0.0.0.0:${target_port}"
+    HOST="0.0.0.0"
+    sync_env_port_and_host
+  fi
+}
+
+if [[ -n "${SETUP_CADDY_DOMAIN:-}" && "$FORCE_CONFIGURE" == "false" ]]; then
+  echo "[✓] Found configured domain in environment: ${SETUP_CADDY_DOMAIN}"
+  HOST="127.0.0.1"
+  PORT="${PORT:-8000}"
+  sync_env_port_and_host
+  apply_caddy_config "$SETUP_CADDY_DOMAIN" "$PORT"
+elif [[ -t 0 ]]; then
   if [[ -f "/etc/caddy/Caddyfile" && "$FORCE_CONFIGURE" == "false" ]] && grep -q "reverse_proxy" /etc/caddy/Caddyfile 2>/dev/null; then
     EXISTING_DOMAIN="$(grep -E '^[a-zA-Z0-9.-]+\s*\{' /etc/caddy/Caddyfile 2>/dev/null | head -n1 | sed -e 's/[{[:space:]]//g' || true)"
     echo "[✓] Found existing Caddy configuration in /etc/caddy/Caddyfile${EXISTING_DOMAIN:+ ($EXISTING_DOMAIN)}"
@@ -431,7 +504,7 @@ if [[ -t 0 ]]; then
 
     if [[ "$setup_caddy" == "y" || "$setup_caddy" == "yes" ]]; then
       echo ""
-      read -r -p "  ▸ Enter your domain name (e.g. e-cashier.takcakap.com): " domain_name </dev/tty || domain_name=""
+      read -r -p "  ▸ Enter your domain name (e.g. takcakap.com or takcakap.com, demo.takcakap.com): " domain_name </dev/tty || domain_name=""
       domain_name="$(echo "$domain_name" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 
       if [[ -z "$domain_name" ]]; then
@@ -451,58 +524,7 @@ if [[ -t 0 ]]; then
         PORT="8000"
         HOST="127.0.0.1"
         sync_env_port_and_host
-
-        if ! command -v caddy >/dev/null 2>&1; then
-          echo "[*] Installing Caddy web server..."
-          if command -v apt-get >/dev/null 2>&1; then
-            $SUDO apt-get update -y
-            $SUDO apt-get install -y caddy || {
-              $SUDO apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
-              curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | $SUDO gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg --yes 2>/dev/null || true
-              curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | $SUDO tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
-              $SUDO apt-get update -y
-              $SUDO apt-get install -y caddy
-            }
-          elif command -v dnf >/dev/null 2>&1; then
-            $SUDO dnf install -y 'dnf-command(copr)' 2>/dev/null || true
-            $SUDO dnf copr enable -y @caddy/caddy 2>/dev/null || true
-            $SUDO dnf install -y caddy
-          fi
-        fi
-
-        if command -v caddy >/dev/null 2>&1; then
-          $SUDO mkdir -p /etc/caddy
-          if [[ -f /etc/caddy/Caddyfile ]]; then
-            $SUDO cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak 2>/dev/null || true
-          fi
-          $SUDO tee /etc/caddy/Caddyfile >/dev/null <<EOF
-${SETUP_CADDY_DOMAIN} {
-    header {
-        X-Frame-Options "SAMEORIGIN"
-        X-Content-Type-Options "nosniff"
-        Referrer-Policy "strict-origin-when-cross-origin"
-        X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
-        -Server
-    }
-    request_body {
-        max_size 2MB
-    }
-    reverse_proxy 127.0.0.1:${PORT} {
-        header_up -CF-Connecting-IP
-        trusted_proxies 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
-    }
-}
-EOF
-          if command -v systemctl >/dev/null 2>&1; then
-            $SUDO systemctl enable caddy >/dev/null 2>&1 || true
-            $SUDO systemctl restart caddy 2>/dev/null || $SUDO systemctl reload caddy 2>/dev/null || true
-          fi
-          echo "[✓] Caddy configured for https://${SETUP_CADDY_DOMAIN} -> 127.0.0.1:${PORT}"
-        else
-          echo "[!] Caddy could not be installed automatically. Binding to 0.0.0.0:${PORT}"
-          HOST="0.0.0.0"
-          sync_env_port_and_host
-        fi
+        apply_caddy_config "$SETUP_CADDY_DOMAIN" "$PORT"
       fi
     else
       echo ""

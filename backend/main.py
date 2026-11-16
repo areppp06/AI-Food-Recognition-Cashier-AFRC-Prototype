@@ -12,6 +12,8 @@ import io
 import math
 import os
 import re
+import shutil
+import subprocess
 import uuid
 import json
 import hashlib
@@ -818,9 +820,58 @@ def _track_task(coro) -> asyncio.Task:
     task.add_done_callback(_BACKGROUND_TASKS.discard)
     return task
 
+def _sync_caddy_domain_sync() -> None:
+    raw_domain = os.getenv("DOMAIN", "").strip()
+    if not raw_domain:
+        return
+    caddy_file = Path("/etc/caddy/Caddyfile")
+    if not caddy_file.parent.exists():
+        return
+    caddy_bin = shutil.which("caddy")
+    if not caddy_bin:
+        return
+
+    domains = [d.strip() for d in re.split(r"[,;\s]+", raw_domain) if d.strip()]
+    if not domains:
+        return
+    domain_header = ", ".join(domains)
+    port = os.getenv("PORT", "8000").strip() or "8000"
+
+    expected_content = f"""{domain_header} {{
+    header {{
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+        -Server
+    }}
+    request_body {{
+        max_size 2MB
+    }}
+    reverse_proxy 127.0.0.1:{port} {{
+        header_up -CF-Connecting-IP
+        trusted_proxies 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+    }}
+}}
+"""
+    try:
+        current_content = caddy_file.read_text(encoding="utf-8") if caddy_file.exists() else ""
+        if current_content.strip() != expected_content.strip():
+            caddy_file.write_text(expected_content, encoding="utf-8")
+            subprocess.run(
+                ["caddy", "reload", "--config", str(caddy_file)],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+            )
+    except Exception:
+        pass
+
 @app.on_event("startup")
 async def startup():
     init_db()
+    await asyncio.to_thread(_sync_caddy_domain_sync)
     await asyncio.to_thread(_sync_legacy_scans_sync)
     await asyncio.to_thread(_run_stale_bills_cleanup_sync)
     _track_task(_sync_r2_objects_async(force=True))
