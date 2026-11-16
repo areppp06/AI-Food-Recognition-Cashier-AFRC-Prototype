@@ -158,7 +158,7 @@ def print_setup_qr_cli(base_url: str = ""):
                     pass
                 if pub_ip:
                     env_port = "8000"
-                    env_file = ROOT / "env" / ".env"
+                    env_file = ENV_DIR / ".env"
                     if env_file.is_file():
                         try:
                             for el in env_file.read_text(encoding="utf-8").splitlines():
