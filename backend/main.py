@@ -3271,7 +3271,7 @@ def refund_admin_bill(session_id: str, payload: dict, request: Request, db: Sess
             action="REFUND_ISSUED",
             details=(
                 f"Bill #{bill.bill_number or bill.id}: RM {total_refund:.2f} "
-                f"({', '.join(f'{i['quantity']}x {i['name']}' for i in refund_items_payload)})"
+                f"({', '.join(str(i['quantity']) + 'x ' + str(i['name']) for i in refund_items_payload)})"
                 + (f" [Curlec {curlec_refund_id}]" if curlec_refund_id else " [Manual]")
                 + f" by admin '{current_admin.username}'"
             ),
