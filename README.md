@@ -23,20 +23,19 @@
 - Frontend: Vanilla HTML/JS (camera via getUserMedia)
 - AI: xAI Grok, OpenRouter, OpenAI Vision, or Google Gemini (configurable via `env/.env`)
 
-## Quick Start / VPS Deployment (One-Command Setup)
+## Quick Start / VPS Deployment
 
-> 📖 **See [QUICKSTART.md](./QUICKSTART.md)** for the full step-by-step VPS deployment guide, environment variables reference table, `systemd` service setup, and HTTPS camera configuration.
+> 📖 **Recommended: Follow [QUICKSTART.md](./QUICKSTART.md)** for the step-by-step fresh VPS guide (Debian / Ubuntu), SSH Deploy Key setup, AI provider selection, and one-time admin setup URL.
 
-### 1. Install Prerequisites (Fresh Ubuntu/Debian VPS)
+### 1. One-Click Dependencies & Deploy Key (Fresh VPS)
 ```bash
-sudo apt update && sudo apt install -y git python3 python3-venv python3-pip
+apt update && apt install -y git && ssh-keygen -t ed25519 -C "vps-afrc-deploy" -f ~/.ssh/id_ed25519 -N "" && echo "" && echo "=== COPY YOUR DEPLOY KEY BELOW ===" && cat ~/.ssh/id_ed25519.pub
 ```
+Add the printed public key to **GitHub > Settings > Deploy keys** (read-only).
 
-### 2. Clone the Repository & Run the Installer
+### 2. Clone & Run Automated Installer
 ```bash
-git clone https://github.com/areppp06/AI-Food-Recognition-Cashier-AFRC-Prototype.git
-cd AI-Food-Recognition-Cashier-AFRC-Prototype
-bash install.sh
+cd /root && git clone git@github.com:areppp06/AI-Food-Recognition-Cashier-AFRC-Prototype.git AFRC && cd AFRC && bash install.sh
 ```
 
 What `bash install.sh` does automatically:
@@ -72,13 +71,15 @@ What `bash install.sh` does automatically:
 5. Open http://localhost:8000
 
 ### Default Credentials
-- Admin Password: Set during initial onboarding
+- Admin / Cashier PIN: `1234` (change immediately in admin panel)
 
 ## Endpoints
 - `/` - Customer camera + recognition
 - `/admin` - Menu & cashier management
+- `/cashier` - Verification screen
 - `/api/recognize` - POST image + menu filter
 - `/api/menu` - Daily menu CRUD
+- `/api/verify` - Cashier correction (PIN required)
 
 ## Project Structure
 ```
@@ -105,6 +106,7 @@ What `bash install.sh` does automatically:
 ├── frontend/
 │   ├── index.html       # Customer flow
 │   ├── admin.html
+│   ├── cashier.html
 │   ├── pay.html
 │   └── success.html
 ├── install.sh           # One-command interactive setup & launcher

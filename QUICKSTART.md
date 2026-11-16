@@ -1,199 +1,112 @@
-# AFRC Quickstart & VPS Deployment Guide
+# QUICKSTART GUIDE
+### AFRC (Ubuntu / Debian) — Fresh VPS Installation
 
-This guide walks you through setting up and deploying the **AI Food Recognition Cashier (AFRC)** on a fresh Linux VPS or local machine using the one-command installer (`install.sh`).
+> This quickstart guide is designed for a clean, fast installation on a brand new VPS (Ubuntu 22.04/24.04 or Debian 12/13).
 
 ---
 
-## 1. Prerequisites (Fresh Ubuntu / Debian VPS)
+## Pre-flight Checklist
 
-Connect to your VPS via SSH and install Git and Python 3 virtual environment tools:
-
+### 1. SSH into Your Server
 ```bash
-sudo apt update && sudo apt install -y git python3 python3-venv python3-pip
+ssh root@<YOUR_VPS_IP>
 ```
 
+### 2. Check Firewall in Your Cloud Provider's Console
+Ensure the following ports are open in your provider's security group / firewall settings:
+- **Port 443** (HTTPS for secure mobile camera access)
+- **Port 8000** (Default AFRC application port)
+- **Port 22** (SSH)
+- *(Optional)* **Port 80** (HTTP for SSL verification)
+
+### 3. Have Your Credentials Ready
+Have the following service credentials on hand before starting:
+- **AI API Key** (Choose at least one):
+  - **Google Gemini** (Recommended: Gemini 2.5 Flash)
+  - **OpenRouter**
+  - **xAI (Grok)**
+  - **OpenAI**
+- **Cloudflare Envs** *(Optional)*:
+  - Turnstile Sitekey & Secret Key
+  - R2 API Token & Account ID (for cloud plate image storage)
+- **Curlec Envs** *(Optional)*:
+  - Key ID, Key Secret, and Webhook Secret
+
 ---
 
-## 2. Clone & Run One-Command Setup
+## 5-Step Automated Setup
 
-Clone the repository and run `bash install.sh`:
-
+### Step 1: Update & Install Git
 ```bash
-git clone https://github.com/areppp06/AI-Food-Recognition-Cashier-AFRC-Prototype.git
-cd AI-Food-Recognition-Cashier-AFRC-Prototype
-bash install.sh
-```
-
-### What `bash install.sh` Does:
-1. **Interactive Environment Setup** (First Run Only):
-   - Checks if `env/.env`, `env/curlec.env`, and `env/rate-limit.env` exist.
-   - If missing, prompts you directly in the terminal for each configuration value.
-   - Press **Enter** to accept the default value shown in `[brackets]`, or type your own value and press **Enter**.
-   - Saves your settings into `env/.env`, `env/curlec.env`, and `env/rate-limit.env` with restricted permissions (`chmod 600`).
-2. **Python Virtual Environment**:
-   - Creates `./venv` if it doesn't exist and upgrades `pip`.
-   - Installs all required packages from `requirements.txt`.
-3. **Auto-Configures & Starts `systemd` Service**:
-   - Automatically creates `/etc/systemd/system/afrc.service`, enables it on boot, starts `uvicorn backend.main:app` in the background on `http://0.0.0.0:8000`, and prints the live service status.
-   - *(Use `bash install.sh --foreground` if you want to run `uvicorn` directly in your terminal instead of via `systemd`.)*
-
----
-
-## 3. Environment Variables Reference
-
-During the interactive setup, `install.sh` walks through the templates inside `env/examples/` and saves your live configs into `env/`:
-
-### `env/restaurant.env` (from `env/examples/restaurant.env.example`)
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `RESTAURANT_NAME` | `AFRC` | Restaurant / outlet name shown on payment checkout & receipt headers |
-| `COMPANY_NAME` | `AFRC Technologies Sdn. Bhd.` | Registered company name printed under restaurant name on receipts |
-| `COMPANY_PHONE` | `+60 12-345 6789` | Company customer support phone number on receipts |
-| `COMPANY_EMAIL` | `support@afrc.example.com` | Company customer support email on receipts |
-
-### `env/.env` (App & Server Settings)
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `HOST` | `0.0.0.0` | Server bind IP (`0.0.0.0` for public access, `127.0.0.1` when behind Caddy) |
-| `PORT` | `8000` | Local port for FastAPI/Uvicorn server |
-| `DATABASE_URL` | `sqlite:///./afrc.db` | SQLAlchemy database connection URL |
-
-### `env/AI_model.env` (AI Model & API Keys)
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `AI_PROVIDER` | `grok` | Active AI backend: `grok`, `openrouter`, `gemini`, `openai`, or `mock` |
-| `XAI_API_KEY` | `your-xai-key-here` | xAI Grok API key (if `AI_PROVIDER=grok`) |
-| `XAI_MODEL` | `grok-4.7` | xAI vision model name |
-| `OPENROUTER_API_KEY` | `your-openrouter-key-here` | OpenRouter API key (if `AI_PROVIDER=openrouter`) |
-| `OPENROUTER_MODEL` | `x-ai/grok-4` | OpenRouter vision model ID |
-| `OPENROUTER_SITE_URL` | `http://localhost:8000` | Site URL header sent to OpenRouter |
-| `OPENAI_API_KEY` | `sk-your-key-here` | OpenAI API key (if `AI_PROVIDER=openai`) |
-| `GEMINI_API_KEY` | `your-gemini-key-here` | Google Gemini API key (if `AI_PROVIDER=gemini`) |
-
-### `env/cloudflare.env` (Cloudflare R2 & Turnstile)
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `CLOUDFLARE_API_TOKEN` | `your-cloudflare-api-token` | Cloudflare API token (with **Workers R2 Storage: Edit** permission for R2 plate image storage) |
-| `CLOUDFLARE_ACCOUNT_ID` | `your-cloudflare-account-id` | Cloudflare account ID |
-| `R2_BUCKET_NAME` | `afrc-plates` | Cloudflare R2 bucket name for plate photos (auto-created in `APAC` on startup if missing) |
-| `TURNSTILE_SITEKEY` | `your-turnstile-sitekey` | Cloudflare Turnstile widget sitekey |
-| `TURNSTILE_SECRET` | `your-turnstile-secret` | Cloudflare Turnstile secret key for backend verification |
-| `TURNSTILE_HOSTNAMES` | `localhost,127.0.0.1` | Comma-separated allowed hostnames/IPs (add your VPS IP or domain here, e.g. `localhost,127.0.0.1,203.0.113.10`) |
-
-### `env/curlec.env` (Curlec / Razorpay Payment Gateway)
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `CURLEC_KEY_ID` | `your-curlec-key-id` | Curlec / Razorpay API Key ID |
-| `CURLEC_KEY_SECRET` | `your-curlec-key-secret` | Curlec / Razorpay API Key Secret |
-| `CURLEC_WEBHOOK_SECRET` | `your-curlec-webhook-secret` | Webhook secret used to verify `/api/curlec/webhook` events |
-
-### `env/rate-limit.env` (Scan Rate Limiting & Cooldown)
-
-> Changes saved to `env/rate-limit.env` (or `rate-limit.env`) take effect immediately on the next request without restarting the server. Active cooldowns and scan attempt windows are stored in SQLite and persist across crashes/restarts.
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `MAX_SCANS_PER_SESSION` | `5` | Max photo scans allowed per browser/bill session within `SCAN_WINDOW_MINUTES` |
-| `MAX_SCANS_PER_DEVICE` | `5` | Max photo scans allowed per device ID within `SCAN_WINDOW_MINUTES` |
-| `MAX_SCANS_PER_IP` | `6` | Max photo scans allowed per IP address within `SCAN_WINDOW_MINUTES` |
-| `SCAN_WINDOW_MINUTES` | `15` | Sliding time window (in minutes) before each scan attempt drops from the count |
-| `COOLDOWN_MINUTES` | `25` | Lockout duration (in minutes) once a session, device ID, IP, or retake limit is exceeded |
-| `MAX_RETAKES` | `4` | Max photo retakes allowed per bill (keep `MAX_SCANS_PER_SESSION` and `MAX_SCANS_PER_DEVICE` at least `MAX_RETAKES + 1`) |
-
----
-
-## 4. `install.sh` Options & Flags
-
-- **Re-configure environment variables interactively at any time:**
-  ```bash
-  bash install.sh --configure
-  ```
-  *(Your current values in `env/.env`, `env/curlec.env`, and `env/rate-limit.env` will be shown as the defaults in `[brackets]` so you only need to type the ones you want to change.)*
-
-- **Install dependencies & configure env without starting the server:**
-  ```bash
-  bash install.sh --setup-only
-  ```
-
-- **Run on a custom host or port:**
-  ```bash
-  HOST=127.0.0.1 PORT=8080 bash install.sh
-  ```
-
----
-
-## 5. Running in the Background on a VPS
-
-Once you have completed the initial interactive setup (`bash install.sh --setup-only`), you can keep the app running after closing SSH using either `nohup` or `systemd`.
-
-### Option A: Quick Background Run (`nohup`)
-```bash
-nohup bash install.sh > afrc.log 2>&1 &
-```
-- View live logs: `tail -f afrc.log`
-- Stop server: `pkill -f "uvicorn backend.main:app"`
-
-### Option B: Persistent `systemd` Service (Recommended for VPS)
-Create `/etc/systemd/system/afrc.service`:
-
-```ini
-[Unit]
-Description=AFRC FastAPI Server
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/root/AI-Food-Recognition-Cashier-AFRC-Prototype
-ExecStart=/bin/bash /root/AI-Food-Recognition-Cashier-AFRC-Prototype/install.sh
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-```
-*(Adjust `User` and `WorkingDirectory` if cloned under a non-root user.)*
-
-Enable and start the service:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now afrc
-sudo systemctl status afrc
+apt update && apt install -y git
 ```
 
 ---
 
-## 6. Enabling HTTPS for Camera Access (`getUserMedia`)
-
-Modern browsers require **HTTPS** (or `localhost`) to allow camera access (`navigator.mediaDevices.getUserMedia`). When accessing your VPS from a phone or tablet, put a reverse proxy with HTTPS in front of port `8000`.
-
-### Quickest HTTPS with Caddy
+### Step 2: Generate SSH Deploy Key
+Generate a fresh ed25519 deploy key and display the public key:
 ```bash
-sudo apt install -y caddy
+ssh-keygen -t ed25519 -C "vps-afrc-deploy" -f ~/.ssh/id_ed25519 -N "" && echo "" && cat ~/.ssh/id_ed25519.pub
 ```
-Replace `/etc/caddy/Caddyfile` with your domain name:
-```caddyfile
-your-domain.com {
-    reverse_proxy 127.0.0.1:8000
-}
-```
-Reload Caddy:
-```bash
-sudo systemctl reload caddy
-```
+Copy the printed output (starts with `ssh-ed25519 ...`).
 
 ---
 
-## 7. Updating on the VPS
+### Step 3: Add Deploy Key in GitHub
+1. Open your repository on GitHub:
+   👉 **`https://github.com/areppp06/AI-Food-Recognition-Cashier-AFRC-Prototype/settings/keys`**
+2. Click **"Add deploy key"**.
+3. **Title**: `Production VPS`
+4. **Key**: Paste the copied key from Step 2.
+5. **Allow write access**: **Leave unchecked** (Write Disabled).
+6. Click **"Add key"**.
 
-To pull new changes and restart cleanly:
+---
+
+### Step 4: Git Clone & Run Installer
+Clone directly to `/root/AFRC` and launch the installer:
 ```bash
-cd AI-Food-Recognition-Cashier-AFRC-Prototype
-git pull
-bash install.sh
+cd /root && git clone git@github.com:areppp06/AI-Food-Recognition-Cashier-AFRC-Prototype.git AFRC && cd AFRC && bash install.sh
+```
+*(If prompted with `Are you sure you want to continue connecting (yes/no/[fingerprint])?`, type `yes` and press Enter).*
+
+---
+
+### Step 5: Follow Interactive Installation & Key In Envs
+The installer handles Python, virtualenv, dependencies, database, and systemd service automatically. Follow the on-screen prompts:
+
+1. **Host & Port**: Press **Enter** to keep `0.0.0.0` and `8000`.
+2. **AI Provider**:
+   - Choose `[1] OpenRouter`, `[2] xAI (Grok)`, `[3] Google Gemini`, or `[4] OpenAI`.
+   - Paste the API key for your selected provider.
+3. **Other Envs**: Paste your Cloudflare / Curlec keys (or press **Enter** to keep defaults).
+4. **Caddy / SSL**:
+   - If using a domain for HTTPS on port 443, type `y` and enter your domain.
+   - If using direct IP access (`http://<IP>:8000`), press **Enter** (`n`).
+5. **First-Time Admin Setup**:
+   - Scan the terminal **QR Code** or open the printed setup URL:
+     ```text
+     http://<YOUR_VPS_IP>:8000/login?setup_token=...
+     ```
+   - Enter your initial **Admin Username** and **Password**. Done!
+
+---
+
+## Quick Reference Commands
+
+```bash
+# Check service status
+systemctl status afrc
+
+# Restart application
+systemctl restart afrc
+
+# View live application logs
+journalctl -u afrc -f
+
+# Re-run environment setup
+cd /root/AFRC && bash install.sh --configure
+
+# Pull latest code update
+cd /root/AFRC && git pull && systemctl restart afrc
 ```
