@@ -157,7 +157,18 @@ def print_setup_qr_cli(base_url: str = ""):
                 except Exception:
                     pass
                 if pub_ip:
-                    base_url = f"http://{pub_ip}"
+                    env_port = "8000"
+                    env_file = ROOT / "env" / ".env"
+                    if env_file.is_file():
+                        try:
+                            for el in env_file.read_text(encoding="utf-8").splitlines():
+                                if el.startswith("PORT="):
+                                    env_port = el.split("=")[1].strip()
+                                    break
+                        except Exception:
+                            pass
+                    port_suffix = f":{env_port}" if env_port and env_port != "80" else ""
+                    base_url = f"http://{pub_ip}{port_suffix}"
                 else:
                     base_url = "http://localhost:8000"
 
