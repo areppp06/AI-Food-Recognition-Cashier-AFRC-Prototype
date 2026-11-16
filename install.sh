@@ -58,22 +58,23 @@ configure_env_file() {
   fi
 
   if [[ -f "$target_file" && "$FORCE_CONFIGURE" == "false" ]]; then
-    echo "[✓] Found existing $label ($target_file)"
+    echo "  [✓] Found existing $label ($target_file)"
     return
   fi
 
   if [[ ! -t 0 ]]; then
     cp "$example_file" "$target_file"
     chmod 600 "$target_file" 2>/dev/null || true
-    echo "[✓] Created $label from $example_file (non-interactive mode)"
+    echo "  [✓] Created $label from template (non-interactive mode)"
     return
   fi
 
   echo ""
-  echo "============================================================"
-  echo " Configuring $label"
-  echo " Press Enter to accept the default/current value in [brackets]"
-  echo "============================================================"
+  echo "┌──────────────────────────────────────────────────────────────────┐"
+  printf "│  Configuring: %-51s│\n" "$label"
+  echo "│  Press [Enter] to keep the default value in brackets             │"
+  echo "└──────────────────────────────────────────────────────────────────┘"
+  echo ""
 
   declare -A existing_values=()
   if [[ -f "$target_file" ]]; then
@@ -134,7 +135,7 @@ configure_env_file() {
         default_val="${existing_values[$key]}"
       fi
 
-      local prompt_text="  $key"
+      local prompt_text="  ▸ $key"
       if [[ -n "$hint" ]]; then
         prompt_text="$prompt_text ($hint)"
       fi
@@ -147,6 +148,7 @@ configure_env_file() {
       fi
 
       echo "${key}=${user_input}" >> "$tmp_file"
+      echo ""
     else
       echo "$line" >> "$tmp_file"
     fi
@@ -154,11 +156,184 @@ configure_env_file() {
 
   mv "$tmp_file" "$target_file"
   chmod 600 "$target_file" 2>/dev/null || true
-  echo "[✓] Saved $target_file"
+  echo "  [✓] Saved $target_file"
+  echo ""
 }
 
+configure_ai_model_env() {
+  local target_file="$AI_MODEL_ENV"
+  local example_file="$AI_MODEL_EXAMPLE"
+
+  if [[ -f "$target_file" && "$FORCE_CONFIGURE" == "false" ]]; then
+    echo "  [✓] Found existing AI Model configuration ($target_file)"
+    return
+  fi
+
+  if [[ ! -t 0 ]]; then
+    cp "$example_file" "$target_file"
+    chmod 600 "$target_file" 2>/dev/null || true
+    echo "  [✓] Created AI Model configuration from template (non-interactive mode)"
+    return
+  fi
+
+  echo ""
+  echo "┌──────────────────────────────────────────────────────────────────┐"
+  echo "│          AI Vision Model Provider Selection                      │"
+  echo "│  Choose which AI engine will recognize food dishes on plates     │"
+  echo "└──────────────────────────────────────────────────────────────────┘"
+  echo ""
+  echo "    [1] OpenRouter    (Multi-model proxy, e.g. x-ai/grok-4)"
+  echo "    [2] xAI (Grok)    (Official Grok 4.7 / Grok Vision)"
+  echo "    [3] Google Gemini (Official Gemini 2.5 Flash - Recommended)"
+  echo "    [4] OpenAI        (Official GPT-4o / GPT-4-turbo)"
+  echo ""
+
+  declare -A cur_ai=()
+  if [[ -f "$target_file" ]]; then
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      line="${line%$'\r'}"
+      [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+      if [[ "$line" == *"="* ]]; then
+        local k="${line%%=*}"
+        local v="${line#*=}"
+        cur_ai["$k"]="$(echo "$v" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      fi
+    done < "$target_file"
+  fi
+
+  local default_opt="3"
+  local existing_prov="${cur_ai[AI_PROVIDER]:-}"
+  case "$existing_prov" in
+    openrouter) default_opt="1" ;;
+    grok|xai)   default_opt="2" ;;
+    gemini)     default_opt="3" ;;
+    openai)     default_opt="4" ;;
+  esac
+
+  local choice=""
+  while true; do
+    read -r -p "  Select AI Provider [1-4] (default: ${default_opt}): " choice </dev/tty || choice="$default_opt"
+    choice="$(echo "$choice" | tr -d ' ')"
+    [[ -z "$choice" ]] && choice="$default_opt"
+
+    case "$choice" in
+      1)
+        echo ""
+        echo "  [Selected: OpenRouter]"
+        echo "  ──────────────────────────────────────────────────"
+        local def_or_key="${cur_ai[OPENROUTER_API_KEY]:-}"
+        local def_or_model="${cur_ai[OPENROUTER_MODEL]:-x-ai/grok-4}"
+        local def_or_url="${cur_ai[OPENROUTER_SITE_URL]:-http://localhost:8000}"
+
+        read -r -p "  ▸ OPENROUTER_API_KEY [${def_or_key:-sk-or-...}]: " in_or_key </dev/tty || in_or_key=""
+        in_or_key="$(echo "$in_or_key" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        [[ -z "$in_or_key" ]] && in_or_key="$def_or_key"
+        echo ""
+
+        read -r -p "  ▸ OPENROUTER_MODEL [${def_or_model}]: " in_or_model </dev/tty || in_or_model=""
+        in_or_model="$(echo "$in_or_model" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        [[ -z "$in_or_model" ]] && in_or_model="$def_or_model"
+        echo ""
+
+        read -r -p "  ▸ OPENROUTER_SITE_URL [${def_or_url}]: " in_or_url </dev/tty || in_or_url=""
+        in_or_url="$(echo "$in_or_url" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        [[ -z "$in_or_url" ]] && in_or_url="$def_or_url"
+        echo ""
+
+        cat <<EOF > "$target_file"
+# AI Provider Selection: OpenRouter
+AI_PROVIDER=openrouter
+OPENROUTER_API_KEY=${in_or_key}
+OPENROUTER_MODEL=${in_or_model}
+OPENROUTER_SITE_URL=${in_or_url}
+EOF
+        break
+        ;;
+
+      2)
+        echo ""
+        echo "  [Selected: xAI (Grok)]"
+        echo "  ──────────────────────────────────────────────────"
+        local def_xai_key="${cur_ai[XAI_API_KEY]:-}"
+        local def_xai_model="${cur_ai[XAI_MODEL]:-grok-4.7}"
+
+        read -r -p "  ▸ XAI_API_KEY [${def_xai_key:-xai-...}]: " in_xai_key </dev/tty || in_xai_key=""
+        in_xai_key="$(echo "$in_xai_key" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        [[ -z "$in_xai_key" ]] && in_xai_key="$def_xai_key"
+        echo ""
+
+        read -r -p "  ▸ XAI_MODEL [${def_xai_model}]: " in_xai_model </dev/tty || in_xai_model=""
+        in_xai_model="$(echo "$in_xai_model" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        [[ -z "$in_xai_model" ]] && in_xai_model="$def_xai_model"
+        echo ""
+
+        cat <<EOF > "$target_file"
+# AI Provider Selection: xAI (Grok)
+AI_PROVIDER=grok
+XAI_API_KEY=${in_xai_key}
+XAI_MODEL=${in_xai_model}
+EOF
+        break
+        ;;
+
+      3)
+        echo ""
+        echo "  [Selected: Google Gemini]"
+        echo "  ──────────────────────────────────────────────────"
+        local def_gem_key="${cur_ai[GEMINI_API_KEY]:-}"
+
+        read -r -p "  ▸ GEMINI_API_KEY [${def_gem_key:-AIza...}]: " in_gem_key </dev/tty || in_gem_key=""
+        in_gem_key="$(echo "$in_gem_key" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        [[ -z "$in_gem_key" ]] && in_gem_key="$def_gem_key"
+        echo ""
+
+        cat <<EOF > "$target_file"
+# AI Provider Selection: Google Gemini
+AI_PROVIDER=gemini
+GEMINI_API_KEY=${in_gem_key}
+EOF
+        break
+        ;;
+
+      4)
+        echo ""
+        echo "  [Selected: OpenAI]"
+        echo "  ──────────────────────────────────────────────────"
+        local def_oai_key="${cur_ai[OPENAI_API_KEY]:-}"
+
+        read -r -p "  ▸ OPENAI_API_KEY [${def_oai_key:-sk-...}]: " in_oai_key </dev/tty || in_oai_key=""
+        in_oai_key="$(echo "$in_oai_key" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        [[ -z "$in_oai_key" ]] && in_oai_key="$def_oai_key"
+        echo ""
+
+        cat <<EOF > "$target_file"
+# AI Provider Selection: OpenAI
+AI_PROVIDER=openai
+OPENAI_API_KEY=${in_oai_key}
+EOF
+        break
+        ;;
+
+      *)
+        echo "  [!] Invalid choice. Please enter 1, 2, 3, or 4."
+        echo ""
+        ;;
+    esac
+  done
+
+  chmod 600 "$target_file" 2>/dev/null || true
+  echo "  [✓] Saved $target_file"
+  echo ""
+}
+
+echo ""
+echo "=================================================================="
+echo "          AFRC Smart Cashier - System Environment Setup           "
+echo "=================================================================="
+echo ""
+
 configure_env_file "$MAIN_ENV" "$MAIN_EXAMPLE" "App & Server Environment (env/.env)"
-configure_env_file "$AI_MODEL_ENV" "$AI_MODEL_EXAMPLE" "AI Model API Environment (env/AI_model.env)"
+configure_ai_model_env
 configure_env_file "$CLOUDFLARE_ENV" "$CLOUDFLARE_EXAMPLE" "Cloudflare R2 & Turnstile Environment (env/cloudflare.env)"
 configure_env_file "$RESTAURANT_ENV" "$RESTAURANT_EXAMPLE" "Restaurant & Company Profile (env/restaurant.env)"
 configure_env_file "$CURLEC_ENV" "$CURLEC_EXAMPLE" "Curlec Payment Environment (env/curlec.env)"
@@ -245,27 +420,27 @@ if [[ -t 0 ]]; then
     sync_env_port_and_host
   else
     echo ""
-    echo "============================================================"
-    echo " Web Server & Reverse Proxy Configuration"
-    echo "============================================================"
-    echo " NOTE: Automated Caddy HTTPS setup is intended for dedicated / single-app servers."
-    echo " If you're already using a Proxy Manager (Nginx, Caddy with other apps,"
-    echo " Nginx Proxy Manager, Traefik, Cloudflare Tunnel) for another purpose,"
-    echo " or you know what you are cooking, select 'N' and point your proxy to AFRC's port."
-    echo "============================================================"
-    read -r -p "Would you like to setup Caddy reverse proxy with automatic HTTPS? [y/N]: " setup_caddy </dev/tty || setup_caddy="n"
+    echo "┌──────────────────────────────────────────────────────────────────┐"
+    echo "│         Web Server & Reverse Proxy Configuration                 │"
+    echo "│  Automated Caddy provides free SSL/HTTPS for custom domains      │"
+    echo "└──────────────────────────────────────────────────────────────────┘"
+    echo "  (Select 'N' if you prefer direct IP:Port access or your own proxy)"
+    echo ""
+    read -r -p "  Setup Caddy reverse proxy with automatic HTTPS? [y/N]: " setup_caddy </dev/tty || setup_caddy="n"
     setup_caddy="$(echo "$setup_caddy" | tr '[:upper:]' '[:lower:]')"
 
     if [[ "$setup_caddy" == "y" || "$setup_caddy" == "yes" ]]; then
-      read -r -p "Enter your domain name (e.g. e-cashier.takcakap.com): " domain_name </dev/tty || domain_name=""
+      echo ""
+      read -r -p "  ▸ Enter your domain name (e.g. e-cashier.takcakap.com): " domain_name </dev/tty || domain_name=""
       domain_name="$(echo "$domain_name" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 
       if [[ -z "$domain_name" ]]; then
-        echo "[!] No domain entered. Falling back to local port setup."
-        read -r -p "Enter local port to run the server on [${PORT}]: " custom_port </dev/tty || custom_port=""
+        echo "  [!] No domain entered. Falling back to local port setup."
+        echo ""
+        read -r -p "  ▸ Enter local port to run the server on [${PORT}]: " custom_port </dev/tty || custom_port=""
         custom_port="$(echo "$custom_port" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
         if [[ -n "$custom_port" && ! "$custom_port" =~ ^[0-9]+$ ]]; then
-          echo "[!] Invalid port '$custom_port'. Using default 8000."
+          echo "  [!] Invalid port '$custom_port'. Using default 8000."
           custom_port="8000"
         fi
         PORT="${custom_port:-$PORT}"
@@ -329,10 +504,11 @@ EOF
         fi
       fi
     else
-      read -r -p "Enter local port to run the server on [${PORT}]: " custom_port </dev/tty || custom_port=""
+      echo ""
+      read -r -p "  ▸ Enter local port to run the server on [${PORT}]: " custom_port </dev/tty || custom_port=""
       custom_port="$(echo "$custom_port" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
       if [[ -n "$custom_port" && ! "$custom_port" =~ ^[0-9]+$ ]]; then
-        echo "[!] Invalid port '$custom_port'. Using default 8000."
+        echo "  [!] Invalid port '$custom_port'. Using default 8000."
         custom_port="8000"
       fi
       PORT="${custom_port:-$PORT}"
