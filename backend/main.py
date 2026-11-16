@@ -11,6 +11,8 @@ import csv
 import io
 import math
 import os
+import logging
+logger = logging.getLogger("afrc")
 import re
 import shutil
 import subprocess
