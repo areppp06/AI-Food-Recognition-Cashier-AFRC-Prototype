@@ -39,6 +39,14 @@ done
 
 mkdir -p "$ENV_DIR"
 
+SUDO=""
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  if command -v sudo >/dev/null 2>&1; then
+    SUDO="sudo"
+  fi
+fi
+
+
 configure_env_file() {
   local target_file="$1"
   local example_file="$2"
@@ -156,6 +164,15 @@ configure_env_file "$RESTAURANT_ENV" "$RESTAURANT_EXAMPLE" "Restaurant & Company
 configure_env_file "$CURLEC_ENV" "$CURLEC_EXAMPLE" "Curlec Payment Environment (env/curlec.env)"
 configure_env_file "$RATELIMIT_ENV" "$RATELIMIT_EXAMPLE" "Rate Limit Environment (env/rate-limit.env)"
 
+# Auto-install Debian/Ubuntu system prerequisites if missing
+if command -v apt-get >/dev/null 2>&1; then
+  if ! command -v python3 >/dev/null 2>&1 || ! dpkg -s python3-venv >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1 || ! command -v git >/dev/null 2>&1; then
+    echo "[*] Ensuring essential packages are installed (python3, python3-venv, python3-pip, curl, git)..."
+    $SUDO apt-get update -y >/dev/null 2>&1 || true
+    $SUDO apt-get install -y python3 python3-venv python3-pip curl git >/dev/null 2>&1 || true
+  fi
+fi
+
 PYTHON_BIN=""
 if command -v python3 >/dev/null 2>&1; then
   PYTHON_BIN="python3"
@@ -189,12 +206,6 @@ if [[ "$START_SERVER" == "false" ]]; then
   exit 0
 fi
 
-SUDO=""
-if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
-  if command -v sudo >/dev/null 2>&1; then
-    SUDO="sudo"
-  fi
-fi
 
 HOST="${HOST:-0.0.0.0}"
 PORT="${PORT:-8000}"
