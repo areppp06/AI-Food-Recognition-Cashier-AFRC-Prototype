@@ -271,21 +271,18 @@ input[type="email"]:focus,
 .turnstile-slot {
   display: flex;
   justify-content: center;
-  height: 0;
-  min-height: 0;
-  margin: 0;
+  align-items: center;
   width: 100%;
   max-width: 100%;
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.2s ease, margin 0.2s ease;
+  min-height: 0;
+  margin: 0;
+  overflow: visible;
+  transition: min-height 0.2s ease, margin 0.2s ease;
 }
 .turnstile-slot.interactive {
-  height: auto;
   min-height: 65px;
-  margin-top: 1rem;
-  opacity: 1;
-  overflow: visible;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 .btn {
   display: inline-flex;
@@ -547,6 +544,7 @@ input[type="email"]:focus,
 <span class="confirm-text">I confirm that all listed dishes and quantities on my plate are accurate.</span>
 </label>
 <div class="turnstile-slot" id="pay-turnstile"></div>
+<div id="turnstileHelp" style="display:none; color:#ea580c; text-align:center; font-size:0.85rem; margin-top:0.35rem; font-weight:500;">Please tick the verification box above to continue.</div>
 <div class="action-row">
 <button class="btn btn-secondary" id="needCashier" type="button">Need Cashier</button>
 <button class="btn" disabled id="payBtn" type="submit">
@@ -658,56 +656,72 @@ function settlePayWaiters(token, error) {
 
 function renderPayTurnstile() {
   if (payWidgetId !== undefined || !window.turnstile) return;
-  payWidgetId = window.turnstile.render("#pay-turnstile", {
-    sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
-    action: "pay",
-    size: "flexible",
-    appearance: "interaction-only",
-    "before-interactive-callback": () => {
-      payInteractive = true;
-      paySlot.classList.add("interactive");
-    },
-    "after-interactive-callback": () => {
-      payInteractive = false;
-      paySlot.classList.remove("interactive");
-    },
-    callback: (token) => {
-      payToken = token || "";
-      payFailed = false;
-      payInteractive = false;
-      paySlot.classList.remove("interactive");
-      if (payToken) settlePayWaiters(payToken, null);
-    },
-    "expired-callback": () => {
-      payToken = "";
-      if (payWidgetId !== undefined && window.turnstile) {
-        window.turnstile.reset(payWidgetId);
+  const slot = document.getElementById("pay-turnstile");
+  if (!slot) return;
+  try {
+    payWidgetId = window.turnstile.render("#pay-turnstile", {
+      sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
+      action: "pay",
+      size: "flexible",
+      appearance: "interaction-only",
+      "before-interactive-callback": () => {
+        payInteractive = true;
+        if (slot) slot.classList.add("interactive");
+        const help = document.getElementById("turnstileHelp");
+        if (help) help.style.display = "block";
+      },
+      "after-interactive-callback": () => {
+        payInteractive = false;
+        if (slot) slot.classList.remove("interactive");
+        const help = document.getElementById("turnstileHelp");
+        if (help) help.style.display = "none";
+      },
+      callback: (token) => {
+        payToken = token || "";
+        payFailed = false;
+        payInteractive = false;
+        if (slot) slot.classList.remove("interactive");
+        const help = document.getElementById("turnstileHelp");
+        if (help) help.style.display = "none";
+        if (payToken) settlePayWaiters(payToken, null);
+      },
+      "expired-callback": () => {
+        payToken = "";
+        if (payWidgetId !== undefined && window.turnstile) {
+          try { window.turnstile.reset(payWidgetId); } catch (e) {}
+        }
+      },
+      "error-callback": (code) => {
+        console.warn("Turnstile payment error code:", code);
+        payToken = "";
+        payFailed = true;
+        if (slot) slot.classList.remove("interactive");
+        settlePayWaiters(null, new Error("CAPTCHA_FAILED"));
+      },
+      "timeout-callback": () => {
+        payToken = "";
+        payFailed = true;
+        if (slot) slot.classList.remove("interactive");
+        settlePayWaiters(null, new Error("CAPTCHA_FAILED"));
       }
-    },
-    "error-callback": () => {
-      payToken = "";
-      payFailed = true;
-      paySlot.classList.remove("interactive");
-      settlePayWaiters(null, new Error("CAPTCHA_FAILED"));
-    },
-    "timeout-callback": () => {
-      payToken = "";
-      payFailed = true;
-      paySlot.classList.remove("interactive");
-      settlePayWaiters(null, new Error("CAPTCHA_FAILED"));
-    }
-  });
+    });
+  } catch (err) {
+    console.error("renderPayTurnstile error:", err);
+  }
 }
 window.onPayTurnstileLoad = () => {
-  if (!form.hidden) renderPayTurnstile();
+  renderPayTurnstile();
 };
 function resetPayTurnstile() {
   payToken = "";
   payFailed = false;
   payInteractive = false;
-  paySlot.classList.remove("interactive");
+  const slot = document.getElementById("pay-turnstile");
+  if (slot) slot.classList.remove("interactive");
+  const help = document.getElementById("turnstileHelp");
+  if (help) help.style.display = "none";
   if (payWidgetId !== undefined && window.turnstile) {
-    window.turnstile.reset(payWidgetId);
+    try { window.turnstile.reset(payWidgetId); } catch (e) {}
   }
 }
 function getPayToken() {
@@ -716,7 +730,7 @@ function getPayToken() {
   if (existing) return Promise.resolve(existing);
   if (payFailed && payWidgetId !== undefined && window.turnstile) {
     payFailed = false;
-    window.turnstile.reset(payWidgetId);
+    try { window.turnstile.reset(payWidgetId); } catch (e) {}
   }
   return new Promise((resolve, reject) => {
     const waiter = {
@@ -1157,7 +1171,9 @@ form.onsubmit = async (event) => {
   } catch (err) {
     button.disabled = !confirmBox.checked;
     button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
-    errorBox.textContent = "Captcha verification failed. Please try again.";
+    errorBox.textContent = payInteractive
+      ? "Please tick the verification box above and tap Confirm & Pay again."
+      : "Security verification timed out. Please tap Confirm & Pay again.";
     resetPayTurnstile();
     return;
   }
@@ -1177,8 +1193,8 @@ form.onsubmit = async (event) => {
     if (!res.ok) {
       button.disabled = !confirmBox.checked;
       button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
-      if (res.status === 403 || messageOf(data) === "forbidden") {
-        errorBox.textContent = "Captcha verification failed. Please try again.";
+      if (res.status === 403 && (messageOf(data) === "forbidden" || !messageOf(data))) {
+        errorBox.textContent = "Security verification expired. Please refresh the page and try again.";
       } else {
         errorBox.textContent = messageOf(data) || "Payment could not be completed.";
       }

@@ -686,10 +686,21 @@ def _record_and_enforce_scan_limit(
 
 def _require_turnstile(token: str, expected_action: str, request: Request) -> None:
     hostnames = {
-        hostname.strip()
+        hostname.strip().lower()
         for hostname in os.getenv("TURNSTILE_HOSTNAMES", "").split(",")
         if hostname.strip()
     }
+    # Auto-allow DOMAIN and its www. variant if configured in env
+    domain_env = (os.getenv("DOMAIN") or "").strip().lower()
+    if domain_env:
+        hostnames.add(domain_env)
+        if not domain_env.startswith("www."):
+            hostnames.add(f"www.{domain_env}")
+        else:
+            hostnames.add(domain_env[4:])
+    # Also allow localhost for local testing
+    hostnames.update({"localhost", "127.0.0.1"})
+
     secret = os.getenv("TURNSTILE_SECRET", "")
     if not isinstance(token, str) or not token or len(token) > 2048 or not hostnames or not secret:
         raise HTTPException(status_code=403, detail="forbidden")
@@ -706,11 +717,24 @@ def _require_turnstile(token: str, expected_action: str, request: Request) -> No
         raise
     except Exception:
         raise HTTPException(status_code=403, detail="forbidden")
+
+    result_hostname = str(result.get("hostname") or "").strip().lower()
+    result_base = result_hostname[4:] if result_hostname.startswith("www.") else result_hostname
+    hostname_matches = any(
+        result_hostname == h or result_base == (h[4:] if h.startswith("www.") else h)
+        for h in hostnames
+    )
+
     if (
         result.get("success") is not True
         or result.get("action") != expected_action
-        or result.get("hostname") not in hostnames
+        or not hostname_matches
     ):
+        logger.warning(
+            f"Turnstile siteverify rejected: success={result.get('success')}, action={result.get('action')} "
+            f"(expected {expected_action}), hostname={result_hostname} (allowed: {hostnames}), "
+            f"error-codes={result.get('error-codes')}"
+        )
         raise HTTPException(status_code=403, detail="forbidden")
 
 _R2_SYNC_LOCK: asyncio.Lock | None = None
@@ -2180,8 +2204,11 @@ def _checkout_payload(bill: SessionBill, key_id: str) -> dict:
 def _create_curlec_order(bill: SessionBill, db: Session) -> dict:
     client, key_id = _curlec_client()
     amount = _amount_sen(bill)
-    if amount < 1:
-        raise HTTPException(status_code=400, detail="This bill has nothing to pay")
+    if amount < 10:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Payment amount (RM {amount / 100:.2f}) is below the minimum allowed payment of RM 0.10. Please adjust dish price or items.",
+        )
     if bill.curlec_order_id and bill.status == "pending":
         try:
             existing = client.order.fetch(bill.curlec_order_id)
@@ -2201,8 +2228,15 @@ def _create_curlec_order(bill: SessionBill, db: Session) -> dict:
             "receipt": (bill.bill_number or bill.id)[:40],
             "notes": {"session_id": bill.id, "bill_number": bill.bill_number or ""},
         })
-    except Exception:
-        raise HTTPException(status_code=502, detail="Could not start the payment. Please try again.")
+    except Exception as e:
+        logger.exception(f"Curlec order creation failed for bill {bill.id} (amount {amount} sen): {e}")
+        err_str = str(e)
+        if "minimum amount" in err_str.lower():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Payment amount (RM {amount / 100:.2f}) is below the minimum allowed payment of RM 0.10.",
+            )
+        raise HTTPException(status_code=502, detail=f"Could not start the payment: {err_str[:120]}")
     bill.curlec_order_id = order["id"]
     bill.status = "pending"
     db.commit()
