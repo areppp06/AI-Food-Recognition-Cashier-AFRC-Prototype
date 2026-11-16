@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Cooming Soon - AFRC</title>
+  <title>Coming Soon - AFRC</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -26,9 +26,17 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2rem 1rem 1.5rem;
+    }
+    .main-content {
+      display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 1.5rem 1rem;
+      flex: 1;
+      width: 100%;
     }
     .coming-card {
       background: var(--card-bg);
@@ -81,21 +89,114 @@
       margin: 0 auto;
       max-width: 340px;
     }
+    .quick-links-footer {
+      margin-top: 2rem;
+      padding: 1rem 0;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.7;
+      width: 100%;
+      max-width: 540px;
+    }
+    .quick-links-footer .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 0.4rem 0.55rem;
+      margin-bottom: 0.65rem;
+    }
+    .quick-links-footer .footer-link {
+      color: #64748b;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+    .quick-links-footer .footer-link:hover {
+      color: var(--orange);
+      text-decoration: underline;
+    }
+    .quick-links-footer .dot {
+      color: #cbd5e1;
+      font-size: 0.6rem;
+    }
+    .quick-links-footer .footer-brand {
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
   </style>
 </head>
 <body>
-  <div class="coming-card">
-    <div class="icon-badge">
-      <svg viewBox="0 0 24 24">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-      </svg>
+  <div class="main-content">
+    <div class="coming-card">
+      <div class="icon-badge">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+        </svg>
+      </div>
+
+      <h1>Coming Soon</h1>
+
+      <p class="desc">
+        This E-cashier self service feature is coming soon, stay tuned.
+      </p>
     </div>
-
-    <h1>Cooming Soon</h1>
-
-    <p class="desc">
-      This E-cashier self service feature is coming soon, stay tuned.
-    </p>
   </div>
+
+  <footer class="quick-links-footer">
+    <div class="footer-links">
+      <a href="/privacy" class="footer-link"><span data-lang="bm">Dasar Privasi</span><span data-lang="en" style="display:none;">Privacy Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/terms" class="footer-link"><span data-lang="bm">Terma &amp; Syarat</span><span data-lang="en" style="display:none;">Terms &amp; Conditions</span></a>
+      <span class="dot">•</span>
+      <a href="/payment-policy" class="footer-link"><span data-lang="bm">Polisi Pembayaran</span><span data-lang="en" style="display:none;">Payment Policy</span></a>
+      <span class="dot">•</span>
+      <a href="/contact" class="footer-link"><span data-lang="bm">Hubungi Kami</span><span data-lang="en" style="display:none;">Contact Us</span></a>
+      <span class="dot">•</span>
+      <a href="/about" class="footer-link"><span data-lang="bm">Tentang Kami</span><span data-lang="en" style="display:none;">About Us</span></a>
+      <span class="dot">•</span>
+      <a href="/pricelist" class="footer-link"><span data-lang="bm">Senarai Harga</span><span data-lang="en" style="display:none;">Menu Prices</span></a>
+      <span class="dot">•</span>
+      <a href="/guide" class="footer-link"><span data-lang="bm">Panduan</span><span data-lang="en" style="display:none;">How to Use</span></a>
+    </div>
+    <div class="footer-brand">
+      &copy; 2026 <span class="dyn-restaurant-name">AFRC</span> &bull; e-Cashier
+    </div>
+  </footer>
+
+  <script>
+    function setLanguage(lang) {
+      document.querySelectorAll('[data-lang]').forEach(el => {
+        if (el.getAttribute('data-lang') === lang) {
+          el.style.display = '';
+        } else {
+          el.style.display = 'none';
+        }
+      });
+      document.documentElement.lang = (lang === 'bm') ? 'ms' : 'en';
+    }
+
+    function initProfile() {
+      fetch('/api/public-profile')
+        .then(r => r.json())
+        .then(data => {
+          if (!data) return;
+          const rName = data.restaurant_name || 'AFRC';
+          document.querySelectorAll('.dyn-restaurant-name').forEach(el => el.textContent = rName);
+        })
+        .catch(() => {});
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      let lang = 'bm';
+      try {
+        const saved = localStorage.getItem('prism_lang');
+        if (saved === 'en' || saved === 'bm') lang = saved;
+      } catch (e) {}
+      setLanguage(lang);
+      initProfile();
+    });
+  </script>
 </body>
 </html>
