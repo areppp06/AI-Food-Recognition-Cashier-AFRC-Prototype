@@ -481,6 +481,7 @@ ${SETUP_CADDY_DOMAIN} {
         X-Frame-Options "SAMEORIGIN"
         X-Content-Type-Options "nosniff"
         Referrer-Policy "strict-origin-when-cross-origin"
+        X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
         -Server
     }
     request_body {

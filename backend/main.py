@@ -100,6 +100,12 @@ def _rate_limit_config() -> dict:
     }
 app = FastAPI(title="AFRC Prototype", version="1.0", docs_url=None, redoc_url=None, openapi_url=None)
 
+@app.middleware("http")
+async def add_anti_indexing_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive, nosnippet"
+    return response
+
 _R2_SESSION_KEYS: dict[str, str] = {}
 _R2_BILL_KEYS: dict[str, str] = {}
 
@@ -842,7 +848,19 @@ NO_CACHE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "Pragma": "no-cache",
     "Expires": "0",
+    "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
 }
+
+@app.get("/robots.txt", include_in_schema=False)
+def robots_txt():
+    return Response(
+        content="User-agent: *\nDisallow: /\n",
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
+        },
+    )
 
 @app.get("/")
 async def root():
