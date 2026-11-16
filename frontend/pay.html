@@ -116,8 +116,7 @@ h1 {
   height: auto;
   object-fit: cover;
   border-radius: 16px;
-  border: none;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  border: 1px solid #cbd5e1;
   background: #0f172a;
   display: block;
   cursor: zoom-in;
@@ -546,25 +545,6 @@ input[type="email"]:focus,
 </label>
 <div class="turnstile-slot" id="pay-turnstile"></div>
 <div id="turnstileHelp" style="display:none; color:#ea580c; text-align:center; font-size:0.85rem; margin-top:0.35rem; font-weight:500;">Please tick the verification box above to continue.</div>
-<div class="payment-methods-wrap" style="margin: 0.85rem 0 0.5rem; text-align: center;">
-  <div style="font-size: 0.74rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.45rem;">
-    Recommended E-Wallets
-  </div>
-  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; align-items: center;">
-    <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.28rem 0.65rem; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; color: #1d4ed8;">
-      Touch 'n Go
-    </span>
-    <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.28rem 0.65rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; color: #15803d;">
-      GrabPay
-    </span>
-    <span style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.28rem 0.65rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; color: #b91c1c;">
-      Boost
-    </span>
-    <span style="display: inline-flex; align-items: center; padding: 0.28rem 0.55rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9999px; font-size: 0.75rem; color: #64748b;">
-      FPX &amp; Cards
-    </span>
-  </div>
-</div>
 <div class="action-row">
 <button class="btn btn-secondary" id="needCashier" type="button">Need Cashier</button>
 <button class="btn" disabled id="payBtn" type="submit">
@@ -1240,7 +1220,6 @@ form.onsubmit = async (event) => {
       currency: data.currency,
       name: restName,
       description: "Plate payment",
-      image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
       order_id: data.order_id,
       callback_url: location.origin + "/api/pay/callback",
       redirect: true,
@@ -1248,27 +1227,9 @@ form.onsubmit = async (event) => {
       theme: { color: "#ff5e36" },
       config: {
         display: {
-          blocks: {
-            recommended_wallets: {
-              name: "Recommended / E-Wallets",
-              instruments: [
-                {
-                  method: "wallet",
-                  wallets: ["touchngo", "grabpay", "boost"]
-                }
-              ]
-            },
-            other_methods: {
-              name: "Other Payment Methods",
-              instruments: [
-                { method: "card" },
-                { method: "fpx" }
-              ]
-            }
-          },
-          sequence: [
-            "block.recommended_wallets",
-            "block.other_methods"
+          hide: [
+            { method: "fpx" },
+            { method: "netbanking" }
           ],
           preferences: {
             show_default_blocks: true
