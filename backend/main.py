@@ -158,6 +158,7 @@ def _get_http_client() -> httpx.AsyncClient:
 async def _upload_plate_to_r2(key: str, image_bytes: bytes) -> bool:
     cfg = _r2_config()
     if not cfg:
+        logger.warning(f"[R2] Upload skipped for {key}: R2 configuration missing (_r2_config is None)")
         return False
     account_id, api_token, bucket = cfg
     headers = {
@@ -171,8 +172,12 @@ async def _upload_plate_to_r2(key: str, image_bytes: bytes) -> bool:
             resp = await client.put(url, content=image_bytes, headers=headers, timeout=15.0)
             if 200 <= resp.status_code < 300:
                 _register_r2_key(key)
+                logger.info(f"[R2] Uploaded {key} to bucket '{bucket}' ({len(image_bytes)} bytes)")
                 return True
-    except Exception:
+            else:
+                logger.warning(f"[R2] Upload failed (HTTP {resp.status_code}) for '{key}' in bucket '{bucket}': {resp.text[:160]}")
+    except Exception as e:
+        logger.exception(f"[R2] Exception during upload for '{key}' in bucket '{bucket}': {e}")
         return False
     return False
 
@@ -1306,12 +1311,15 @@ def update_menu(dishes: List[dict], request: Request, db: Session = Depends(get_
             if "alias" in d:
                 dish.alias = str(d.get("alias") or "").strip()
             if "price" in d:
+                price_str = str(d["price"]).strip()
                 try:
-                    p = float(d["price"])
+                    p = float(price_str)
                 except (TypeError, ValueError):
                     raise HTTPException(status_code=400, detail=f"Invalid price for dish '{dish.name}'")
-                if p < 0 or p > 10000:
-                    raise HTTPException(status_code=400, detail=f"Price cannot be negative or exceed RM 10,000 for dish '{dish.name}'")
+                if p < 0.10 or p > 10000:
+                    raise HTTPException(status_code=400, detail=f"Price must be at least RM 0.10 and cannot exceed RM 10,000 for dish '{dish.name}'")
+                if not re.match(r"^\d+(\.\d{1,2})?$", price_str) and round(p, 2) != round(p, 4):
+                    raise HTTPException(status_code=400, detail=f"Price can have at most 2 decimal places for dish '{dish.name}'")
                 dish.price = round(p, 2)
             if "description" in d:
                 dish.description = _clean_description(d.get("description"))
@@ -1332,12 +1340,15 @@ def add_menu_item(payload: dict, request: Request, db: Session = Depends(get_db)
     name = str(payload.get("name") or "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="Dish name is required")
+    price_str = str(payload.get("price") or "").strip()
     try:
-        price = float(payload.get("price"))
+        price = float(price_str)
     except (TypeError, ValueError):
         raise HTTPException(status_code=400, detail="A valid price is required")
-    if price < 0 or price > 10000:
-        raise HTTPException(status_code=400, detail="Price cannot be negative or exceed RM 10,000")
+    if price < 0.10 or price > 10000:
+        raise HTTPException(status_code=400, detail="Price must be at least RM 0.10 and cannot exceed RM 10,000")
+    if not re.match(r"^\d+(\.\d{1,2})?$", price_str) and round(price, 2) != round(price, 4):
+        raise HTTPException(status_code=400, detail="Price can have at most 2 decimal places")
     existing = db.query(Dish).filter(func.lower(Dish.name) == name.casefold()).first()
     if existing:
         raise HTTPException(status_code=409, detail="A dish with this name already exists")

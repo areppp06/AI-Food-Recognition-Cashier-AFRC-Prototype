@@ -388,7 +388,7 @@
   /* Menu Form */
   .menu-form-grid {
     display: grid;
-    grid-template-columns: 1.3fr 0.7fr 0.7fr 2fr auto auto;
+    grid-template-columns: 1.2fr 1.2fr 0.7fr 0.7fr 2.4fr auto;
     gap: 0.85rem;
     align-items: end;
   }
@@ -1865,17 +1865,13 @@
               <input class="input-box" id="newAlias" placeholder="e.g. Signature Fried Chicken" type="text">
             </label>
             <label class="field-label">Price (RM)
-              <input class="input-box" id="newPrice" min="0" required step="0.01" type="number" value="0.00">
+              <input class="input-box" id="newPrice" min="0.10" required step="0.50" type="number" value="1.00">
             </label>
             <label class="field-label">Pieces / Portion
               <input class="input-box" id="newPieces" max="100" min="1" required step="1" type="number" value="1">
             </label>
             <label class="field-label">AI Visual Description (optional)
               <input class="input-box" id="newDescription" maxlength="500" placeholder="e.g. fried chicken piece with crispy skin" type="text">
-            </label>
-            <label class="field-label" style="align-items:center; justify-content:center; padding-bottom:0.4rem;">
-              <span>Available</span>
-              <input checked id="newAvailable" style="width:18px; height:18px;" type="checkbox">
             </label>
             <button class="btn" type="submit">+ Add Dish</button>
           </form>
@@ -4014,7 +4010,7 @@ async function loadMenu() {
         </td>
         <td><textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">${esc(d.description || "")}</textarea></td>
         <td style="width:110px;"><input type="number" min="1" max="100" step="1" class="input-box pieces" required value="${d.pieces_per_portion || 1}" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
-        <td style="width:120px;"><input type="number" step="0.01" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
+        <td style="width:120px;"><input type="number" step="0.50" min="0.10" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
         <td style="width:100px; text-align:center;"><input type="checkbox" style="width:18px; height:18px;" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail" onchange="flushAutoSaveDish(${d.id})"></td>
         <td style="width:80px;"><button type="button" class="btn btn-danger btn-sm" data-id="${d.id}" data-name="${esc(d.name)}" onclick="removeDish(this)">Remove</button></td>
       </tr>
@@ -4047,7 +4043,7 @@ async function loadMenu() {
           <div class="mmc-grid">
             <label class="card-input-label">
               <span>Price (RM)</span>
-              <input type="number" step="0.01" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">
+              <input type="number" step="0.50" min="0.10" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">
             </label>
             <label class="card-input-label">
               <span>Pieces / Portion</span>
@@ -4143,10 +4139,23 @@ async function saveDishById(dishId) {
     }
   }
 
+  const priceRaw = (priceInput ? priceInput.value : "").trim();
+  const priceVal = parseFloat(priceRaw);
+  if (isNaN(priceVal) || priceVal < 0.10) {
+    showError("Price must be at least RM 0.10.");
+    setAutoSaveIndicator("error");
+    return;
+  }
+  if (!/^\d+(\.\d{1,2})?$/.test(priceRaw)) {
+    showError("Price can have at most 2 decimal places (e.g. 1.50).");
+    setAutoSaveIndicator("error");
+    return;
+  }
+
   const dishPayload = [{
     id: parseInt(dishId),
     alias: aliasInput ? aliasInput.value.trim() : "",
-    price: parseFloat(priceInput ? priceInput.value : 0) || 0,
+    price: parseFloat(priceVal.toFixed(2)),
     description: descInput ? descInput.value : "",
     pieces_per_portion: piecesInput ? piecesInput.value : "1",
     available: availInput ? availInput.checked : true
@@ -4160,6 +4169,8 @@ async function saveDishById(dishId) {
       body: JSON.stringify(dishPayload)
     });
     if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      showError(errData.detail || "Save failed");
       throw new Error("Save failed");
     }
     setAutoSaveIndicator("saved");
@@ -4172,13 +4183,30 @@ async function saveDishById(dishId) {
 async function addDish(event) {
   event.preventDefault();
   showError("");
+  const name = document.getElementById("newName").value.trim();
+  const alias = (document.getElementById("newAlias")?.value || "").trim();
+  const priceInput = document.getElementById("newPrice");
+  const priceRaw = (priceInput?.value || "").trim();
+  const priceVal = parseFloat(priceRaw);
+
+  if (isNaN(priceVal) || priceVal < 0.10) {
+    showError("Price must be at least RM 0.10.");
+    if (priceInput) priceInput.focus();
+    return;
+  }
+  if (!/^\d+(\.\d{1,2})?$/.test(priceRaw)) {
+    showError("Price can have at most 2 decimal places (e.g. 1.50).");
+    if (priceInput) priceInput.focus();
+    return;
+  }
+
   const body = {
-    name: document.getElementById("newName").value.trim(),
-    alias: (document.getElementById("newAlias")?.value || "").trim(),
-    price: document.getElementById("newPrice").value,
+    name,
+    alias,
+    price: priceVal.toFixed(2),
     description: document.getElementById("newDescription").value,
     pieces_per_portion: document.getElementById("newPieces").value,
-    available: document.getElementById("newAvailable").checked
+    available: true
   };
   const res = await fetch("/api/menu/item", {
     method: "POST",
@@ -4192,10 +4220,9 @@ async function addDish(event) {
   }
   document.getElementById("newName").value = "";
   if (document.getElementById("newAlias")) document.getElementById("newAlias").value = "";
-  document.getElementById("newPrice").value = "0.00";
+  document.getElementById("newPrice").value = "1.00";
   document.getElementById("newDescription").value = "";
   document.getElementById("newPieces").value = "1";
-  document.getElementById("newAvailable").checked = true;
   showToast("Dish added to menu");
   const panel = document.getElementById("addDishPanel");
   if (panel && window.innerWidth <= 767) {
@@ -4228,13 +4255,28 @@ async function saveMenu() {
   const rows = [...document.querySelectorAll("#menuBody tr")];
   const items = (isMobile && cards.length) ? cards : rows;
 
+  for (const r of items) {
+    const priceEl = r.querySelector(".price");
+    const pRaw = (priceEl ? priceEl.value : "").trim();
+    const pVal = parseFloat(pRaw);
+    if (isNaN(pVal) || pVal < 0.10) {
+      showError("Each dish price must be at least RM 0.10.");
+      return;
+    }
+    if (!/^\d+(\.\d{1,2})?$/.test(pRaw)) {
+      showError("Dish price can have at most 2 decimal places (e.g. 1.50).");
+      return;
+    }
+  }
+
   const dishes = items.map(r => {
     const priceEl = r.querySelector(".price");
     const id = r.dataset.dishId || (priceEl ? priceEl.dataset.id : 0);
+    const pVal = parseFloat(priceEl ? priceEl.value : 0) || 0;
     return {
       id: parseInt(id),
       alias: r.querySelector(".alias") ? r.querySelector(".alias").value.trim() : "",
-      price: parseFloat(priceEl ? priceEl.value : 0) || 0,
+      price: parseFloat(pVal.toFixed(2)),
       description: r.querySelector(".desc") ? r.querySelector(".desc").value : "",
       pieces_per_portion: r.querySelector(".pieces") ? r.querySelector(".pieces").value : "1",
       available: r.querySelector(".avail") ? r.querySelector(".avail").checked : true
