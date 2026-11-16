@@ -125,6 +125,8 @@ def burn_setup_token() -> None:
 
 def print_setup_qr_cli(base_url: str = ""):
     """Displays terminal setup link and scannable QR code if no admin user exists."""
+    from backend.db import init_db
+    init_db()
     db = SessionLocal()
     try:
         admin_count = db.query(AdminUser).count()
@@ -139,14 +141,25 @@ def print_setup_qr_cli(base_url: str = ""):
                     for line in caddy_file.read_text().splitlines():
                         line = line.strip()
                         if line and not line.startswith("#") and "{" in line:
-                            domain = line.split("{")[0].strip()
+                            d = line.split("{")[0].strip()
+                            if not d.startswith(":") and not d.startswith("http"):
+                                domain = d
                             break
                 except Exception:
                     pass
             if domain:
                 base_url = f"https://{domain}"
             else:
-                base_url = "http://localhost:8000"
+                pub_ip = ""
+                try:
+                    import urllib.request
+                    pub_ip = urllib.request.urlopen("https://api.ipify.org", timeout=3).read().decode("utf-8").strip()
+                except Exception:
+                    pass
+                if pub_ip:
+                    base_url = f"http://{pub_ip}"
+                else:
+                    base_url = "http://localhost:8000"
 
         setup_url = f"{base_url}/login?setup_token={token}"
         print("\n" + "=" * 65)

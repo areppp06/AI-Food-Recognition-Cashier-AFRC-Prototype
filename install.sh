@@ -264,6 +264,10 @@ if [[ -t 0 ]]; then
         echo "[!] No domain entered. Falling back to local port setup."
         read -r -p "Enter local port to run the server on [${PORT}]: " custom_port </dev/tty || custom_port=""
         custom_port="$(echo "$custom_port" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+        if [[ -n "$custom_port" && ! "$custom_port" =~ ^[0-9]+$ ]]; then
+          echo "[!] Invalid port '$custom_port'. Using default 8000."
+          custom_port="8000"
+        fi
         PORT="${custom_port:-$PORT}"
         HOST="0.0.0.0"
         sync_env_port_and_host
@@ -327,6 +331,10 @@ EOF
     else
       read -r -p "Enter local port to run the server on [${PORT}]: " custom_port </dev/tty || custom_port=""
       custom_port="$(echo "$custom_port" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      if [[ -n "$custom_port" && ! "$custom_port" =~ ^[0-9]+$ ]]; then
+        echo "[!] Invalid port '$custom_port'. Using default 8000."
+        custom_port="8000"
+      fi
       PORT="${custom_port:-$PORT}"
       HOST="0.0.0.0"
       sync_env_port_and_host
@@ -419,7 +427,14 @@ EOF
   fi
   echo ""
   $SUDO systemctl status afrc.service --no-pager -l || true
-  "${ROOT_DIR}/venv/bin/python3" -m backend.auth print-setup-qr 2>/dev/null || true
+  echo ""
+  echo "[*] Checking database initialization & admin onboarding..."
+  "${ROOT_DIR}/venv/bin/python3" -c "from backend.db import init_db; init_db()" 2>/dev/null || true
+  if [[ -n "${SETUP_CADDY_DOMAIN:-}" ]]; then
+    "${ROOT_DIR}/venv/bin/python3" -m backend.auth print-setup-qr "https://${SETUP_CADDY_DOMAIN}" || true
+  else
+    "${ROOT_DIR}/venv/bin/python3" -m backend.auth print-setup-qr || true
+  fi
   exit 0
 fi
 
