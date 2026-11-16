@@ -29,8 +29,11 @@ Have the following service credentials on hand before starting:
 - **Cloudflare Envs** *(Optional)*:
   - Turnstile Sitekey & Secret Key
   - R2 API Token & Account ID (for cloud plate image storage)
-- **Curlec Envs** *(Optional)*:
-  - Key ID, Key Secret, and Webhook Secret
+- **Curlec Payment Gateway** *(Optional)*:
+  - `CURLEC_KEY_ID` & `CURLEC_KEY_SECRET`
+  - `CURLEC_WEBHOOK_SECRET`
+  - **Webhook Endpoint**: `https://<YOUR_DOMAIN>/api/curlec/webhook`
+    *(or `http://<YOUR_VPS_IP>:8000/api/curlec/webhook` if using direct IP)*
 
 ---
 
@@ -89,6 +92,19 @@ The installer handles Python, virtualenv, dependencies, database, and systemd se
      http://<YOUR_VPS_IP>:8000/login?setup_token=...
      ```
    - Enter your initial **Admin Username** and **Password**. Done!
+
+---
+
+## Curlec Webhook Configuration
+
+In your **Curlec / Razorpay Merchant Dashboard** (*Settings* > *Webhooks* > *Add New Webhook*):
+
+| Field | Value |
+| :--- | :--- |
+| **Webhook URL** | `https://<YOUR_DOMAIN>/api/curlec/webhook`<br>*(or `http://<YOUR_VPS_IP>:8000/api/curlec/webhook`)* |
+| **Secret** | Enter the exact secret you set in `CURLEC_WEBHOOK_SECRET` |
+| **Alert Email** | Your admin/support email address |
+| **Active Events** | Check **`payment.captured`** |
 
 ---
 
