@@ -202,6 +202,9 @@ def _recognize_with_openai_compatible(
     if data.get("error_code"):
         code = str(data["error_code"]).strip()
         default_msgs = {
+            "UNLISTED_OR_TOO_DENSE": "Foreign dish detected or plate is too crowded to bill accurately. Please head to the counter for manual payment.",
+            "UNLISTED_DISH": "Foreign or unlisted dish detected. Please head to the counter for manual payment.",
+            "PLATE_TOO_DENSE": "Plate is too crowded to identify dishes accurately. Please head to the counter for manual payment.",
             "FAKE_OR_SPOOFED_PHOTO": "Photo appears to be taken from a screen, poster, or sample. Please scan real food on a plate.",
             "UNREADABLE_PHOTO": "Photo is blurry or unreadable. Please retake with good lighting.",
             "NOT_A_PLATE": "No dining plate detected. Please ensure your food plate is clearly visible in the camera frame.",
