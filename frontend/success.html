@@ -288,8 +288,13 @@
     font-size: 0.75rem;
     color: #64748b;
   }
-  .comment-meta-row span {
+  .comment-meta-row span:first-child {
     font-weight: 600;
+  }
+  #charCount {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    font-weight: 500;
   }
   .comment-textarea-el {
     width: 100%;
@@ -465,7 +470,7 @@
     <div class="feedback-box" id="feedbackSection">
       <div id="feedbackFormCard">
         <div class="feedback-header-title">Bagaimana Pengalaman Anda?</div>
-        <p class="feedback-header-sub">Ketuk bintang untuk menilai servis kami</p>
+        <p class="feedback-header-sub">Klik bintang dibawah</p>
 
         <div class="star-row" id="starRatingRow" onmouseleave="resetStarHover()">
           <button type="button" class="star-btn" data-val="1" onclick="selectRating(1)" onmouseover="hoverRating(1)" aria-label="1 star">★</button>
@@ -474,19 +479,19 @@
           <button type="button" class="star-btn" data-val="4" onclick="selectRating(4)" onmouseover="hoverRating(4)" aria-label="4 stars">★</button>
           <button type="button" class="star-btn" data-val="5" onclick="selectRating(5)" onmouseover="hoverRating(5)" aria-label="5 stars">★</button>
         </div>
-        <div class="rating-caption" id="ratingCaption">Pilih rating 1 hingga 5 bintang</div>
+        <div class="rating-caption" id="ratingCaption">Nilai 1 hingga 5 Bintang</div>
 
         <div class="prefix-wrap" id="prefixWrap" style="display:none;">
-          <div class="prefix-prompt" id="prefixPrompt">Pilih maklum balas pantas:</div>
+          <div class="prefix-prompt" id="prefixPrompt">Pilih maklum balas ringkas</div>
           <div class="prefix-chips-grid" id="prefixChips"></div>
         </div>
 
         <div class="comment-field-box" id="commentBoxWrap" style="display:none;">
           <div class="comment-meta-row">
-            <span>Ulasan tambahan (pilihan)</span>
+            <span>Ulasan / cadangan tambah baik</span>
             <span id="charCount">0/80</span>
           </div>
-          <textarea id="feedbackComment" class="comment-textarea-el" maxlength="80" placeholder="Tulis ulasan ringkas anda di sini (maksimum 80 aksara)..." oninput="updateCharCount()"></textarea>
+          <textarea id="feedbackComment" class="comment-textarea-el" maxlength="80" placeholder="Tulis ulasan ringkas anda di sini..." oninput="updateCharCount()"></textarea>
         </div>
 
         <button type="button" class="btn-send-review" id="btnSubmitFeedback" style="display:none;" onclick="submitFeedback()">
@@ -495,8 +500,7 @@
       </div>
 
       <div id="feedbackThanksCard" class="feedback-thanks-view" style="display:none;">
-        <div class="fb-thanks-icon">❤️</div>
-        <div class="fb-thanks-title">Terima Kasih Atas Ulasan Anda!</div>
+        <div class="fb-thanks-title">Terima Kasih Atas Ulasan Anda</div>
         <div class="fb-thanks-stars" id="thanksStarsDisplay">★★★★★</div>
         <div class="fb-thanks-tags" id="thanksTagsDisplay"></div>
         <div class="fb-thanks-comment" id="thanksCommentDisplay" style="display:none;"></div>
@@ -762,7 +766,6 @@
       "Perlu Perbaiki Ketepatan AI",
       "Kurang Pengesanan Lauk",
       "Proses Agak Perlahan",
-      "Pencahayaan / Kamera Kurang Jelas",
       "Perlu Bantuan Staf"
     ];
 
@@ -792,11 +795,11 @@
       const captionEl = document.getElementById("ratingCaption");
 
       const captions = {
-        5: "5 Bintang — Sangat Berpuas Hati! 🌟",
-        4: "4 Bintang — Servis Memuaskan 👍",
-        3: "3 Bintang — Sederhana, Boleh Ditambah Baik 👌",
-        2: "2 Bintang — Kurang Memuaskan ⚠️",
-        1: "1 Bintang — Perlu Penambahbaikan Segera ❗"
+        5: "Sangat Berpuas Hati!",
+        4: "Servis Memuaskan",
+        3: "Sederhana, Boleh Ditambah Baik",
+        2: "Kurang Memuaskan",
+        1: "Perlu Penambahbaikan Segera"
       };
       if (captionEl) captionEl.textContent = captions[rating] || "";
 
@@ -804,7 +807,7 @@
       const list = isPositive ? POSITIVE_PREFIXES : CONSTRUCTIVE_PREFIXES;
 
       if (promptEl) {
-        promptEl.textContent = isPositive ? "Pilih maklum balas pantas:" : "Cadangan penambahbaikan:";
+        promptEl.textContent = isPositive ? "Pilih maklum balas ringkas" : "Cadangan penambahbaikan";
       }
 
       selectedPrefixTags.clear();

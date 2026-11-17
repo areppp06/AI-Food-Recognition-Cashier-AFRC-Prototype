@@ -1355,6 +1355,22 @@
     flex-direction: column;
     gap: 0.6rem;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .fb-comment-bubble {
+    font-size: 0.82rem;
+    color: #334155;
+    font-style: italic;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    word-wrap: break-word;
+    line-height: 1.45;
   }
   .mobile-only-badge,
   .mobile-add-toggle-btn {
@@ -4858,7 +4874,7 @@ async function loadFeedbacks() {
             <td style="text-align:center;">${photoHtml}</td>
             <td><span class="feedback-stars-gold">${starsStr}</span> <span style="font-size:0.78rem; font-weight:700; color:#64748b;">(${fb.rating}.0)</span></td>
             <td>${tagsHtml}</td>
-            <td style="font-size:0.84rem; color:#334155; max-width:260px; word-break:break-word;">${fb.comment ? `“${esc(fb.comment)}”` : '<span style="color:#94a3b8; font-style:italic;">—</span>'}</td>
+            <td style="font-size:0.84rem; color:#334155; max-width:260px; word-break:break-word; overflow-wrap:anywhere;">${fb.comment ? `“${esc(fb.comment)}”` : '<span style="color:#94a3b8; font-style:italic;">—</span>'}</td>
           </tr>
         `;
       }).join("");
@@ -4891,7 +4907,7 @@ async function loadFeedbacks() {
               <span style="font-size:0.8rem; font-weight:600; color:#334155;">${esc(fb.phone || "—")}</span>
             </div>
             ${tagsHtml ? `<div>${tagsHtml}</div>` : ""}
-            ${fb.comment ? `<div style="font-size:0.82rem; color:#334155; font-style:italic; background:#f8fafc; padding:0.45rem 0.65rem; border-radius:8px;">“${esc(fb.comment)}”</div>` : ""}
+            ${fb.comment ? `<div class="fb-comment-bubble">“${esc(fb.comment)}”</div>` : ""}
           </div>
         `;
       }).join("");

@@ -606,27 +606,18 @@ input[type="email"]:focus,
   margin-bottom: 0;
 }
 .early-user-highlight {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-radius: 14px;
-  padding: 0.85rem 1rem;
+  position: relative;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #ff5e36;
+  border-radius: 12px;
+  padding: 0.9rem 1.15rem;
   margin-bottom: 1.35rem;
 }
-.early-user-highlight .highlight-icon {
-  color: #d97706;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
 .early-user-highlight .highlight-text {
-  font-size: 0.83rem;
-  color: #92400e;
-  line-height: 1.45;
-}
-.early-user-highlight .highlight-text strong {
-  color: #b45309;
+  font-size: 0.86rem;
+  color: #334155;
+  line-height: 1.5;
 }
 .early-user-btn {
   display: flex;
@@ -737,11 +728,8 @@ input[type="email"]:focus,
     </div>
 
     <div class="early-user-highlight" id="earlyUserHighlight">
-      <div class="highlight-icon">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-      </div>
       <div class="highlight-text" id="earlyUserHighlightText">
-        <strong>Highlight:</strong> Jika menghadapi sebarang masalah teknikal, sila ke kaunter untuk membuat pembayaran secara manual.
+        Jika menghadapi sebarang masalah teknikal, sila ke kaunter untuk membuat pembayaran secara manual.
       </div>
     </div>
 
@@ -1455,14 +1443,14 @@ const EARLY_USER_TEXTS = {
     title: "Anda Antara Pengguna Terawal AFRC!",
     p1: "AFRC masih dalam proses penambahbaikan. Data penggunaan anda membantu kami meningkatkan ketepatan dan prestasi sistem.",
     p2: "Selepas pembayaran, sila luangkan sedikit masa untuk memberikan ulasan dan maklum balas. Sokongan anda amat kami hargai!",
-    highlight: "<strong>Highlight:</strong> Jika menghadapi sebarang masalah teknikal, sila ke kaunter untuk membuat pembayaran secara manual."
+    highlight: "Jika menghadapi sebarang masalah teknikal, sila ke kaunter untuk membuat pembayaran secara manual."
   },
   EN: {
     badge: "Early Adopter",
     title: "You're One of AFRC's Early Users!",
     p1: "AFRC is still undergoing improvements. Your usage data helps us enhance system accuracy and performance.",
     p2: "After payment, please take a moment to leave a review and share your feedback. We appreciate your support!",
-    highlight: "<strong>Highlight:</strong> If you encounter any technical issues, please proceed to the counter for manual payment."
+    highlight: "If you encounter any technical issues, please proceed to the counter for manual payment."
   }
 };
 
