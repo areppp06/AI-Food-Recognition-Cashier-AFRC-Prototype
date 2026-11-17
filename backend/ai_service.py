@@ -200,7 +200,15 @@ def _recognize_with_openai_compatible(
                 raw_response=content,
             )
     if data.get("error_code"):
-        raise RecognitionError(data["error_code"], data.get("error_message") or "Unable to recognize food.", raw_response=content)
+        code = str(data["error_code"]).strip()
+        default_msgs = {
+            "FAKE_OR_SPOOFED_PHOTO": "Photo appears to be taken from a screen, poster, or sample. Please scan real food on a plate.",
+            "UNREADABLE_PHOTO": "Photo is blurry or unreadable. Please retake with good lighting.",
+            "NOT_A_PLATE": "No dining plate detected. Please ensure your food plate is clearly visible in the camera frame.",
+            "NO_FOOD_DETECTED": "No recognized food items detected on the plate.",
+        }
+        msg = data.get("error_message") or default_msgs.get(code, "Unable to recognize food.")
+        raise RecognitionError(code, msg, raw_response=content)
     items = _snap_to_menu([AIItem(name=item["name"], quantity=item["quantity"]) for item in data.get("items", [])], allowed_names)
     log.info("Menu match from %s: %s", model, [item.name for item in items])
     return items

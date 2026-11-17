@@ -9,9 +9,10 @@ Rules:
 6. quantity is how many separate servings of that dish are on the plate, unless that menu line says to count pieces. One serving is one unit of what that menu name is sold as. A serving may contain more than one piece. Do not count the pieces inside a serving. Two separate servings of the same dish means quantity 2. If a menu line says to count pieces, quantity is the number of pieces you can see. Do not turn that piece count into portions. Count only what you can clearly see. If some are hidden or cut off, leave them out. Do not count food that is not on the plate.
 7. Each visible piece belongs to only one dish. Do not count the same piece under two names.
 8. Sauce and gravy handling: many dishes are covered in sauce, sambal, or gravy. Take a look closely.
-9. If the photo is blurry, dark, or not a plate, return error_code UNREADABLE_PHOTO or NOT_A_PLATE and items [].
-10. If the plate is readable but none of the listed dishes are on it, return error_code NO_FOOD_DETECTED and items [].
-11. Return JSON only. Do not return prices.
+9. Reject with error_code FAKE_OR_SPOOFED_PHOTO and items [] if the photo is taken of a digital screen/monitor, printed poster/paper, or contains sample labels like "EXAMPLE" or "CONTOH".
+10. If the photo is blurry, dark, or not a plate, return error_code UNREADABLE_PHOTO or NOT_A_PLATE and items [].
+11. If the plate is readable but none of the listed dishes are on it, return error_code NO_FOOD_DETECTED and items [].
+12. Return JSON only. Do not return prices.
 
 Today's available menu:
 {menu}
@@ -32,7 +33,7 @@ Output format (JSON only, no other text). Use only these keys:
   ]
 }
 
-If the photo cannot be billed, set items to [] and set error_code to UNREADABLE_PHOTO, NOT_A_PLATE, or NO_FOOD_DETECTED.
+If the photo cannot be billed, set items to [] and set error_code to FAKE_OR_SPOOFED_PHOTO, UNREADABLE_PHOTO, NOT_A_PLATE, or NO_FOOD_DETECTED.
 
 Today's available menu:
 {menu}
