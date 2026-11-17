@@ -509,6 +509,149 @@ input[type="email"]:focus,
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
 }
+
+/* Early User Announcement Modal */
+.early-user-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 10001;
+}
+.early-user-backdrop.open {
+  display: flex;
+}
+.early-user-card {
+  background: #ffffff;
+  max-width: 440px;
+  width: 100%;
+  border-radius: 24px;
+  padding: 1.6rem 1.4rem;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  text-align: left;
+  position: relative;
+  animation: earlyUserPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes earlyUserPop {
+  0% { opacity: 0; transform: scale(0.92) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.early-user-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.early-user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px solid #ffedd5;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.early-user-lang-toggle {
+  display: inline-flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+}
+.lang-pill {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  line-height: 1.1;
+}
+.lang-pill.active {
+  background: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+.early-user-title {
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+  margin-bottom: 0.85rem;
+  letter-spacing: -0.02em;
+}
+.early-user-body {
+  font-size: 0.88rem;
+  color: #475569;
+  line-height: 1.55;
+  margin-bottom: 1rem;
+}
+.early-user-body p {
+  margin-bottom: 0.65rem;
+}
+.early-user-body p:last-child {
+  margin-bottom: 0;
+}
+.early-user-highlight {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.35rem;
+}
+.early-user-highlight .highlight-icon {
+  color: #d97706;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.early-user-highlight .highlight-text {
+  font-size: 0.83rem;
+  color: #92400e;
+  line-height: 1.45;
+}
+.early-user-highlight .highlight-text strong {
+  color: #b45309;
+}
+.early-user-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.95rem 1.25rem;
+  background: linear-gradient(135deg, #ff5e36 0%, #ea580c 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 16px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(255, 94, 54, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.early-user-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(255, 94, 54, 0.45);
+}
+.early-user-btn:active {
+  transform: translateY(1px);
+}
 </style>
 </head>
 <body style="max-width: 100%; margin: 0px auto; padding: 1.5rem 1rem 2.5rem; background: rgb(233, 238, 245); color: rgb(15, 23, 42);">
@@ -570,6 +713,42 @@ input[type="email"]:focus,
       <button class="btn btn-secondary" type="button" onclick="closeVoidPrompt()">Cancel</button>
       <button class="btn" id="confirmVoidBtn" type="button" style="background:#dc2626;" onclick="confirmVoidBill()">Void Bill</button>
     </div>
+  </div>
+</div>
+
+<div class="early-user-backdrop" id="earlyUserModal" role="dialog" aria-modal="true" aria-labelledby="earlyUserTitle">
+  <div class="early-user-card">
+    <div class="early-user-topbar">
+      <div class="early-user-badge">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        <span id="earlyUserBadgeText">Pengguna Terawal</span>
+      </div>
+      <div class="early-user-lang-toggle" role="group" aria-label="Language selection">
+        <button type="button" class="lang-pill active" id="pillLangMY" onclick="setEarlyUserLang('MY')">MY</button>
+        <button type="button" class="lang-pill" id="pillLangEN" onclick="setEarlyUserLang('EN')">EN</button>
+      </div>
+    </div>
+
+    <h2 class="early-user-title" id="earlyUserTitle">Anda Antara Pengguna Terawal AFRC!</h2>
+
+    <div class="early-user-body">
+      <p id="earlyUserP1">AFRC masih dalam proses penambahbaikan. Data penggunaan anda membantu kami meningkatkan ketepatan dan prestasi sistem.</p>
+      <p id="earlyUserP2">Selepas pembayaran, sila luangkan sedikit masa untuk memberikan ulasan dan maklum balas. Sokongan anda amat kami hargai!</p>
+    </div>
+
+    <div class="early-user-highlight" id="earlyUserHighlight">
+      <div class="highlight-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      </div>
+      <div class="highlight-text" id="earlyUserHighlightText">
+        <strong>Highlight:</strong> Jika menghadapi sebarang masalah teknikal, sila ke kaunter untuk membuat pembayaran secara manual.
+      </div>
+    </div>
+
+    <button type="button" class="early-user-btn" onclick="closeEarlyUserModal()">
+      <span>Let's Jom!</span>
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </button>
   </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1082,6 +1261,8 @@ async function load() {
 
     saveActiveSession(sessionId);
 
+    checkAndShowEarlyUserModal();
+
     if (params.get("payment") === "failed") {
       errorBox.textContent = "Payment was not completed. You can try again.";
     }
@@ -1267,6 +1448,88 @@ form.onsubmit = async (event) => {
     resetPayTurnstile();
   }
 };
+
+const EARLY_USER_TEXTS = {
+  MY: {
+    badge: "Pengguna Terawal",
+    title: "Anda Antara Pengguna Terawal AFRC!",
+    p1: "AFRC masih dalam proses penambahbaikan. Data penggunaan anda membantu kami meningkatkan ketepatan dan prestasi sistem.",
+    p2: "Selepas pembayaran, sila luangkan sedikit masa untuk memberikan ulasan dan maklum balas. Sokongan anda amat kami hargai!",
+    highlight: "<strong>Highlight:</strong> Jika menghadapi sebarang masalah teknikal, sila ke kaunter untuk membuat pembayaran secara manual."
+  },
+  EN: {
+    badge: "Early Adopter",
+    title: "You're One of AFRC's Early Users!",
+    p1: "AFRC is still undergoing improvements. Your usage data helps us enhance system accuracy and performance.",
+    p2: "After payment, please take a moment to leave a review and share your feedback. We appreciate your support!",
+    highlight: "<strong>Highlight:</strong> If you encounter any technical issues, please proceed to the counter for manual payment."
+  }
+};
+
+let currentEarlyUserLang = "MY";
+
+function setEarlyUserLang(lang) {
+  currentEarlyUserLang = lang;
+  const data = EARLY_USER_TEXTS[lang] || EARLY_USER_TEXTS.MY;
+  const badgeEl = document.getElementById("earlyUserBadgeText");
+  const titleEl = document.getElementById("earlyUserTitle");
+  const p1El = document.getElementById("earlyUserP1");
+  const p2El = document.getElementById("earlyUserP2");
+  const hlEl = document.getElementById("earlyUserHighlightText");
+  const pillMY = document.getElementById("pillLangMY");
+  const pillEN = document.getElementById("pillLangEN");
+
+  if (badgeEl) badgeEl.textContent = data.badge;
+  if (titleEl) titleEl.textContent = data.title;
+  if (p1El) p1El.textContent = data.p1;
+  if (p2El) p2El.textContent = data.p2;
+  if (hlEl) hlEl.innerHTML = data.highlight;
+
+  if (pillMY && pillEN) {
+    if (lang === "MY") {
+      pillMY.classList.add("active");
+      pillEN.classList.remove("active");
+    } else {
+      pillEN.classList.add("active");
+      pillMY.classList.remove("active");
+    }
+  }
+}
+
+function showEarlyUserModal() {
+  const modal = document.getElementById("earlyUserModal");
+  if (modal) modal.classList.add("open");
+}
+
+function closeEarlyUserModal() {
+  const modal = document.getElementById("earlyUserModal");
+  if (modal) modal.classList.remove("open");
+  try {
+    if (sessionId) {
+      sessionStorage.setItem("afrc_early_popup_seen_" + sessionId, "1");
+    }
+  } catch (e) {}
+}
+
+function checkAndShowEarlyUserModal() {
+  try {
+    if (sessionId && sessionStorage.getItem("afrc_early_popup_seen_" + sessionId)) {
+      return;
+    }
+  } catch (e) {}
+  showEarlyUserModal();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const earlyModal = document.getElementById("earlyUserModal");
+  if (earlyModal) {
+    earlyModal.addEventListener("click", (e) => {
+      if (e.target === earlyModal) {
+        closeEarlyUserModal();
+      }
+    });
+  }
+});
 
 window.addEventListener("pageshow", () => {
   load();
