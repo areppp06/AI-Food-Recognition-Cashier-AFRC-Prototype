@@ -26,7 +26,7 @@ from pathlib import Path
 from urllib.parse import quote
 from dotenv import dotenv_values
 
-from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, FailedScan, BillRefund, AdminUser, AdminSession, next_bill_number
+from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, FailedScan, BillRefund, Feedback, AdminUser, AdminSession, next_bill_number
 from .auth import hash_password, verify_password, create_admin_session, get_current_admin, require_admin_api, revoke_session, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS, get_or_create_setup_token, burn_setup_token
 from .schemas import Dish as DishSchema, BillResponse, BillItem, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
@@ -3842,3 +3842,129 @@ async def get_failed_scan_image(
         return Response(content=r2_bytes, media_type="image/jpeg", headers=NO_CACHE_HEADERS)
 
     raise HTTPException(status_code=404, detail="Image could not be retrieved")
+
+@app.post("/api/feedback")
+def submit_customer_feedback(payload: dict, request: Request, db: Session = Depends(get_db)):
+    session_id = str(payload.get("session_id") or "").strip()
+    try:
+        rating = int(payload.get("rating") or 5)
+    except (ValueError, TypeError):
+        rating = 5
+
+    if rating < 1:
+        rating = 1
+    elif rating > 5:
+        rating = 5
+
+    prefix = str(payload.get("prefix_comment") or "").strip()
+    comment = str(payload.get("comment") or "").strip()
+    if len(comment) > 80:
+        comment = comment[:80]
+
+    bill_number = ""
+    phone = ""
+    if session_id:
+        bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+        if bill:
+            bill_number = bill.bill_number or ""
+            phone = bill.receipt_phone or ""
+
+    existing = None
+    if session_id:
+        existing = db.query(Feedback).filter(Feedback.session_id == session_id).first()
+
+    if existing:
+        existing.rating = rating
+        existing.prefix_comment = prefix
+        existing.comment = comment
+        if bill_number:
+            existing.bill_number = bill_number
+        if phone:
+            existing.phone = phone
+        db.commit()
+        return {"ok": True, "message": "Feedback updated", "id": existing.id}
+
+    fb = Feedback(
+        session_id=session_id,
+        bill_number=bill_number,
+        phone=phone,
+        rating=rating,
+        prefix_comment=prefix,
+        comment=comment,
+        created_at=datetime.utcnow(),
+    )
+    db.add(fb)
+    db.commit()
+    db.refresh(fb)
+    return {"ok": True, "message": "Feedback submitted successfully", "id": fb.id}
+
+
+@app.get("/api/admin/feedbacks")
+def get_admin_feedbacks(request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
+    rows = db.query(Feedback).order_by(Feedback.created_at.desc()).all()
+
+    tz_offset = _local_tz_offset()
+
+    session_ids = [r.session_id for r in rows if r.session_id]
+    bills_map = {}
+    if session_ids:
+        bills = db.query(SessionBill).filter(SessionBill.id.in_(session_ids)).all()
+        for b in bills:
+            bills_map[b.id] = b
+
+    feedbacks_data = []
+    distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    total_rating_sum = 0
+
+    for fb in rows:
+        rating = fb.rating if (fb.rating and 1 <= fb.rating <= 5) else 5
+        distribution[rating] = distribution.get(rating, 0) + 1
+        total_rating_sum += rating
+
+        bill = bills_map.get(fb.session_id)
+        bill_no = fb.bill_number or (bill.bill_number if bill else "") or "N/A"
+        phone = fb.phone or (bill.receipt_phone if bill else "") or "N/A"
+
+        has_image = False
+        image_url = ""
+        bill_total = 0.0
+        if bill:
+            has_image = bool(bill.image_key or (UPLOAD_DIR / f"{bill.id}.jpg").is_file())
+            if has_image or bill.id:
+                image_url = f"/api/sessions/{bill.id}/image"
+            try:
+                items = json.loads(bill.final_bill or "[]")
+                bill_total = round(sum(float(it.get("subtotal") or 0) for it in items), 2)
+            except Exception:
+                bill_total = 0.0
+
+        dt_local = fb.created_at + tz_offset if fb.created_at else datetime.utcnow() + tz_offset
+
+        feedbacks_data.append({
+            "id": fb.id,
+            "session_id": fb.session_id,
+            "bill_number": bill_no,
+            "phone": phone,
+            "rating": rating,
+            "prefix_comment": fb.prefix_comment or "",
+            "comment": fb.comment or "",
+            "has_image": has_image,
+            "image_url": image_url,
+            "bill_total": bill_total,
+            "created_at_local": dt_local.strftime("%Y-%m-%d %H:%M:%S"),
+        })
+
+    count = len(feedbacks_data)
+    avg_rating = round(total_rating_sum / count, 1) if count > 0 else 0.0
+
+    return {
+        "feedbacks": feedbacks_data,
+        "summary": {
+            "total": count,
+            "avg_rating": avg_rating,
+            "distribution": distribution,
+            "positive_count": distribution[4] + distribution[5],
+            "improvement_count": distribution[1] + distribution[2] + distribution[3],
+        }
+    }

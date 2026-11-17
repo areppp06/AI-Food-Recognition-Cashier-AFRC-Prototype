@@ -1311,8 +1311,50 @@
   /* Default hiding for mobile lists & mobile controls on tablet/desktop */
   .bills-mobile-list,
   .menu-mobile-list,
-  .audit-mobile-list {
+  .audit-mobile-list,
+  .feedbacks-mobile-list {
     display: none;
+  }
+
+  .fb-badge-pill {
+    display: inline-block;
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #ffedd5;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+  .feedback-stars-gold {
+    color: #f59e0b;
+    font-size: 0.95rem;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+  .feedback-photo-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .feedback-photo-thumb:hover {
+    transform: scale(1.08);
+  }
+  .fb-mobile-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
   }
   .mobile-only-badge,
   .mobile-add-toggle-btn {
@@ -1324,14 +1366,16 @@
     /* Hide wide table containers on mobile phones */
     #tab-bills .table-wrap,
     #tab-menu .table-wrap,
-    #tab-audit .table-wrap {
+    #tab-audit .table-wrap,
+    #tab-feedbacks .table-wrap {
       display: none !important;
     }
 
     /* Show mobile card lists */
     .bills-mobile-list,
     .menu-mobile-list,
-    .audit-mobile-list {
+    .audit-mobile-list,
+    .feedbacks-mobile-list {
       display: flex !important;
       flex-direction: column;
       gap: 0.85rem;
@@ -1665,6 +1709,14 @@
           <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
         <span>Restaurant's</span>
+      </span>
+    </button>
+    <button class="nav-btn" data-tab="feedbacks" onclick="switchTab('feedbacks', 'Customer Feedbacks')">
+      <span class="nav-btn-left">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Feedbacks</span>
       </span>
     </button>
     <button class="nav-btn" data-tab="audit" onclick="switchTab('audit', 'Audit Log')">
@@ -2136,6 +2188,71 @@
       </div>
     </section>
 
+    <!-- TAB: FEEDBACKS -->
+    <section class="section-pane" id="tab-feedbacks">
+      <div class="panel-card" style="margin-bottom:1.5rem;">
+        <div class="panel-header" style="border-bottom:1px solid #f1f5f9; padding-bottom:1rem;">
+          <div>
+            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
+              <svg style="width:20px;height:20px;color:#f59e0b;" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"></path>
+              </svg>
+              <span>Customer Feedbacks &amp; Ratings</span>
+            </div>
+            <p style="font-size:0.82rem; color:#64748b; margin-top:0.25rem;">
+              Reviews submitted after bill payment, including star ratings, quick tags, comments, customer phone, and plate photos.
+            </p>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="loadFeedbacks()">
+            <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <div class="panel-body" style="padding:1.25rem 1rem;">
+          <div class="stats-grid" style="margin-bottom:1.25rem;">
+            <div class="stat-card">
+              <div class="stat-label">Average Rating</div>
+              <div class="stat-value amber" id="fbAvgRating">0.0 <span style="font-size:1.1rem;">★</span></div>
+              <div class="stat-sub" id="fbTotalCount">0 total reviews</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Positive Reviews (4★ - 5★)</div>
+              <div class="stat-value green" id="fbPositiveCount">0</div>
+              <div class="stat-sub" id="fbPositivePct">0% satisfaction</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Improvement Needed (1★ - 3★)</div>
+              <div class="stat-value orange" id="fbImproveCount">0</div>
+              <div class="stat-sub">Constructive feedback</div>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table id="feedbacksTable">
+              <thead>
+                <tr>
+                  <th style="min-width:130px;">Date &amp; Time</th>
+                  <th style="min-width:110px;">Paid Bill #</th>
+                  <th style="min-width:120px;">Customer Phone</th>
+                  <th style="width:90px; text-align:center;">Plate Photo</th>
+                  <th style="min-width:125px;">Rating</th>
+                  <th style="min-width:160px;">Chosen Prefix</th>
+                  <th>Customer Comment</th>
+                </tr>
+              </thead>
+              <tbody id="feedbacksBody">
+                <tr>
+                  <td colspan="7" style="text-align:center; color:#94a3b8; padding:2rem;">Loading feedbacks...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="feedbacks-mobile-list" id="feedbacksMobileList"></div>
+        </div>
+      </div>
+    </section>
+
     <!-- TAB 5: AUDIT LOG -->
     <section class="section-pane" id="tab-audit">
       <div class="panel-card">
@@ -2500,6 +2617,9 @@ function switchTab(tabId, title) {
   }
   if (tabId === "restaurant") {
     loadRestaurantSettings();
+  }
+  if (tabId === "feedbacks") {
+    loadFeedbacks();
   }
   if (tabId === "archives") {
     loadArchives();
@@ -4675,7 +4795,7 @@ async function submitChangePassword(e) {
 }
 
 async function refreshAll() {
-  await Promise.all([loadAdminUser(), loadBills(), loadMenu(), loadAuditLogs(), loadArchives()]);
+  await Promise.all([loadAdminUser(), loadBills(), loadMenu(), loadAuditLogs(), loadArchives(), loadFeedbacks()]);
 }
 
 refreshAll();
@@ -4684,6 +4804,102 @@ refreshAll();
 // ==================== RESTAURANT SETTINGS & SWITCHES ====================
 let currentRestaurantConfirmAction = null;
 let currentTargetPhrase = "";
+
+
+async function loadFeedbacks() {
+  try {
+    const res = await fetch("/api/admin/feedbacks");
+    if (!res.ok) return;
+    const data = await res.json();
+    const feedbacks = data.feedbacks || [];
+    const summary = data.summary || {};
+
+    const avgEl = document.getElementById("fbAvgRating");
+    const totalEl = document.getElementById("fbTotalCount");
+    const posEl = document.getElementById("fbPositiveCount");
+    const posPctEl = document.getElementById("fbPositivePct");
+    const impEl = document.getElementById("fbImproveCount");
+
+    if (avgEl) avgEl.innerHTML = `${(summary.avg_rating || 0).toFixed(1)} <span style="font-size:1.1rem; color:#f59e0b;">★</span>`;
+    if (totalEl) totalEl.textContent = `${summary.total || 0} total reviews`;
+    if (posEl) posEl.textContent = summary.positive_count || 0;
+    const pct = summary.total > 0 ? Math.round((summary.positive_count / summary.total) * 100) : 0;
+    if (posPctEl) posPctEl.textContent = `${pct}% satisfaction`;
+    if (impEl) impEl.textContent = summary.improvement_count || 0;
+
+    const tbody = document.getElementById("feedbacksBody");
+    const mobileList = document.getElementById("feedbacksMobileList");
+
+    if (!feedbacks.length) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:2.5rem;">No customer feedbacks submitted yet.</td></tr>';
+      if (mobileList) mobileList.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:2rem;">No customer feedbacks submitted yet.</div>';
+      return;
+    }
+
+    if (tbody) {
+      tbody.innerHTML = feedbacks.map(fb => {
+        let starsStr = "";
+        for (let i = 1; i <= 5; i++) {
+          starsStr += i <= fb.rating ? "★" : "☆";
+        }
+        const tagsHtml = fb.prefix_comment
+          ? fb.prefix_comment.split(",").map(t => `<span class="fb-badge-pill">${esc(t.trim())}</span>`).join("")
+          : '<span style="color:#94a3b8; font-style:italic;">—</span>';
+
+        const photoHtml = fb.has_image && fb.image_url
+          ? `<img src="${fb.image_url}" alt="Plate" class="feedback-photo-thumb" onclick="viewPhoto('${fb.image_url}')" title="Click to enlarge" loading="lazy">`
+          : '<span style="font-size:0.75rem; color:#94a3b8; font-style:italic;">No photo</span>';
+
+        return `
+          <tr>
+            <td style="font-size:0.82rem; color:#64748b; white-space:nowrap;">${esc(fb.created_at_local)}</td>
+            <td><span class="badge" style="background:#f1f5f9; color:#0f172a; font-weight:700;">#${esc(fb.bill_number)}</span></td>
+            <td style="font-size:0.84rem; font-weight:600; color:#1e293b;">${esc(fb.phone || "—")}</td>
+            <td style="text-align:center;">${photoHtml}</td>
+            <td><span class="feedback-stars-gold">${starsStr}</span> <span style="font-size:0.78rem; font-weight:700; color:#64748b;">(${fb.rating}.0)</span></td>
+            <td>${tagsHtml}</td>
+            <td style="font-size:0.84rem; color:#334155; max-width:260px; word-break:break-word;">${fb.comment ? `“${esc(fb.comment)}”` : '<span style="color:#94a3b8; font-style:italic;">—</span>'}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    if (mobileList) {
+      mobileList.innerHTML = feedbacks.map(fb => {
+        let starsStr = "";
+        for (let i = 1; i <= 5; i++) {
+          starsStr += i <= fb.rating ? "★" : "☆";
+        }
+        const tagsHtml = fb.prefix_comment
+          ? fb.prefix_comment.split(",").map(t => `<span class="fb-badge-pill">${esc(t.trim())}</span>`).join("")
+          : "";
+        const photoHtml = fb.has_image && fb.image_url
+          ? `<img src="${fb.image_url}" alt="Plate" class="feedback-photo-thumb" onclick="viewPhoto('${fb.image_url}')" title="Click to enlarge" loading="lazy">`
+          : "";
+
+        return `
+          <div class="fb-mobile-card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <span class="badge" style="background:#f1f5f9; color:#0f172a; font-weight:700;">#${esc(fb.bill_number)}</span>
+                <span style="font-size:0.78rem; color:#64748b; margin-left:0.4rem;">${esc(fb.created_at_local)}</span>
+              </div>
+              ${photoHtml}
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span class="feedback-stars-gold">${starsStr} (${fb.rating}.0)</span>
+              <span style="font-size:0.8rem; font-weight:600; color:#334155;">${esc(fb.phone || "—")}</span>
+            </div>
+            ${tagsHtml ? `<div>${tagsHtml}</div>` : ""}
+            ${fb.comment ? `<div style="font-size:0.82rem; color:#334155; font-style:italic; background:#f8fafc; padding:0.45rem 0.65rem; border-radius:8px;">“${esc(fb.comment)}”</div>` : ""}
+          </div>
+        `;
+      }).join("");
+    }
+  } catch (err) {
+    console.error("Failed to load feedbacks:", err);
+  }
+}
 
 async function loadRestaurantSettings() {
   try {

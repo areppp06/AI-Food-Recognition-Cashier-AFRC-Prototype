@@ -150,6 +150,17 @@ class BillRefund(Base):
     status = Column(String, default="processed")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, index=True)
+    bill_number = Column(String, default="", index=True)
+    phone = Column(String, default="")
+    rating = Column(Integer, default=5)
+    prefix_comment = Column(String, default="")
+    comment = Column(String(80), default="")
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
 def format_bill_number(seq: int) -> str:
     seq = max(1, int(seq))
     prefix_idx, num = divmod(seq - 1, 9999)

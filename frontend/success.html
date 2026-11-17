@@ -171,6 +171,213 @@
     transform: scale(0.98);
     background: #1e293b;
   }
+
+  /* Interactive Feedback Section */
+  .feedback-box {
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    padding: 1.35rem 1.15rem 1.25rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  .feedback-header-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.2rem;
+  }
+  .feedback-header-sub {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 0.85rem;
+  }
+  .star-row {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+  .star-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 2.15rem;
+    line-height: 1;
+    color: #cbd5e1;
+    transition: transform 0.15s ease, color 0.15s ease;
+    padding: 0 0.1rem;
+    outline: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .star-btn:hover, .star-btn.hover {
+    transform: scale(1.18);
+  }
+  .star-btn.active {
+    color: #f59e0b;
+    text-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+  }
+  .rating-caption {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0f172a;
+    min-height: 1.2rem;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s ease;
+  }
+  .prefix-wrap {
+    margin-top: 0.75rem;
+    animation: fbFadeIn 0.25s ease-out;
+  }
+  @keyframes fbFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .prefix-prompt {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
+  }
+  .prefix-chips-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+  }
+  .prefix-chip {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #334155;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    user-select: none;
+  }
+  .prefix-chip:hover {
+    border-color: #ff5e36;
+    color: #ff5e36;
+    background: #fff7ed;
+  }
+  .prefix-chip.selected {
+    background: #ff5e36;
+    border-color: #ff5e36;
+    color: #ffffff;
+    box-shadow: 0 3px 8px rgba(255, 94, 54, 0.3);
+  }
+  .comment-field-box {
+    margin-top: 0.65rem;
+    text-align: left;
+    animation: fbFadeIn 0.25s ease-out;
+  }
+  .comment-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+  .comment-meta-row span {
+    font-weight: 600;
+  }
+  .comment-textarea-el {
+    width: 100%;
+    height: 60px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 0.55rem 0.75rem;
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: #0f172a;
+    background: #ffffff;
+    resize: none;
+    outline: none;
+    transition: border-color 0.18s ease;
+  }
+  .comment-textarea-el:focus {
+    border-color: #ff5e36;
+    box-shadow: 0 0 0 3px rgba(255, 94, 54, 0.12);
+  }
+  .btn-send-review {
+    margin-top: 0.85rem;
+    width: 100%;
+    background: linear-gradient(135deg, #ff5e36 0%, #ea580c 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    padding: 0.78rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(255, 94, 54, 0.25);
+    transition: transform 0.15s ease;
+  }
+  .btn-send-review:active {
+    transform: scale(0.98);
+  }
+  .feedback-thanks-view {
+    padding: 0.75rem 0.25rem;
+    animation: fbFadeIn 0.3s ease-out;
+  }
+  .fb-thanks-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.35rem;
+  }
+  .fb-thanks-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.3rem;
+  }
+  .fb-thanks-desc {
+    font-size: 0.82rem;
+    color: #64748b;
+    line-height: 1.45;
+  }
+  .fb-thanks-stars {
+    color: #f59e0b;
+    font-size: 1.35rem;
+    letter-spacing: 0.15rem;
+    margin: 0.45rem 0 0.25rem;
+  }
+  .fb-thanks-tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    justify-content: center;
+    margin-top: 0.45rem;
+  }
+  .fb-thanks-badge {
+    background: #fff7ed;
+    color: #ea580c;
+    border: 1px solid #ffedd5;
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+  .fb-thanks-comment {
+    font-size: 0.82rem;
+    color: #334155;
+    font-style: italic;
+    background: #ffffff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.65rem;
+    word-break: break-word;
+  }
 </style>
 </head>
 <body>
@@ -252,6 +459,49 @@
         </svg>
         Share Receipt
       </button>
+    </div>
+
+    <!-- Customer Review & Feedback Box -->
+    <div class="feedback-box" id="feedbackSection">
+      <div id="feedbackFormCard">
+        <div class="feedback-header-title">Bagaimana Pengalaman Anda?</div>
+        <p class="feedback-header-sub">Ketuk bintang untuk menilai servis kami</p>
+
+        <div class="star-row" id="starRatingRow" onmouseleave="resetStarHover()">
+          <button type="button" class="star-btn" data-val="1" onclick="selectRating(1)" onmouseover="hoverRating(1)" aria-label="1 star">★</button>
+          <button type="button" class="star-btn" data-val="2" onclick="selectRating(2)" onmouseover="hoverRating(2)" aria-label="2 stars">★</button>
+          <button type="button" class="star-btn" data-val="3" onclick="selectRating(3)" onmouseover="hoverRating(3)" aria-label="3 stars">★</button>
+          <button type="button" class="star-btn" data-val="4" onclick="selectRating(4)" onmouseover="hoverRating(4)" aria-label="4 stars">★</button>
+          <button type="button" class="star-btn" data-val="5" onclick="selectRating(5)" onmouseover="hoverRating(5)" aria-label="5 stars">★</button>
+        </div>
+        <div class="rating-caption" id="ratingCaption">Pilih rating 1 hingga 5 bintang</div>
+
+        <div class="prefix-wrap" id="prefixWrap" style="display:none;">
+          <div class="prefix-prompt" id="prefixPrompt">Pilih maklum balas pantas:</div>
+          <div class="prefix-chips-grid" id="prefixChips"></div>
+        </div>
+
+        <div class="comment-field-box" id="commentBoxWrap" style="display:none;">
+          <div class="comment-meta-row">
+            <span>Ulasan tambahan (pilihan)</span>
+            <span id="charCount">0/80</span>
+          </div>
+          <textarea id="feedbackComment" class="comment-textarea-el" maxlength="80" placeholder="Tulis ulasan ringkas anda di sini (maksimum 80 aksara)..." oninput="updateCharCount()"></textarea>
+        </div>
+
+        <button type="button" class="btn-send-review" id="btnSubmitFeedback" style="display:none;" onclick="submitFeedback()">
+          Hantar Maklum Balas
+        </button>
+      </div>
+
+      <div id="feedbackThanksCard" class="feedback-thanks-view" style="display:none;">
+        <div class="fb-thanks-icon">❤️</div>
+        <div class="fb-thanks-title">Terima Kasih Atas Ulasan Anda!</div>
+        <div class="fb-thanks-stars" id="thanksStarsDisplay">★★★★★</div>
+        <div class="fb-thanks-tags" id="thanksTagsDisplay"></div>
+        <div class="fb-thanks-comment" id="thanksCommentDisplay" style="display:none;"></div>
+        <p class="fb-thanks-desc" style="margin-top:0.65rem;">Maklum balas anda amat berharga dalam membantu kami menambah baik sistem AFRC.</p>
+      </div>
     </div>
 
     <button class="btn-action" onclick="location.href='/'">
@@ -507,6 +757,204 @@
       doc.save(filename);
     }
 
+    const POSITIVE_PREFIXES = ["Mantap", "Pantas & Lancar", "Memudahkan", "Sangat Berpuas Hati!", "Kamera Tepat"];
+    const CONSTRUCTIVE_PREFIXES = [
+      "Perlu Perbaiki Ketepatan AI",
+      "Kurang Pengesanan Lauk",
+      "Proses Agak Perlahan",
+      "Pencahayaan / Kamera Kurang Jelas",
+      "Perlu Bantuan Staf"
+    ];
+
+    let selectedRating = 0;
+    let selectedPrefixTags = new Set();
+
+    function initFeedbackSection() {
+      if (!sessionId) return;
+      try {
+        const saved = localStorage.getItem("afrc_feedback_" + sessionId);
+        if (saved) {
+          const data = JSON.parse(saved);
+          showFeedbackThanks(data.rating, data.prefix_comment, data.comment);
+        }
+      } catch (e) {}
+    }
+
+    function selectRating(rating) {
+      selectedRating = rating;
+      renderStars();
+
+      const promptEl = document.getElementById("prefixPrompt");
+      const chipsEl = document.getElementById("prefixChips");
+      const prefixWrap = document.getElementById("prefixWrap");
+      const commentWrap = document.getElementById("commentBoxWrap");
+      const submitBtn = document.getElementById("btnSubmitFeedback");
+      const captionEl = document.getElementById("ratingCaption");
+
+      const captions = {
+        5: "5 Bintang — Sangat Berpuas Hati! 🌟",
+        4: "4 Bintang — Servis Memuaskan 👍",
+        3: "3 Bintang — Sederhana, Boleh Ditambah Baik 👌",
+        2: "2 Bintang — Kurang Memuaskan ⚠️",
+        1: "1 Bintang — Perlu Penambahbaikan Segera ❗"
+      };
+      if (captionEl) captionEl.textContent = captions[rating] || "";
+
+      const isPositive = rating >= 4;
+      const list = isPositive ? POSITIVE_PREFIXES : CONSTRUCTIVE_PREFIXES;
+
+      if (promptEl) {
+        promptEl.textContent = isPositive ? "Pilih maklum balas pantas:" : "Cadangan penambahbaikan:";
+      }
+
+      selectedPrefixTags.clear();
+
+      if (chipsEl) {
+        chipsEl.innerHTML = list.map(item => `
+          <button type="button" class="prefix-chip" onclick="togglePrefixTag('${item.replace(/'/g, "\\'")}', this)">${item}</button>
+        `).join("");
+      }
+
+      if (prefixWrap) prefixWrap.style.display = "block";
+      if (commentWrap) commentWrap.style.display = "block";
+      if (submitBtn) submitBtn.style.display = "block";
+    }
+
+    function hoverRating(rating) {
+      const stars = document.querySelectorAll(".star-btn");
+      stars.forEach((btn, idx) => {
+        btn.classList.toggle("hover", idx < rating);
+      });
+    }
+
+    function resetStarHover() {
+      const stars = document.querySelectorAll(".star-btn");
+      stars.forEach(btn => btn.classList.remove("hover"));
+    }
+
+    function renderStars() {
+      const stars = document.querySelectorAll(".star-btn");
+      stars.forEach((btn, idx) => {
+        btn.classList.toggle("active", idx < selectedRating);
+      });
+    }
+
+    function togglePrefixTag(tag, el) {
+      if (selectedPrefixTags.has(tag)) {
+        selectedPrefixTags.delete(tag);
+        el.classList.remove("selected");
+      } else {
+        selectedPrefixTags.add(tag);
+        el.classList.add("selected");
+      }
+    }
+
+    function updateCharCount() {
+      const ta = document.getElementById("feedbackComment");
+      const cc = document.getElementById("charCount");
+      if (!ta || !cc) return;
+      const len = ta.value.length;
+      cc.textContent = `${len}/80`;
+      if (len >= 80) {
+        cc.style.color = "#dc2626";
+      } else {
+        cc.style.color = "#64748b";
+      }
+    }
+
+    async function submitFeedback() {
+      if (!selectedRating) {
+        alert("Sila pilih rating bintang terlebih dahulu.");
+        return;
+      }
+
+      const submitBtn = document.getElementById("btnSubmitFeedback");
+      const commentEl = document.getElementById("feedbackComment");
+      const comment = commentEl ? commentEl.value.trim().slice(0, 80) : "";
+      const prefix_comment = Array.from(selectedPrefixTags).join(", ");
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<span>Menghantar...</span>`;
+      }
+
+      try {
+        const res = await fetch("/api/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: sessionId,
+            rating: selectedRating,
+            prefix_comment: prefix_comment,
+            comment: comment
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          try {
+            localStorage.setItem("afrc_feedback_" + sessionId, JSON.stringify({
+              rating: selectedRating,
+              prefix_comment: prefix_comment,
+              comment: comment
+            }));
+          } catch (e) {}
+          showFeedbackThanks(selectedRating, prefix_comment, comment);
+        } else {
+          alert("Gagal menghantar maklum balas: " + (data.detail || "Ralat pelayan"));
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `<span>Hantar Maklum Balas</span>`;
+          }
+        }
+      } catch (err) {
+        alert("Masalah sambungan rangkaian semasa menghantar maklum balas.");
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `<span>Hantar Maklum Balas</span>`;
+        }
+      }
+    }
+
+    function showFeedbackThanks(rating, prefix_comment, comment) {
+      const formCard = document.getElementById("feedbackFormCard");
+      const thanksCard = document.getElementById("feedbackThanksCard");
+      const starsEl = document.getElementById("thanksStarsDisplay");
+      const tagsEl = document.getElementById("thanksTagsDisplay");
+      const commentEl = document.getElementById("thanksCommentDisplay");
+
+      if (formCard) formCard.style.display = "none";
+      if (thanksCard) thanksCard.style.display = "block";
+
+      if (starsEl) {
+        let s = "";
+        for (let i = 1; i <= 5; i++) {
+          s += i <= rating ? "★" : "☆";
+        }
+        starsEl.textContent = s;
+      }
+
+      if (tagsEl) {
+        if (prefix_comment) {
+          const tags = prefix_comment.split(",").map(t => t.trim()).filter(Boolean);
+          tagsEl.innerHTML = tags.map(t => `<span class="fb-thanks-badge">${t}</span>`).join(" ");
+          tagsEl.style.display = "inline-flex";
+        } else {
+          tagsEl.style.display = "none";
+        }
+      }
+
+      if (commentEl) {
+        if (comment) {
+          commentEl.textContent = `“${comment}”`;
+          commentEl.style.display = "block";
+        } else {
+          commentEl.style.display = "none";
+        }
+      }
+    }
+
+    initFeedbackSection();
     load();
   </script>
 </body></html>
