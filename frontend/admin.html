@@ -1968,13 +1968,28 @@
               <span>All changes saved</span>
             </span>
           </div>
-          <button class="btn btn-dark" onclick="saveMenu()" id="btnSaveMenuManual" title="Manual save shortcut">
-            <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 4h11l3 3v13H5V4z" stroke-linecap="round" stroke-linejoin="round"></path>
-              <path d="M8 4v5h7V4M8 20v-6h8v6" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-            <span>Save Menu Changes</span>
-          </button>
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline" onclick="exportMenuCsv()" id="btnExportMenuCsv" title="Export current menu as a CSV spreadsheet">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Export CSV</span>
+            </button>
+            <button type="button" class="btn btn-outline" onclick="triggerImportMenuCsv()" id="btnImportMenuCsv" title="Import menu from CSV (overwrites existing dishes)">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 19V7m0 0l-4 4m4-4l4 4M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Import CSV</span>
+            </button>
+            <input type="file" id="menuCsvFileInput" accept=".csv" style="display:none;" onchange="handleMenuCsvFileSelected(event)">
+            <button class="btn btn-dark" onclick="saveMenu()" id="btnSaveMenuManual" title="Manual save shortcut">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 4h11l3 3v13H5V4z" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M8 4v5h7V4M8 20v-6h8v6" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Save Menu Changes</span>
+            </button>
+          </div>
         </div>
         <div class="table-wrap">
           <table id="menuTable">
@@ -4403,6 +4418,67 @@ async function saveMenu() {
   }
   setAutoSaveIndicator("saved");
   showToast("Menu changes saved!");
+}
+
+function exportMenuCsv() {
+  window.location.href = "/api/admin/menu/export";
+}
+
+function triggerImportMenuCsv() {
+  const proceed = confirm(
+    "⚠️ WARNING: OVERWRITE MENU\n\n" +
+    "Importing a CSV will COMPLETELY OVERWRITE and replace all current dishes in the menu.\n\n" +
+    "Are you sure you want to proceed?"
+  );
+  if (!proceed) return;
+
+  const fileInput = document.getElementById("menuCsvFileInput");
+  if (fileInput) {
+    fileInput.value = "";
+    fileInput.click();
+  }
+}
+
+async function handleMenuCsvFileSelected(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const btnImport = document.getElementById("btnImportMenuCsv");
+  const origHtml = btnImport ? btnImport.innerHTML : "";
+  if (btnImport) {
+    btnImport.disabled = true;
+    btnImport.innerHTML = `<span>Importing...</span>`;
+  }
+
+  showToast("Uploading and overwriting menu...");
+
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/admin/menu/import", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert("CSV Import Failed:\n\n" + (data.detail || "Unknown error occurred"));
+      showToast(data.detail || "Import failed");
+    } else {
+      showToast(data.message || `Menu imported successfully (${data.count} items).`);
+      await loadMenu();
+    }
+  } catch (err) {
+    alert("Network or server error during CSV import:\n\n" + err.message);
+    showToast("Error importing menu CSV");
+  } finally {
+    if (btnImport) {
+      btnImport.disabled = false;
+      btnImport.innerHTML = origHtml;
+    }
+    event.target.value = "";
+  }
 }
 
 let auditCurrentPage = 1;

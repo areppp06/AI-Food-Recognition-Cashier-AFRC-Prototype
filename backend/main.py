@@ -1393,6 +1393,190 @@ def delete_menu_item(dish_id: int, request: Request, db: Session = Depends(get_d
     db.commit()
     return {"status": "deleted", "id": dish_id}
 
+@app.get("/api/admin/menu/export")
+def export_admin_menu_csv(request: Request, db: Session = Depends(get_db)):
+    require_admin_api(request, db)
+    dishes = db.query(Dish).order_by(Dish.name.asc()).all()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["Name", "Alias", "Price", "Pieces", "Available", "Description"])
+    for d in dishes:
+        p_val = f"{d.price:.2f}" if d.price is not None else "0.00"
+        avail_str = "Yes" if d.available else "No"
+        pieces_val = d.pieces_per_portion if d.pieces_per_portion is not None else 1
+        writer.writerow([
+            d.name or "",
+            d.alias or "",
+            p_val,
+            pieces_val,
+            avail_str,
+            d.description or "",
+        ])
+
+    csv_bytes = ("\ufeff" + buf.getvalue()).encode("utf-8")
+    date_tag = (datetime.utcnow() + _local_tz_offset()).strftime("%Y%m%d_%H%M%S")
+    filename = f"afrc-menu-{date_tag}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            **NO_CACHE_HEADERS,
+        },
+    )
+
+@app.post("/api/admin/menu/import")
+async def import_admin_menu_csv(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    current_admin = require_admin_api(request, db)
+
+    fname = (file.filename or "").lower()
+    if not fname.endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only CSV files (.csv) are supported")
+
+    content_bytes = await file.read()
+    if not content_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded CSV file is empty")
+
+    if len(content_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large (maximum 5MB allowed)")
+
+    text = None
+    for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+        try:
+            text = content_bytes.decode(enc)
+            break
+        except (UnicodeDecodeError, LookupError):
+            continue
+
+    if text is None:
+        raise HTTPException(status_code=400, detail="Unable to decode CSV file. Please upload a UTF-8 encoded CSV.")
+
+    first_line = text.splitlines()[0] if text.splitlines() else ""
+    delimiter = ";" if (";" in first_line and "," not in first_line) else ","
+
+    reader = csv.reader(io.StringIO(text), delimiter=delimiter)
+    rows = list(reader)
+    if not rows:
+        raise HTTPException(status_code=400, detail="CSV file contains no rows")
+
+    raw_headers = rows[0]
+    normalized_headers = [h.strip().lower() for h in raw_headers]
+
+    col_map = {}
+    for idx, h in enumerate(normalized_headers):
+        if h in ("name", "dish name", "dish", "ai dish name", "item", "item name") and "name" not in col_map:
+            col_map["name"] = idx
+        elif h in ("alias", "customer alias", "display name") and "alias" not in col_map:
+            col_map["alias"] = idx
+        elif h in ("price", "price (rm)", "price rm", "rm", "cost") and "price" not in col_map:
+            col_map["price"] = idx
+        elif h in ("pieces", "piece", "pieces per portion", "pieces / portion", "portion", "qty", "count") and "pieces" not in col_map:
+            col_map["pieces"] = idx
+        elif h in ("available", "available today", "is available", "active", "status", "enabled") and "available" not in col_map:
+            col_map["available"] = idx
+        elif h in ("description", "desc", "ai description", "visual description", "ai visual description") and "description" not in col_map:
+            col_map["description"] = idx
+
+    if "name" not in col_map:
+        raise HTTPException(
+            status_code=400,
+            detail="CSV is missing the 'Name' column header. Required column: Name (optional: Alias, Price, Pieces, Available, Description)."
+        )
+
+    new_dishes = []
+    seen_names = set()
+
+    for row_idx, row in enumerate(rows[1:], start=2):
+        if not row or not any(field.strip() for field in row):
+            continue
+
+        def get_val(key, default=""):
+            idx = col_map.get(key)
+            if idx is not None and idx < len(row):
+                return row[idx].strip()
+            return default
+
+        name = get_val("name")
+        if not name:
+            raise HTTPException(status_code=400, detail=f"Row {row_idx}: Dish Name cannot be empty")
+
+        name_lower = name.casefold()
+        if name_lower in seen_names:
+            raise HTTPException(status_code=400, detail=f"Row {row_idx}: Duplicate dish name '{name}' found in CSV")
+        seen_names.add(name_lower)
+
+        alias = get_val("alias")
+
+        price_raw = get_val("price", "0")
+        price_clean = re.sub(r"[^0-9.]", "", price_raw.replace(",", "."))
+        try:
+            price_val = float(price_clean) if price_clean else 0.0
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Row {row_idx} ('{name}'): Invalid price '{price_raw}'")
+
+        if price_val < 0.10 or price_val > 10000:
+            raise HTTPException(status_code=400, detail=f"Row {row_idx} ('{name}'): Price must be between RM 0.10 and RM 10,000")
+
+        pieces_raw = get_val("pieces", "1")
+        try:
+            pieces_val = int(re.sub(r"[^0-9]", "", pieces_raw)) if pieces_raw else 1
+            if pieces_val < 1:
+                pieces_val = 1
+            elif pieces_val > 100:
+                pieces_val = 100
+        except ValueError:
+            pieces_val = 1
+
+        avail_raw = get_val("available", "true").lower()
+        if avail_raw in ("false", "no", "0", "n", "f", "unavailable", "off", "disable", "disabled"):
+            avail_val = False
+        else:
+            avail_val = True
+
+        desc_raw = get_val("description")
+        if len(desc_raw) > 500:
+            desc_raw = desc_raw[:500]
+
+        dish = Dish(
+            name=name,
+            alias=alias,
+            price=round(price_val, 2),
+            available=avail_val,
+            unit="portion",
+            description=desc_raw,
+            pieces_per_portion=pieces_val,
+        )
+        new_dishes.append(dish)
+
+    if not new_dishes:
+        raise HTTPException(status_code=400, detail="No valid menu items found in CSV")
+
+    try:
+        db.query(Dish).delete()
+        for d in new_dishes:
+            db.add(d)
+        db.add(AuditLog(
+            cashier_id=current_admin.id,
+            admin_username=current_admin.username,
+            action="MENU_IMPORT",
+            details=f"Admin '{current_admin.username}' imported menu CSV overwriting with {len(new_dishes)} item(s)"
+        ))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to overwrite menu: {str(e)}")
+
+    return {
+        "ok": True,
+        "count": len(new_dishes),
+        "message": f"Successfully imported and overwrote menu with {len(new_dishes)} items."
+    }
+
 @app.get("/api/client-state")
 def get_client_state(
     request: Request,
