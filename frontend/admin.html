@@ -388,9 +388,47 @@
   /* Menu Form */
   .menu-form-grid {
     display: grid;
-    grid-template-columns: 1.2fr 1.2fr 0.7fr 0.7fr 2.4fr auto;
+    grid-template-columns: 1.2fr 1.2fr minmax(130px, 1fr) 0.8fr 2.2fr auto;
     gap: 0.85rem;
     align-items: end;
+  }
+  .price-stepper-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    width: 100%;
+  }
+  .price-stepper-wrap .input-box {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    padding: 0.5rem 0.25rem;
+  }
+  .price-step-btn {
+    width: 30px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #1e293b;
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    padding: 0;
+  }
+  .price-step-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+  .price-step-btn:active {
+    background: #cbd5e1;
+    transform: scale(0.95);
   }
   .field-label {
     display: flex;
@@ -1857,7 +1895,7 @@
           </button>
         </div>
         <div class="panel-body" id="addDishBody">
-          <form class="menu-form-grid" onsubmit="addDish(event)">
+          <form class="menu-form-grid" onsubmit="addDish(event)" novalidate>
             <label class="field-label">AI Dish Name
               <input class="input-box" id="newName" placeholder="e.g. Ayam goreng" required type="text">
             </label>
@@ -1865,7 +1903,11 @@
               <input class="input-box" id="newAlias" placeholder="e.g. Signature Fried Chicken" type="text">
             </label>
             <label class="field-label">Price (RM)
-              <input class="input-box" id="newPrice" min="0.10" required step="0.50" type="number" value="1.00">
+              <div class="price-stepper-wrap">
+                <button type="button" class="price-step-btn" onclick="stepPriceInput('newPrice', -1)" aria-label="Decrease price by 1">−</button>
+                <input class="input-box" id="newPrice" min="0" required step="1" type="number" value="1.00">
+                <button type="button" class="price-step-btn" onclick="stepPriceInput('newPrice', 1)" aria-label="Increase price by 1">+</button>
+              </div>
             </label>
             <label class="field-label">Pieces / Portion
               <input class="input-box" id="newPieces" max="100" min="1" required step="1" type="number" value="1">
@@ -4010,7 +4052,7 @@ async function loadMenu() {
         </td>
         <td><textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">${esc(d.description || "")}</textarea></td>
         <td style="width:110px;"><input type="number" min="1" max="100" step="1" class="input-box pieces" required value="${d.pieces_per_portion || 1}" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
-        <td style="width:120px;"><input type="number" step="0.50" min="0.10" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
+        <td style="width:130px;"><div class="price-stepper-wrap"><button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, -1)" aria-label="Decrease price by 1">−</button><input type="number" step="1" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"><button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, 1)" aria-label="Increase price by 1">+</button></div></td>
         <td style="width:100px; text-align:center;"><input type="checkbox" style="width:18px; height:18px;" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail" onchange="flushAutoSaveDish(${d.id})"></td>
         <td style="width:80px;"><button type="button" class="btn btn-danger btn-sm" data-id="${d.id}" data-name="${esc(d.name)}" onclick="removeDish(this)">Remove</button></td>
       </tr>
@@ -4043,7 +4085,11 @@ async function loadMenu() {
           <div class="mmc-grid">
             <label class="card-input-label">
               <span>Price (RM)</span>
-              <input type="number" step="0.50" min="0.10" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">
+              <div class="price-stepper-wrap">
+                <button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, -1)" aria-label="Decrease price by 1">−</button>
+                <input type="number" step="1" min="0" value="${Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">
+                <button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, 1)" aria-label="Increase price by 1">+</button>
+              </div>
             </label>
             <label class="card-input-label">
               <span>Pieces / Portion</span>
@@ -4090,6 +4136,27 @@ function setAutoSaveIndicator(state) {
       <span>Failed to save</span>
     `;
   }
+}
+
+function stepPriceInput(inputId, delta) {
+  const el = typeof inputId === "string" ? document.getElementById(inputId) : inputId;
+  if (!el) return;
+  let cur = parseFloat(el.value);
+  if (isNaN(cur)) cur = 0;
+  let next = Math.max(0.10, Math.round((cur + delta) * 100) / 100);
+  el.value = next.toFixed(2);
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function stepDishPrice(dishId, delta) {
+  const inputs = document.querySelectorAll(`.input-box.price[data-id="${dishId}"]`);
+  inputs.forEach(inp => {
+    let cur = parseFloat(inp.value);
+    if (isNaN(cur)) cur = 0;
+    let next = Math.max(0.10, Math.round((cur + delta) * 100) / 100);
+    inp.value = next.toFixed(2);
+  });
+  flushAutoSaveDish(dishId);
 }
 
 function triggerAutoSaveDish(dishId) {
@@ -4139,7 +4206,8 @@ async function saveDishById(dishId) {
     }
   }
 
-  const priceRaw = (priceInput ? priceInput.value : "").trim();
+  let priceRaw = (priceInput ? priceInput.value : "").trim().replace(',', '.');
+  if (priceRaw.startsWith('.')) priceRaw = '0' + priceRaw;
   const priceVal = parseFloat(priceRaw);
   if (isNaN(priceVal) || priceVal < 0.10) {
     showError("Price must be at least RM 0.10.");
@@ -4186,7 +4254,8 @@ async function addDish(event) {
   const name = document.getElementById("newName").value.trim();
   const alias = (document.getElementById("newAlias")?.value || "").trim();
   const priceInput = document.getElementById("newPrice");
-  const priceRaw = (priceInput?.value || "").trim();
+  let priceRaw = (priceInput?.value || "").trim().replace(',', '.');
+  if (priceRaw.startsWith('.')) priceRaw = '0' + priceRaw;
   const priceVal = parseFloat(priceRaw);
 
   if (isNaN(priceVal) || priceVal < 0.10) {
