@@ -388,27 +388,26 @@
   /* Menu Form */
   .menu-form-grid {
     display: grid;
-    grid-template-columns: 1.2fr 1.2fr minmax(130px, 1fr) 0.8fr 2.2fr auto;
+    grid-template-columns: 1.2fr 1.2fr auto 110px 2.2fr auto;
     gap: 0.85rem;
     align-items: end;
   }
   .price-stepper-wrap {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
-    width: 100%;
+    gap: 0.35rem;
   }
   .input-with-prefix {
     position: relative;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    flex: 1;
-    min-width: 0;
+    width: 110px;
+    min-width: 110px;
   }
   .input-with-prefix .currency-prefix {
     position: absolute;
-    left: 0.55rem;
-    font-size: 0.8rem;
+    left: 0.65rem;
+    font-size: 0.82rem;
     font-weight: 700;
     color: #64748b;
     pointer-events: none;
@@ -416,11 +415,21 @@
     z-index: 2;
   }
   .input-with-prefix .prefix-input {
-    width: 100%;
-    padding-left: 2rem !important;
-    padding-right: 0.35rem !important;
+    width: 100% !important;
+    padding-left: 2.1rem !important;
+    padding-right: 0.5rem !important;
     text-align: left;
     font-weight: 700;
+  }
+  .menu-mobile-card .price-stepper-wrap {
+    display: flex;
+    width: 100%;
+  }
+  .menu-mobile-card .input-with-prefix {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    min-width: 0;
   }
   .price-stepper-wrap input[type=number]::-webkit-inner-spin-button,
   .price-stepper-wrap input[type=number]::-webkit-outer-spin-button {
@@ -1939,7 +1948,7 @@
               </div>
             </label>
             <label class="field-label">Pieces / Portion
-              <input class="input-box" id="newPieces" max="100" min="1" required step="1" type="number" value="1">
+              <input class="input-box" id="newPieces" max="100" min="1" required step="1" type="number" value="1" style="width:110px;">
             </label>
             <label class="field-label">AI Visual Description (optional)
               <input class="input-box" id="newDescription" maxlength="500" placeholder="e.g. fried chicken piece with crispy skin" type="text">
@@ -1975,7 +1984,7 @@
                 <th style="min-width:160px;">Customer Alias</th>
                 <th>Description for AI</th>
                 <th style="width:110px;">Pieces / Portion</th>
-                <th style="width:160px;">Price</th>
+                <th style="width:190px;">Price</th>
                 <th style="width:100px; text-align:center;">Available Today</th>
                 <th style="width:80px;"></th>
               </tr>
@@ -4081,7 +4090,7 @@ async function loadMenu() {
         </td>
         <td><textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">${esc(d.description || "")}</textarea></td>
         <td style="width:110px;"><input type="number" min="1" max="100" step="1" class="input-box pieces" required value="${d.pieces_per_portion || 1}" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
-        <td style="width:160px;"><div class="price-stepper-wrap"><button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, -1)" aria-label="Decrease price by 1">−</button><div class="input-with-prefix"><span class="currency-prefix">RM</span><input type="number" step="1" min="0" value="${Math.round(d.price) == d.price ? Number(d.price).toFixed(0) : Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box prefix-input price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></div><button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, 1)" aria-label="Increase price by 1">+</button></div></td>
+        <td style="width:190px;"><div class="price-stepper-wrap"><button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, -1)" aria-label="Decrease price by 1">−</button><div class="input-with-prefix"><span class="currency-prefix">RM</span><input type="number" step="1" min="0" value="${Math.round(d.price) == d.price ? Number(d.price).toFixed(0) : Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box prefix-input price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></div><button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, 1)" aria-label="Increase price by 1">+</button></div></td>
         <td style="width:100px; text-align:center;"><input type="checkbox" style="width:18px; height:18px;" ${d.available ? "checked" : ""} data-id="${d.id}" class="avail" onchange="flushAutoSaveDish(${d.id})"></td>
         <td style="width:80px;"><button type="button" class="btn btn-danger btn-sm" data-id="${d.id}" data-name="${esc(d.name)}" onclick="removeDish(this)">Remove</button></td>
       </tr>
