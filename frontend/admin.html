@@ -2216,7 +2216,7 @@
               <span>Customer Feedbacks &amp; Ratings</span>
             </div>
             <p style="font-size:0.82rem; color:#64748b; margin-top:0.25rem;">
-              Reviews submitted after bill payment, including star ratings, quick tags, comments, customer phone, and plate photos.
+              Reviews submitted after bill payment.
             </p>
           </div>
           <button type="button" class="btn btn-outline btn-sm" onclick="loadFeedbacks()">
@@ -2229,13 +2229,12 @@
           <div class="stats-grid" style="margin-bottom:1.25rem;">
             <div class="stat-card">
               <div class="stat-label">Average Rating</div>
-              <div class="stat-value amber" id="fbAvgRating">0.0 <span style="font-size:1.1rem;">★</span></div>
+              <div class="stat-value" id="fbAvgRating">0.0 <span style="font-size:1.1rem;">★</span></div>
               <div class="stat-sub" id="fbTotalCount">0 total reviews</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Positive Reviews (4★ - 5★)</div>
               <div class="stat-value green" id="fbPositiveCount">0</div>
-              <div class="stat-sub" id="fbPositivePct">0% satisfaction</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Improvement Needed (1★ - 3★)</div>
@@ -4833,14 +4832,26 @@ async function loadFeedbacks() {
     const avgEl = document.getElementById("fbAvgRating");
     const totalEl = document.getElementById("fbTotalCount");
     const posEl = document.getElementById("fbPositiveCount");
-    const posPctEl = document.getElementById("fbPositivePct");
     const impEl = document.getElementById("fbImproveCount");
 
-    if (avgEl) avgEl.innerHTML = `${(summary.avg_rating || 0).toFixed(1)} <span style="font-size:1.1rem; color:#f59e0b;">★</span>`;
+    const avg = Number(summary.avg_rating || 0);
+    let ratingColor = "#94a3b8";
+    if ((summary.total || 0) > 0) {
+      if (avg >= 4.0) {
+        ratingColor = "#10b981"; // 4-5 green
+      } else if (avg >= 3.0) {
+        ratingColor = "#eab308"; // 3 yellow
+      } else {
+        ratingColor = "#ef4444"; // 1-2 red
+      }
+    }
+
+    if (avgEl) {
+      avgEl.style.color = ratingColor;
+      avgEl.innerHTML = `${avg.toFixed(1)} <span style="font-size:1.1rem; color:${ratingColor};">★</span>`;
+    }
     if (totalEl) totalEl.textContent = `${summary.total || 0} total reviews`;
     if (posEl) posEl.textContent = summary.positive_count || 0;
-    const pct = summary.total > 0 ? Math.round((summary.positive_count / summary.total) * 100) : 0;
-    if (posPctEl) posPctEl.textContent = `${pct}% satisfaction`;
     if (impEl) impEl.textContent = summary.improvement_count || 0;
 
     const tbody = document.getElementById("feedbacksBody");
