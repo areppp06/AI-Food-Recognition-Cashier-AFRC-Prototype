@@ -669,8 +669,8 @@ input[type="email"]:focus,
   <input autocomplete="tel-national" id="phoneLocal" inputmode="numeric" maxlength="11" placeholder="12 345 6789" required type="tel">
 </div>
 </div>
-<div class="input-group">
-<label for="email">Email for receipt (optional) - Coming soon</label>
+<div class="input-group" id="emailInputGroup" style="display:none;">
+<label for="email">Email for receipt (optional)</label>
 <input autocomplete="email" id="email" placeholder="name@domain.com" type="email">
 </div>
 <label class="confirm-wrapper">
@@ -1293,6 +1293,16 @@ async function load() {
 
     billBox.innerHTML = html;
     form.hidden = false;
+    const emailGroup = document.getElementById("emailInputGroup");
+    if (emailGroup) {
+      if (data.email_receipt_enabled) {
+        emailGroup.style.display = "";
+      } else {
+        emailGroup.style.display = "none";
+        const emailInput = document.getElementById("email");
+        if (emailInput) emailInput.value = "";
+      }
+    }
     syncButtons();
     renderPayTurnstile();
   } catch (e) {
@@ -1348,13 +1358,17 @@ form.onsubmit = async (event) => {
   }
 
   try {
+    const emailGroup = document.getElementById("emailInputGroup");
+    const isEmailVisible = emailGroup && emailGroup.style.display !== "none";
+    const emailVal = isEmailVisible ? String(document.getElementById("email").value || "").trim() : "";
+
     const res = await fetch("/api/pay", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
         session_id: sessionId,
         phone: normalizedPhone,
-        email: document.getElementById("email").value,
+        email: emailVal,
         "cf-turnstile-response": token
       })
     });
@@ -1379,9 +1393,8 @@ form.onsubmit = async (event) => {
       errorBox.textContent = "Payment checkout could not be loaded. Please refresh and try again.";
       return;
     }
-    const email = String(document.getElementById("email").value || "").trim();
     const prefill = { contact: normalizedPhone };
-    if (email) prefill.email = email;
+    if (emailVal) prefill.email = emailVal;
     const restName = data.restaurant_name || (currentBillData && currentBillData.restaurant_name) || "AFRC";
     const checkout = new window.Razorpay({
       key: data.key_id,

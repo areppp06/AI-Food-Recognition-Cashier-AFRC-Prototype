@@ -1628,6 +1628,7 @@ def get_client_state(
             },
             "coming_soon": _restaurant_settings()["coming_soon"],
             "maintenance_mode": _restaurant_settings()["maintenance_mode"],
+            "email_receipt_enabled": _restaurant_settings()["email_receipt_enabled"],
         },
         headers=NO_CACHE_HEADERS,
     )
@@ -1987,6 +1988,7 @@ def _bill_payload(session: SessionBill, refunded_amount: float = 0.0, is_owner_o
         "max_retakes": max_retakes,
         "receipt_email": email_val,
         "receipt_phone": phone_val,
+        "email_receipt_enabled": _restaurant_settings()["email_receipt_enabled"],
         "curlec_order_id": session.curlec_order_id or "",
         "curlec_payment_id": session.curlec_payment_id or "",
         "restaurant_name": prof["restaurant_name"],
@@ -2313,6 +2315,7 @@ def _restaurant_settings() -> dict:
     }
     coming_soon = env_data.get("COMING_SOON", "false").strip().lower() in ("true", "1", "yes")
     maintenance = env_data.get("MAINTENANCE_MODE", "false").strip().lower() in ("true", "1", "yes")
+    email_receipt = env_data.get("ENABLE_EMAIL_RECEIPT", "false").strip().lower() in ("true", "1", "yes")
     op_start = env_data.get("OPERATION_HOURS_START", "08:00").strip() or "08:00"
     op_end = env_data.get("OPERATION_HOURS_END", "17:00").strip() or "17:00"
     
@@ -2324,6 +2327,7 @@ def _restaurant_settings() -> dict:
     return {
         "coming_soon": coming_soon,
         "maintenance_mode": maintenance,
+        "email_receipt_enabled": email_receipt,
         "operation_hours_start": op_start,
         "operation_hours_end": op_end,
         "is_open": is_open,
@@ -2343,6 +2347,10 @@ def _save_restaurant_settings(updates: dict) -> dict:
         keys_map["COMING_SOON"] = "true" if updates["coming_soon"] else "false"
     if "maintenance_mode" in updates:
         keys_map["MAINTENANCE_MODE"] = "true" if updates["maintenance_mode"] else "false"
+    if "email_receipt_enabled" in updates:
+        keys_map["ENABLE_EMAIL_RECEIPT"] = "true" if updates["email_receipt_enabled"] else "false"
+    elif "enable_email_receipt" in updates:
+        keys_map["ENABLE_EMAIL_RECEIPT"] = "true" if updates["enable_email_receipt"] else "false"
     if "operation_hours_start" in updates and updates["operation_hours_start"]:
         keys_map["OPERATION_HOURS_START"] = str(updates["operation_hours_start"]).strip()
     if "operation_hours_end" in updates and updates["operation_hours_end"]:
@@ -3679,6 +3687,8 @@ async def update_admin_restaurant_settings(request: Request, db: Session = Depen
         changes.append(f"coming_soon={'ENABLED' if updated['coming_soon'] else 'DISABLED'}")
     if "maintenance_mode" in data:
         changes.append(f"maintenance_mode={'ENABLED' if updated['maintenance_mode'] else 'DISABLED'}")
+    if "email_receipt_enabled" in data or "enable_email_receipt" in data:
+        changes.append(f"email_receipt={'ENABLED' if updated['email_receipt_enabled'] else 'DISABLED'}")
     if op_start is not None or op_end is not None:
         changes.append(f"operation_hours={updated['operation_hours_start']}-{updated['operation_hours_end']}")
         

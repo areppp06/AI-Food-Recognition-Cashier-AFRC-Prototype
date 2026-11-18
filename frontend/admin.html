@@ -2199,6 +2199,27 @@
               </div>
             </div>
 
+            <!-- Customer Email Receipt Switch Row -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Customer Email Receipt</span>
+                  <span id="badgeEmailReceipt" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
+                </div>
+                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
+                  When enabled, displays the optional email receipt field on the bill payment page. When disabled, the email field is hidden.
+                </p>
+              </div>
+              <div style="flex-shrink:0;">
+                <label class="switch-wrap" style="cursor:pointer;" onclick="onEmailReceiptToggle(event)">
+                  <span class="switch-toggle">
+                    <input type="checkbox" id="toggleEmailReceipt" class="switch-input" style="pointer-events:none;">
+                    <span class="switch-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -4964,6 +4985,21 @@ async function loadRestaurantSettings() {
       }
     }
 
+    const emailToggle = document.getElementById("toggleEmailReceipt");
+    const emailBadge = document.getElementById("badgeEmailReceipt");
+    if (emailToggle) emailToggle.checked = !!data.email_receipt_enabled;
+    if (emailBadge) {
+      if (data.email_receipt_enabled) {
+        emailBadge.textContent = "Active";
+        emailBadge.style.background = "#dcfce7";
+        emailBadge.style.color = "#15803d";
+      } else {
+        emailBadge.textContent = "Disabled";
+        emailBadge.style.background = "#e2e8f0";
+        emailBadge.style.color = "#475569";
+      }
+    }
+
     if (data.operation_hours_start) {
       document.getElementById("opHourStartInput").value = data.operation_hours_start;
     }
@@ -5014,6 +5050,18 @@ function onMaintenanceClick(event) {
   } else {
     openRestaurantConfirmModal("maintenance");
   }
+}
+
+async function onEmailReceiptToggle(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const toggle = document.getElementById("toggleEmailReceipt");
+  const nextVal = !toggle.checked;
+  await updateRestaurantSetting({
+    email_receipt_enabled: nextVal
+  }, nextVal ? "Email receipt field enabled on bill page!" : "Email receipt field disabled & hidden on bill page!");
 }
 
 function openRestaurantConfirmModal(actionType) {
