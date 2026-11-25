@@ -677,8 +677,6 @@ input[type="email"]:focus,
 <input id="confirmItems" type="checkbox">
 <span class="confirm-text">I confirm that all listed dishes and quantities on my plate are accurate.</span>
 </label>
-<div class="turnstile-slot" id="pay-turnstile"></div>
-<div id="turnstileHelp" style="display:none; color:#ea580c; text-align:center; font-size:0.85rem; margin-top:0.35rem; font-weight:500;">Please tick the verification box above to continue.</div>
 <div class="action-row">
 <button class="btn btn-secondary" id="needCashier" type="button">Need Cashier</button>
 <button class="btn" disabled id="payBtn" type="submit">
@@ -805,114 +803,7 @@ function closePhotoLightbox() {
   lb.classList.remove("open");
 }
 
-let payWidgetId;
-let payToken = "";
-let payFailed = false;
-let payInteractive = false;
-let payWaiters = [];
-const paySlot = document.getElementById("pay-turnstile");
 
-function settlePayWaiters(token, error) {
-  const list = payWaiters.splice(0, payWaiters.length);
-  list.forEach(w => {
-    clearTimeout(w.timer);
-    if (token) w.resolve(token);
-    else w.reject(error || new Error("CAPTCHA_FAILED"));
-  });
-}
-
-function renderPayTurnstile() {
-  if (payWidgetId !== undefined || !window.turnstile) return;
-  const slot = document.getElementById("pay-turnstile");
-  if (!slot) return;
-  try {
-    payWidgetId = window.turnstile.render("#pay-turnstile", {
-      sitekey: "0x4AAAAAAF7mA3wP9mtOWZAJ",
-      action: "pay",
-      size: "flexible",
-      appearance: "interaction-only",
-      "before-interactive-callback": () => {
-        payInteractive = true;
-        if (slot) slot.classList.add("interactive");
-        const help = document.getElementById("turnstileHelp");
-        if (help) help.style.display = "block";
-      },
-      "after-interactive-callback": () => {
-        payInteractive = false;
-        if (slot) slot.classList.remove("interactive");
-        const help = document.getElementById("turnstileHelp");
-        if (help) help.style.display = "none";
-      },
-      callback: (token) => {
-        payToken = token || "";
-        payFailed = false;
-        payInteractive = false;
-        if (slot) slot.classList.remove("interactive");
-        const help = document.getElementById("turnstileHelp");
-        if (help) help.style.display = "none";
-        if (payToken) settlePayWaiters(payToken, null);
-      },
-      "expired-callback": () => {
-        payToken = "";
-        if (payWidgetId !== undefined && window.turnstile) {
-          try { window.turnstile.reset(payWidgetId); } catch (e) {}
-        }
-      },
-      "error-callback": (code) => {
-        console.warn("Turnstile payment error code:", code);
-        payToken = "";
-        payFailed = true;
-        if (slot) slot.classList.remove("interactive");
-        settlePayWaiters(null, new Error("CAPTCHA_FAILED"));
-      },
-      "timeout-callback": () => {
-        payToken = "";
-        payFailed = true;
-        if (slot) slot.classList.remove("interactive");
-        settlePayWaiters(null, new Error("CAPTCHA_FAILED"));
-      }
-    });
-  } catch (err) {
-    console.error("renderPayTurnstile error:", err);
-  }
-}
-window.onPayTurnstileLoad = () => {
-  renderPayTurnstile();
-};
-function resetPayTurnstile() {
-  payToken = "";
-  payFailed = false;
-  payInteractive = false;
-  const slot = document.getElementById("pay-turnstile");
-  if (slot) slot.classList.remove("interactive");
-  const help = document.getElementById("turnstileHelp");
-  if (help) help.style.display = "none";
-  if (payWidgetId !== undefined && window.turnstile) {
-    try { window.turnstile.reset(payWidgetId); } catch (e) {}
-  }
-}
-function getPayToken() {
-  renderPayTurnstile();
-  const existing = payToken || (payWidgetId !== undefined && window.turnstile && window.turnstile.getResponse(payWidgetId)) || "";
-  if (existing) return Promise.resolve(existing);
-  if (payFailed && payWidgetId !== undefined && window.turnstile) {
-    payFailed = false;
-    try { window.turnstile.reset(payWidgetId); } catch (e) {}
-  }
-  return new Promise((resolve, reject) => {
-    const waiter = {
-      resolve,
-      reject,
-      timer: setTimeout(() => {
-        if (payInteractive) return;
-        const idx = payWaiters.indexOf(waiter);
-        if (idx !== -1) payWaiters.splice(idx, 1);
-        reject(new Error("CAPTCHA_FAILED"));
-      }, 15000)
-    };
-    payWaiters.push(waiter);
-  });
-}
 
 function esc(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({
@@ -1304,7 +1195,6 @@ async function load() {
       }
     }
     syncButtons();
-    renderPayTurnstile();
   } catch (e) {
     billBox.innerHTML = '<p class="note">Could not load this bill. Please try again.</p>';
   }
@@ -1344,19 +1234,6 @@ form.onsubmit = async (event) => {
   button.disabled = true;
   button.innerHTML = '<span class="spinner"></span> Processing...';
 
-  let token = "";
-  try {
-    token = await getPayToken();
-  } catch (err) {
-    button.disabled = !confirmBox.checked;
-    button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
-    errorBox.textContent = payInteractive
-      ? "Please tick the verification box above and tap Confirm & Pay again."
-      : "Security verification timed out. Please tap Confirm & Pay again.";
-    resetPayTurnstile();
-    return;
-  }
-
   try {
     const emailGroup = document.getElementById("emailInputGroup");
     const isEmailVisible = emailGroup && emailGroup.style.display !== "none";
@@ -1368,8 +1245,7 @@ form.onsubmit = async (event) => {
       body: JSON.stringify({
         session_id: sessionId,
         phone: normalizedPhone,
-        email: emailVal,
-        "cf-turnstile-response": token
+        email: emailVal
       })
     });
     const data = await res.json().catch(() => ({}));
@@ -1445,8 +1321,6 @@ form.onsubmit = async (event) => {
     button.disabled = !confirmBox.checked;
     button.innerHTML = '<span class="btn-text">Confirm &amp; Pay</span>';
     errorBox.textContent = "Could not reach the payment server. Please try again.";
-  } finally {
-    resetPayTurnstile();
   }
 };
 
@@ -1538,6 +1412,5 @@ window.addEventListener("pageshow", () => {
 load();
 </script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onPayTurnstileLoad&render=explicit" async defer></script>
 </body>
 </html>

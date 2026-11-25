@@ -2508,7 +2508,6 @@ def _normalize_my_phone(raw_phone: str) -> str:
 
 @app.post("/api/pay")
 def pay(payload: dict, request: Request, db: Session = Depends(get_db)):
-    _require_turnstile(str(payload.get("cf-turnstile-response") or ""), "pay", request)
     _expire_stale_bills(db)
     session_id = str(payload.get("session_id") or "").strip()
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
