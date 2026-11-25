@@ -1202,7 +1202,7 @@ async function load() {
       </div>`;
     if (potPts > 0) {
       html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; padding:0.45rem 0.7rem; background:#fff7ed; border:1px solid #ffedd5; border-radius:10px; font-size:0.8rem; color:#9a3412;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; margin-bottom:1.25rem; padding:0.45rem 0.7rem; background:#fff7ed; border:1px solid #ffedd5; border-radius:10px; font-size:0.8rem; color:#9a3412;">
           <span style="font-weight:600;">Loyalty Points to Earn</span>
           <strong style="font-weight:800; color:#ea580c;">+${potPts.toLocaleString()} pts</strong>
         </div>`;
@@ -1463,7 +1463,7 @@ async function loadCheckoutLoyaltyContext(bill) {
             </span>
             <div style="font-size:0.79rem; color:#7c2d12; line-height:1.35;">
               <div style="font-weight:800;">Guest Checkout${pts > 0 ? ` · +${pts} pts eligible` : ""}</div>
-              <div style="color:#9a3412; font-size:0.73rem;">Pay now and claim after, or sign in to apply vouchers</div>
+              <div style="color:#9a3412; font-size:0.73rem;">${pts > 0 ? `Sign in / Sign up to claim this ${pts.toLocaleString()} pts` : "Sign in / Sign up to earn points"}</div>
             </div>
           </div>
           <a href="/account?next=${nextParam}" style="background:#0f172a; color:#ffffff; font-size:0.75rem; font-weight:700; padding:0.42rem 0.8rem; border-radius:999px; text-decoration:none; white-space:nowrap;">Sign In / Vouchers</a>
