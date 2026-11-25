@@ -1727,6 +1727,14 @@
         <span>Restaurant's</span>
       </span>
     </button>
+    <button class="nav-btn" data-tab="loyalty" onclick="switchTab('loyalty', 'Loyalty &amp; Customers')">
+      <span class="nav-btn-left">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Loyalty &amp; Users</span>
+      </span>
+    </button>
     <button class="nav-btn" data-tab="feedbacks" onclick="switchTab('feedbacks', 'Customer Feedbacks')">
       <span class="nav-btn-left">
         <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
@@ -2241,6 +2249,185 @@
       </div>
     </section>
 
+    <!-- TAB: LOYALTY & CUSTOMERS -->
+    <section class="section-pane" id="tab-loyalty">
+      <div class="kpi-grid" style="margin-bottom:1.25rem;">
+        <div class="kpi-card">
+          <div class="kpi-label">Circulating Points</div>
+          <div class="kpi-value" id="loyKpiPoints">0 pts</div>
+          <div class="kpi-sub" id="loyKpiPointsVal">Est. RM 0.00 reward value</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Customer Accounts</div>
+          <div class="kpi-value" id="loyKpiCustomers">0</div>
+          <div class="kpi-sub" id="loyKpiCustomersSub">0 new this week</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Unclaimed Guest Points</div>
+          <div class="kpi-value" id="loyKpiUnclaimed" style="color:#ea580c;">0 pts</div>
+          <div class="kpi-sub" id="loyKpiUnclaimedSub">0 active guest bills</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Vouchers Redeemed (Month)</div>
+          <div class="kpi-value" id="loyKpiVoucherMonth" style="color:#059669;">RM 0.00</div>
+          <div class="kpi-sub" id="loyKpiVoucherToday">Today: RM 0.00</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.25rem;">
+        <button type="button" class="pill-filter active" data-loysub="customers" onclick="switchLoyaltySubtab('customers', this)">Customers &amp; Balances</button>
+        <button type="button" class="pill-filter" data-loysub="tiers" onclick="switchLoyaltySubtab('tiers', this)">Redemption Tiers &amp; Rules</button>
+        <button type="button" class="pill-filter" data-loysub="vouchers" onclick="switchLoyaltySubtab('vouchers', this)">Vouchers Management</button>
+      </div>
+
+      <!-- SUBTAB: CUSTOMERS -->
+      <div id="loySub-customers">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="panel-title">Registered Customer Accounts</div>
+            <div class="filter-bar">
+              <input type="text" class="search-input" id="loyCustomerSearch" placeholder="Search name, email, phone..." oninput="onLoyaltyCustomerSearch()">
+              <div class="filter-pills" id="loyCustomerFilterPills">
+                <button type="button" class="pill-filter active" onclick="setLoyaltyCustomerFilter('all', this)">All</button>
+                <button type="button" class="pill-filter" onclick="setLoyaltyCustomerFilter('active', this)">Active</button>
+                <button type="button" class="pill-filter" onclick="setLoyaltyCustomerFilter('debt', this)">In Debt</button>
+                <button type="button" class="pill-filter" onclick="setLoyaltyCustomerFilter('suspended', this)">Suspended</button>
+              </div>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Contact</th>
+                  <th>Paid Bills</th>
+                  <th>Points Balance</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="loyCustomersBody"></tbody>
+            </table>
+          </div>
+          <div class="pagination-bar">
+            <div class="pagination-info" id="loyCustomersPageInfo">Showing 0 customers</div>
+            <div class="pagination-controls" id="loyCustomersPageBtns"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBTAB: TIERS & RULES -->
+      <div id="loySub-tiers" style="display:none;">
+        <div class="panel-card" style="margin-bottom:1.25rem;">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Point Redemption Tiers</div>
+              <p style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Customers earn 10 points per whole RM 1 of food subtotal and redeem points for 30-day RM vouchers.</p>
+            </div>
+            <button type="button" class="btn btn-dark" onclick="openTierModal()">+ Add Tier</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Points Required</th>
+                  <th>Voucher Discount (RM)</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="loyTiersBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Redemption Cooldown Rule</div>
+              <p style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Minimum hours required between point-to-voucher redemptions per account (set 0 to disable).</p>
+            </div>
+          </div>
+          <div class="panel-body" style="padding:1.25rem;">
+            <form onsubmit="saveLoyaltyCooldown(event)" style="display:flex; align-items:flex-end; gap:0.85rem; flex-wrap:wrap; max-width:440px;">
+              <label class="field-label" style="flex:1; min-width:160px;">Cooldown Limit (Hours)
+                <input type="number" min="0" max="720" step="1" class="input-box" id="loyCooldownInput" value="12" required>
+              </label>
+              <button type="submit" class="btn btn-dark">Save Rule</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBTAB: VOUCHERS -->
+      <div id="loySub-vouchers" style="display:none;">
+        <div class="panel-card" style="margin-bottom:1.25rem;">
+          <div class="panel-header">
+            <div class="panel-title">Create Promotional / Customer Voucher</div>
+          </div>
+          <div class="panel-body" style="padding:1.25rem;">
+            <form onsubmit="createAdminVoucher(event)" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(175px, 1fr)); gap:0.9rem; align-items:end;">
+              <label class="field-label">Voucher Code
+                <input type="text" class="input-box" id="vNewCode" placeholder="e.g. MAKAN5" style="text-transform:uppercase;" required>
+              </label>
+              <label class="field-label">Discount Type
+                <select class="input-box" id="vNewType">
+                  <option value="fixed">Fixed Amount (RM)</option>
+                  <option value="percentage">Percentage (%)</option>
+                </select>
+              </label>
+              <label class="field-label">Discount Value
+                <input type="number" step="0.01" min="0.10" class="input-box" id="vNewVal" placeholder="e.g. 5.00" required>
+              </label>
+              <label class="field-label">Min Spend (RM)
+                <input type="number" step="0.01" min="0" class="input-box" id="vNewMin" value="0">
+              </label>
+              <label class="field-label">Max Uses (Public)
+                <input type="number" step="1" min="1" class="input-box" id="vNewMaxUses" value="1">
+              </label>
+              <label class="field-label">Assign Customer Email (Optional)
+                <input type="email" class="input-box" id="vNewEmail" placeholder="Blank = any signed-in user">
+              </label>
+              <label class="field-label">Expiry Date
+                <input type="date" class="input-box" id="vNewExpiry" required>
+              </label>
+              <button type="submit" class="btn">+ Create Voucher</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="panel-title">Issued Vouchers</div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+              <div class="filter-pills">
+                <button type="button" class="pill-filter active" onclick="setAdminVoucherSource('manual', this)">Manual Promo</button>
+                <button type="button" class="pill-filter" onclick="setAdminVoucherSource('points_redemption', this)">Points Redeemed</button>
+              </div>
+              <a href="/api/admin/loyalty/vouchers/export" class="btn btn-outline btn-sm" style="text-decoration:none;">Export CSV</a>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Value</th>
+                  <th>Min Spend &amp; Uses</th>
+                  <th>Assigned To</th>
+                  <th>Expires</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="loyVouchersBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- TAB: FEEDBACKS -->
     <section class="section-pane" id="tab-feedbacks">
       <div class="panel-card" style="margin-bottom:1.5rem;">
@@ -2446,6 +2633,77 @@
 
 <div class="lightbox" id="photoModal" onclick="this.classList.remove('open')">
   <img alt="Plate photo" id="photoModalImg" src="">
+</div>
+
+<!-- LOYALTY: ADJUST POINTS MODAL -->
+<div class="modal-backdrop" id="loyaltyAdjustModal" onclick="if(event.target===this) closeLoyaltyAdjustModal()">
+  <div class="refund-modal-card" style="max-width:440px;" role="dialog" aria-modal="true">
+    <div class="refund-modal-head">
+      <div class="refund-modal-title">Adjust Customer Points</div>
+      <button type="button" class="refund-modal-close" onclick="closeLoyaltyAdjustModal()">&times;</button>
+    </div>
+    <div class="refund-modal-body" style="padding:1.25rem 1.5rem 1.5rem;">
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:0.75rem 0.9rem; margin-bottom:1rem; font-size:0.86rem;">
+        <div id="loyAdjCustomerName" style="font-weight:800; color:#0f172a;"></div>
+        <div id="loyAdjCustomerBalance" style="color:#64748b; margin-top:0.15rem;"></div>
+      </div>
+      <form onsubmit="submitLoyaltyAdjust(event)">
+        <div style="display:flex; gap:0.5rem; margin-bottom:0.9rem;">
+          <button type="button" id="loyAdjBtnAdd" class="btn btn-sm" style="flex:1; background:#059669;" onclick="setLoyAdjMode('add')">+ Add Points</button>
+          <button type="button" id="loyAdjBtnDeduct" class="btn btn-outline btn-sm" style="flex:1;" onclick="setLoyAdjMode('deduct')">− Deduct Points</button>
+        </div>
+        <label class="field-label" style="margin-bottom:0.85rem;">Points Amount
+          <input type="number" min="1" step="1" class="input-box" id="loyAdjPointsInput" placeholder="e.g. 200" required>
+        </label>
+        <label class="field-label" style="margin-bottom:1rem;">Reason / Description
+          <input type="text" maxlength="160" class="input-box" id="loyAdjDescInput" placeholder="e.g. Goodwill compensation" required>
+        </label>
+        <div style="display:flex; gap:0.6rem;">
+          <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeLoyaltyAdjustModal()">Cancel</button>
+          <button type="submit" class="btn btn-dark" style="flex:1;" id="btnSubmitLoyAdj">Confirm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- LOYALTY: TIER MODAL -->
+<div class="modal-backdrop" id="loyaltyTierModal" onclick="if(event.target===this) closeTierModal()">
+  <div class="refund-modal-card" style="max-width:420px;" role="dialog" aria-modal="true">
+    <div class="refund-modal-head">
+      <div class="refund-modal-title" id="loyTierModalTitle">Add Redemption Tier</div>
+      <button type="button" class="refund-modal-close" onclick="closeTierModal()">&times;</button>
+    </div>
+    <div class="refund-modal-body" style="padding:1.25rem 1.5rem 1.5rem;">
+      <form onsubmit="saveTierModal(event)">
+        <label class="field-label" style="margin-bottom:0.85rem;">Points Required
+          <input type="number" min="1" step="1" class="input-box" id="loyTierPointsInput" placeholder="e.g. 200" required>
+        </label>
+        <label class="field-label" style="margin-bottom:0.85rem;">Discount Amount (RM)
+          <input type="number" min="0.10" step="0.01" class="input-box" id="loyTierDiscInput" placeholder="e.g. 1.00" required>
+        </label>
+        <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.86rem; font-weight:600; margin-bottom:1.1rem; cursor:pointer;">
+          <input type="checkbox" id="loyTierActiveInput" checked style="width:16px; height:16px;">
+          <span>Active (visible to customers)</span>
+        </label>
+        <div style="display:flex; gap:0.6rem;">
+          <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeTierModal()">Cancel</button>
+          <button type="submit" class="btn btn-dark" style="flex:1;">Save Tier</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- LOYALTY: CUSTOMER HISTORY MODAL -->
+<div class="modal-backdrop" id="loyaltyCustomerDetailModal" onclick="if(event.target===this) closeCustomerDetailModal()">
+  <div class="refund-modal-card" style="max-width:600px;" role="dialog" aria-modal="true">
+    <div class="refund-modal-head">
+      <div class="refund-modal-title" id="loyCustDetailTitle">Customer Activity</div>
+      <button type="button" class="refund-modal-close" onclick="closeCustomerDetailModal()">&times;</button>
+    </div>
+    <div class="refund-modal-body" id="loyCustDetailBody" style="padding:1.25rem 1.5rem 1.5rem; max-height:72vh; overflow-y:auto;"></div>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="archiveModal" onclick="if(event.target===this) closeArchiveModal()">
@@ -2669,6 +2927,9 @@ function switchTab(tabId, title) {
   }
   if (tabId === "restaurant") {
     loadRestaurantSettings();
+  }
+  if (tabId === "loyalty") {
+    loadAdminLoyalty();
   }
   if (tabId === "feedbacks") {
     loadFeedbacks();
@@ -5595,6 +5856,434 @@ function closeArchiveModal() {
   const modal = document.getElementById("archiveModal");
   if (modal) modal.classList.remove("open");
 }
+
+// ==================== LOYALTY & CUSTOMER MANAGEMENT ====================
+
+let loyCustPage = 1;
+let loyCustStatus = "all";
+let loyCustSearchTimer = null;
+let loyAdjTargetUser = null;
+let loyAdjAction = "add";
+let loyEditingTierId = null;
+let loyVoucherSource = "manual";
+
+function switchLoyaltySubtab(sub, btn) {
+  document.querySelectorAll("[data-loysub]").forEach(b => b.classList.toggle("active", b.dataset.loysub === sub));
+  ["customers", "tiers", "vouchers"].forEach(s => {
+    const el = document.getElementById("loySub-" + s);
+    if (el) el.style.display = (s === sub) ? "block" : "none";
+  });
+  if (sub === "customers") loadAdminCustomers(loyCustPage);
+  if (sub === "tiers") loadAdminTiers();
+  if (sub === "vouchers") loadAdminVouchers();
+}
+
+async function loadAdminLoyalty() {
+  const expEl = document.getElementById("vNewExpiry");
+  if (expEl && !expEl.value) {
+    const d = new Date(Date.now() + 30 * 86400000);
+    expEl.value = d.toISOString().slice(0, 10);
+  }
+  await Promise.all([
+    loadAdminLoyaltyOverview(),
+    loadAdminCustomers(loyCustPage),
+    loadAdminTiers(),
+    loadAdminVouchers(),
+  ]);
+}
+
+async function loadAdminLoyaltyOverview() {
+  try {
+    const res = await fetch("/api/admin/loyalty/overview", { cache: "no-store" });
+    if (!res.ok) return;
+    const d = await res.json();
+    document.getElementById("loyKpiPoints").textContent = Number(d.circulating_points || 0).toLocaleString() + " pts";
+    document.getElementById("loyKpiPointsVal").textContent = "Est. RM " + Number(d.est_value_rm || 0).toFixed(2) + " reward value";
+    document.getElementById("loyKpiCustomers").textContent = Number(d.total_customers || 0).toLocaleString();
+    document.getElementById("loyKpiCustomersSub").textContent = `${Number(d.new_this_week || 0)} new this week • ${Number(d.suspended_customers || 0)} suspended`;
+    document.getElementById("loyKpiUnclaimed").textContent = Number(d.unclaimed_points_total || 0).toLocaleString() + " pts";
+    document.getElementById("loyKpiUnclaimedSub").textContent = `${Number(d.unclaimed_bills_count || 0)} unclaimed guest bill(s)`;
+    const vs = d.voucher_stats || {};
+    document.getElementById("loyKpiVoucherMonth").textContent = "RM " + Number(vs.this_month || 0).toFixed(2);
+    document.getElementById("loyKpiVoucherToday").textContent = `Today: RM ${Number(vs.today || 0).toFixed(2)} • Week: RM ${Number(vs.this_week || 0).toFixed(2)}`;
+    const cdInp = document.getElementById("loyCooldownInput");
+    if (cdInp && d.voucher_cooldown_hours !== undefined) cdInp.value = d.voucher_cooldown_hours;
+  } catch (e) {}
+}
+
+function onLoyaltyCustomerSearch() {
+  clearTimeout(loyCustSearchTimer);
+  loyCustSearchTimer = setTimeout(() => loadAdminCustomers(1), 280);
+}
+
+function setLoyaltyCustomerFilter(status, btn) {
+  loyCustStatus = status;
+  document.querySelectorAll("#loyCustomerFilterPills .pill-filter").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  loadAdminCustomers(1);
+}
+
+async function loadAdminCustomers(page = 1) {
+  loyCustPage = page;
+  const search = (document.getElementById("loyCustomerSearch")?.value || "").trim();
+  const tbody = document.getElementById("loyCustomersBody");
+  if (!tbody) return;
+  try {
+    const res = await fetch(`/api/admin/loyalty/customers?page=${page}&limit=15&status=${encodeURIComponent(loyCustStatus)}&search=${encodeURIComponent(search)}`, { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = data.customers || [];
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:#94a3b8;">No matching customer accounts found.</td></tr>';
+    } else {
+      tbody.innerHTML = list.map(u => {
+        const bal = Number(u.points_balance || 0);
+        const balStyle = bal < 0 ? "color:#dc2626; font-weight:800;" : "color:#059669; font-weight:800;";
+        const stBadge = u.is_suspended
+          ? '<span class="badge badge-void">Suspended</span>'
+          : (bal < 0 ? '<span class="badge badge-pending">Points Debt</span>' : '<span class="badge badge-paid">Active</span>');
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:700; color:#0f172a;">${esc(u.name)}</div>
+              <div style="font-size:0.75rem; color:#64748b;">ID #${u.id}</div>
+            </td>
+            <td>
+              <div style="font-size:0.84rem; color:#1e293b;">${esc(u.email)}</div>
+              <div style="font-size:0.78rem; color:#64748b;">${esc(u.phone_number || "No phone saved")}</div>
+            </td>
+            <td>
+              <div style="font-weight:700;">${u.order_count} bill(s)</div>
+              <div style="font-size:0.78rem; color:#64748b;">RM ${Number(u.total_spent || 0).toFixed(2)}</div>
+            </td>
+            <td style="${balStyle}">${bal.toLocaleString()} pts</td>
+            <td>${stBadge}</td>
+            <td>
+              <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
+                <button type="button" class="btn btn-outline btn-sm" onclick='openLoyaltyAdjustModal(${JSON.stringify({id: u.id, name: u.name, email: u.email, points_balance: bal}).replace(/'/g, "&#39;")})'>Adjust Pts</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="openCustomerDetailModal(${u.id})">History</button>
+                <button type="button" class="btn btn-outline btn-sm" style="color:${u.is_suspended ? '#059669' : '#dc2626'};" onclick="toggleCustomerSuspension(${u.id}, ${!u.is_suspended}, '${esc(u.email)}')">${u.is_suspended ? 'Unsuspend' : 'Suspend'}</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+    document.getElementById("loyCustomersPageInfo").textContent = `Page ${data.page} of ${data.total_pages} (${data.total} total)`;
+    const btns = document.getElementById("loyCustomersPageBtns");
+    btns.innerHTML = `
+      <button type="button" class="btn btn-outline btn-sm" ${data.page <= 1 ? 'disabled' : ''} onclick="loadAdminCustomers(${data.page - 1})">Prev</button>
+      <button type="button" class="btn btn-outline btn-sm" ${data.page >= data.total_pages ? 'disabled' : ''} onclick="loadAdminCustomers(${data.page + 1})">Next</button>
+    `;
+  } catch (e) {}
+}
+
+function setLoyAdjMode(mode) {
+  loyAdjAction = mode;
+  const addBtn = document.getElementById("loyAdjBtnAdd");
+  const dedBtn = document.getElementById("loyAdjBtnDeduct");
+  if (mode === "add") {
+    addBtn.className = "btn btn-sm";
+    addBtn.style.background = "#059669";
+    dedBtn.className = "btn btn-outline btn-sm";
+    dedBtn.style.background = "";
+  } else {
+    dedBtn.className = "btn btn-sm";
+    dedBtn.style.background = "#dc2626";
+    addBtn.className = "btn btn-outline btn-sm";
+    addBtn.style.background = "";
+  }
+}
+
+function openLoyaltyAdjustModal(u) {
+  loyAdjTargetUser = u;
+  document.getElementById("loyAdjCustomerName").textContent = `${u.name} (${u.email})`;
+  document.getElementById("loyAdjCustomerBalance").textContent = `Current Balance: ${Number(u.points_balance).toLocaleString()} pts`;
+  document.getElementById("loyAdjPointsInput").value = "";
+  document.getElementById("loyAdjDescInput").value = "";
+  setLoyAdjMode("add");
+  document.getElementById("loyaltyAdjustModal").classList.add("open");
+}
+
+function closeLoyaltyAdjustModal() {
+  loyAdjTargetUser = null;
+  document.getElementById("loyaltyAdjustModal").classList.remove("open");
+}
+
+async function submitLoyaltyAdjust(event) {
+  event.preventDefault();
+  if (!loyAdjTargetUser) return;
+  const pts = parseInt(document.getElementById("loyAdjPointsInput").value, 10);
+  const desc = document.getElementById("loyAdjDescInput").value.trim();
+  if (!pts || pts <= 0 || !desc) return;
+  const btn = document.getElementById("btnSubmitLoyAdj");
+  btn.disabled = true;
+  try {
+    const res = await fetch("/api/admin/loyalty/points/adjust", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: loyAdjTargetUser.id,
+        action: loyAdjAction,
+        points: pts,
+        description: desc,
+      }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(d.detail || "Failed to adjust points.");
+      return;
+    }
+    closeLoyaltyAdjustModal();
+    showToast(`Points updated! New balance: ${d.balance} pts`);
+    loadAdminLoyaltyOverview();
+    loadAdminCustomers(loyCustPage);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function toggleCustomerSuspension(id, nextState, email) {
+  if (!confirm(`${nextState ? 'Suspend' : 'Unsuspend'} customer account ${email}?`)) return;
+  const res = await fetch(`/api/admin/loyalty/customers/${id}/suspension`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ is_suspended: nextState }),
+  });
+  if (res.ok) {
+    showToast(nextState ? "Customer suspended" : "Customer unsuspended");
+    loadAdminLoyaltyOverview();
+    loadAdminCustomers(loyCustPage);
+  }
+}
+
+async function openCustomerDetailModal(id) {
+  const modal = document.getElementById("loyaltyCustomerDetailModal");
+  const body = document.getElementById("loyCustDetailBody");
+  body.innerHTML = '<div style="padding:1.5rem; text-align:center; color:#64748b;">Loading history...</div>';
+  modal.classList.add("open");
+  try {
+    const res = await fetch(`/api/admin/loyalty/customers/${id}`, { cache: "no-store" });
+    if (!res.ok) { body.textContent = "Failed to load customer history."; return; }
+    const d = await res.json();
+    const c = d.customer;
+    document.getElementById("loyCustDetailTitle").textContent = `${c.name} (${c.points_balance} pts)`;
+    const txHtml = (d.transactions || []).length
+      ? d.transactions.map(t => `
+          <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid #f1f5f9; font-size:0.82rem;">
+            <div>
+              <div style="font-weight:600; color:#0f172a;">${esc(t.description)}</div>
+              <div style="color:#94a3b8; font-size:0.74rem;">${esc(t.created_at ? new Date(t.created_at).toLocaleString("en-MY") : "")}</div>
+            </div>
+            <strong style="color:${t.points > 0 ? '#059669' : '#dc2626'}; white-space:nowrap;">${t.points > 0 ? '+' : ''}${t.points} pts</strong>
+          </div>`).join("")
+      : '<div style="color:#94a3b8; font-size:0.82rem;">No points ledger entries.</div>';
+
+    const ordHtml = (d.orders || []).length
+      ? d.orders.map(o => `
+          <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid #f1f5f9; font-size:0.82rem;">
+            <div>
+              <strong>Bill #${esc(o.bill_number)}</strong> — ${esc(o.items_summary)}
+              <div style="color:#94a3b8; font-size:0.74rem;">${esc(o.paid_at ? new Date(o.paid_at).toLocaleString("en-MY") : "")}</div>
+            </div>
+            <div style="text-align:right; white-space:nowrap;">
+              <strong>RM ${Number(o.total).toFixed(2)}</strong>
+              <div style="font-size:0.74rem; color:#059669;">+${o.points_earned} pts</div>
+            </div>
+          </div>`).join("")
+      : '<div style="color:#94a3b8; font-size:0.82rem;">No paid bills linked.</div>';
+
+    body.innerHTML = `
+      <div style="margin-bottom:1.1rem;">
+        <div style="font-size:0.78rem; font-weight:800; text-transform:uppercase; color:#64748b; margin-bottom:0.4rem;">Recent Points Ledger</div>
+        ${txHtml}
+      </div>
+      <div>
+        <div style="font-size:0.78rem; font-weight:800; text-transform:uppercase; color:#64748b; margin-bottom:0.4rem;">Recent Paid Bills</div>
+        ${ordHtml}
+      </div>`;
+  } catch (e) {
+    body.textContent = "Error loading details.";
+  }
+}
+
+function closeCustomerDetailModal() {
+  document.getElementById("loyaltyCustomerDetailModal").classList.remove("open");
+}
+
+async function loadAdminTiers() {
+  const tbody = document.getElementById("loyTiersBody");
+  if (!tbody) return;
+  try {
+    const res = await fetch("/api/admin/loyalty/tiers", { cache: "no-store" });
+    if (!res.ok) return;
+    const tiers = await res.json();
+    if (!tiers.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:1.5rem; color:#94a3b8;">No tiers configured.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = tiers.map(t => `
+      <tr>
+        <td style="font-weight:800;">${Number(t.points_required).toLocaleString()} pts</td>
+        <td style="font-weight:800; color:#059669;">RM ${Number(t.discount_amount).toFixed(2)}</td>
+        <td>${t.is_active ? '<span class="badge badge-paid">Active</span>' : '<span class="badge badge-void">Hidden</span>'}</td>
+        <td>
+          <div style="display:flex; gap:0.4rem;">
+            <button type="button" class="btn btn-outline btn-sm" onclick='openTierModal(${JSON.stringify(t)})'>Edit</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteAdminTier(${t.id})">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  } catch (e) {}
+}
+
+function openTierModal(tier = null) {
+  loyEditingTierId = tier ? tier.id : null;
+  document.getElementById("loyTierModalTitle").textContent = tier ? "Edit Redemption Tier" : "Add Redemption Tier";
+  document.getElementById("loyTierPointsInput").value = tier ? tier.points_required : "";
+  document.getElementById("loyTierDiscInput").value = tier ? tier.discount_amount : "";
+  document.getElementById("loyTierActiveInput").checked = tier ? !!tier.is_active : true;
+  document.getElementById("loyaltyTierModal").classList.add("open");
+}
+
+function closeTierModal() {
+  loyEditingTierId = null;
+  document.getElementById("loyaltyTierModal").classList.remove("open");
+}
+
+async function saveTierModal(event) {
+  event.preventDefault();
+  const payload = {
+    points_required: parseInt(document.getElementById("loyTierPointsInput").value, 10),
+    discount_amount: parseFloat(document.getElementById("loyTierDiscInput").value),
+    is_active: document.getElementById("loyTierActiveInput").checked,
+  };
+  const url = loyEditingTierId ? `/api/admin/loyalty/tiers/${loyEditingTierId}` : "/api/admin/loyalty/tiers";
+  const method = loyEditingTierId ? "PUT" : "POST";
+  const res = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) { alert(d.detail || "Could not save tier."); return; }
+  closeTierModal();
+  showToast("Redemption tier saved");
+  loadAdminTiers();
+}
+
+async function deleteAdminTier(id) {
+  if (!confirm("Delete this redemption tier?")) return;
+  const res = await fetch(`/api/admin/loyalty/tiers/${id}`, { method: "DELETE" });
+  if (res.ok) {
+    showToast("Tier deleted");
+    loadAdminTiers();
+  }
+}
+
+async function saveLoyaltyCooldown(event) {
+  event.preventDefault();
+  const hrs = parseInt(document.getElementById("loyCooldownInput").value, 10) || 0;
+  const res = await fetch("/api/admin/loyalty/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ voucher_cooldown_hours: hrs }),
+  });
+  if (res.ok) showToast("Cooldown rule updated!");
+  else alert("Failed to update cooldown rule.");
+}
+
+function setAdminVoucherSource(src, btn) {
+  loyVoucherSource = src;
+  if (btn && btn.parentElement) {
+    btn.parentElement.querySelectorAll(".pill-filter").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
+  loadAdminVouchers();
+}
+
+async function loadAdminVouchers() {
+  const tbody = document.getElementById("loyVouchersBody");
+  if (!tbody) return;
+  try {
+    const res = await fetch(`/api/admin/loyalty/vouchers?source=${encodeURIComponent(loyVoucherSource)}&page=1&limit=50`, { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = data.vouchers || [];
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:#94a3b8;">No vouchers found in this category.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(v => {
+      const valStr = v.type === "percentage" ? `${v.discount_value}%` : `RM ${Number(v.discount_value).toFixed(2)}`;
+      const stBadge = v.is_redeemed
+        ? '<span class="badge badge-pending">Exhausted</span>'
+        : (v.is_expired ? '<span class="badge badge-void">Expired</span>' : (v.is_active ? '<span class="badge badge-paid">Active</span>' : '<span class="badge badge-void">Paused</span>'));
+      const expStr = v.expires_at ? new Date(v.expires_at).toLocaleDateString("en-MY") : "—";
+      return `
+        <tr>
+          <td style="font-family:ui-monospace,monospace; font-weight:800;">${esc(v.code)}</td>
+          <td style="font-weight:800; color:#059669;">${esc(valStr)}</td>
+          <td style="font-size:0.82rem;">Min RM ${Number(v.min_spend || 0).toFixed(2)} • Uses: <strong>${v.times_used}/${v.max_uses}</strong></td>
+          <td style="font-size:0.82rem;">${v.user_email ? esc(v.user_email) : '<span style="color:#64748b;">Any signed-in user</span>'}</td>
+          <td style="font-size:0.82rem;">${esc(expStr)}</td>
+          <td>${stBadge}</td>
+          <td>
+            <div style="display:flex; gap:0.35rem;">
+              ${!v.is_redeemed ? `<button type="button" class="btn btn-outline btn-sm" onclick="toggleAdminVoucher(${v.id})">${v.is_active ? 'Pause' : 'Activate'}</button>` : ''}
+              <button type="button" class="btn btn-danger btn-sm" onclick="archiveAdminVoucher(${v.id}, '${esc(v.code)}')">Archive</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  } catch (e) {}
+}
+
+async function createAdminVoucher(event) {
+  event.preventDefault();
+  const payload = {
+    code: document.getElementById("vNewCode").value.trim().toUpperCase(),
+    type: document.getElementById("vNewType").value,
+    discount_value: parseFloat(document.getElementById("vNewVal").value),
+    min_spend: parseFloat(document.getElementById("vNewMin").value || "0"),
+    max_uses: parseInt(document.getElementById("vNewMaxUses").value || "1", 10),
+    user_email: document.getElementById("vNewEmail").value.trim(),
+    expires_at: document.getElementById("vNewExpiry").value,
+  };
+  const res = await fetch("/api/admin/loyalty/vouchers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    alert(d.detail || "Could not create voucher.");
+    return;
+  }
+  document.getElementById("vNewCode").value = "";
+  document.getElementById("vNewVal").value = "";
+  document.getElementById("vNewEmail").value = "";
+  showToast("Voucher " + d.code + " created!");
+  loyVoucherSource = "manual";
+  loadAdminVouchers();
+}
+
+async function toggleAdminVoucher(id) {
+  const res = await fetch(`/api/admin/loyalty/vouchers/${id}/toggle`, { method: "PUT" });
+  if (res.ok) loadAdminVouchers();
+}
+
+async function archiveAdminVoucher(id, code) {
+  if (!confirm(`Archive voucher ${code}?`)) return;
+  const res = await fetch(`/api/admin/loyalty/vouchers/${id}`, { method: "DELETE" });
+  if (res.ok) {
+    showToast("Voucher archived");
+    loadAdminVouchers();
+  }
+}
+
 
 </script>
 </body>

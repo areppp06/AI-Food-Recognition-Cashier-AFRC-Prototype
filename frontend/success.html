@@ -466,6 +466,9 @@
       </button>
     </div>
 
+    <!-- Loyalty & Unclaimed Points Claim Card -->
+    <div id="loyaltySuccessBox" style="display:none; margin-bottom:1.15rem; text-align:left;"></div>
+
     <!-- Customer Review & Feedback Box -->
     <div class="feedback-box" id="feedbackSection">
       <div id="feedbackFormCard">
@@ -569,8 +572,10 @@
       const customerLines = (hasCustomer ? 1 : 0) + (custPhone ? 1 : 0) + (custEmail ? 1 : 0);
 
       const topInfoLines = (compName ? 1 : 0) + (compPhone ? 1 : 0) + (compEmail ? 1 : 0);
+      const discVal = Number((billData && billData.discount_amount) || 0);
+      const discountExtraH = discVal > 0 ? 9 : 0;
       const itemsHeight = items.length * 8.8;
-      const pageHeight = Math.max(120, 98 + topInfoLines * 3.4 + customerLines * 3.6 + itemsHeight);
+      const pageHeight = Math.max(120, 98 + topInfoLines * 3.4 + customerLines * 3.6 + itemsHeight + discountExtraH);
       const doc = new jsPDF({ unit: "mm", format: [80, pageHeight] });
 
       // Restaurant Header
@@ -691,6 +696,22 @@
       });
 
       doc.line(6, y - 1.5, 74, y - 1.5);
+
+      if (discVal > 0) {
+        y += 3.2;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.5);
+        doc.setTextColor(71, 85, 105);
+        const subRaw = Number((billData && billData.subtotal) || (Number(total) + discVal)).toFixed(2);
+        doc.text("Subtotal", 6, y);
+        doc.text("RM " + subRaw, 74, y, { align: "right" });
+        y += 3.8;
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(5, 150, 105);
+        doc.text(`Voucher (${(billData && billData.voucher_code) || "DISCOUNT"})`, 6, y);
+        doc.text("-RM " + discVal.toFixed(2), 74, y, { align: "right" });
+        y += 2.2;
+      }
 
       // Total Box
       y += 4;
@@ -958,6 +979,145 @@
     }
 
     initFeedbackSection();
-    load();
+    load().then(() => initSuccessLoyaltyCard());
+
+    let successGoogleLoaded = false;
+    function escHtml(v) {
+      return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    async function initSuccessLoyaltyCard() {
+      const box = document.getElementById("loyaltySuccessBox");
+      if (!box || !sessionId) return;
+      try {
+        const res = await fetch("/api/loyalty/status?session_id=" + encodeURIComponent(sessionId), { cache: "no-store" });
+        if (!res.ok) return;
+        const st = await res.json();
+        const billPts = Math.max(0, Number((billData && billData.points_earned) || 0) - Number((billData && billData.points_clawed_back) || 0));
+
+        if (st.authenticated && st.user) {
+          const claimedPts = (st.auto_claimed && st.auto_claimed.claimed) ? Number(st.auto_claimed.points || 0) : billPts;
+          box.style.display = "block";
+          box.innerHTML = `
+            <div style="background:#ecfdf5; border:1.5px solid #a7f3d0; border-radius:16px; padding:1rem 1.1rem;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
+                <div style="font-weight:800; font-size:0.95rem; color:#065f46;">
+                  ${claimedPts > 0 ? `+${claimedPts.toLocaleString()} Loyalty Points Credited!` : `Loyalty Account Linked`}
+                </div>
+                <span style="font-size:0.76rem; font-weight:800; background:#d1fae5; color:#047857; padding:0.2rem 0.55rem; border-radius:999px;">
+                  Balance: ${Number(st.user.points_balance || 0).toLocaleString()} pts
+                </span>
+              </div>
+              <div style="margin-top:0.55rem; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap; font-size:0.8rem; color:#047857;">
+                <span>Signed in as ${escHtml(st.user.email)}</span>
+                <a href="/account" style="color:#065f46; font-weight:800; text-decoration:underline;">Open My Rewards</a>
+              </div>
+            </div>`;
+          return;
+        }
+
+        const unclaimedPts = (st.unclaimed && st.unclaimed.has_unclaimed) ? Number(st.unclaimed.points || 0) : billPts;
+        if (unclaimedPts <= 0) {
+          box.style.display = "block";
+          box.innerHTML = `
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:0.85rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; font-size:0.82rem; color:#475569;">
+              <span>Earn 10 pts per RM 1 on future meals</span>
+              <a href="/account" style="color:#ff5e36; font-weight:700; text-decoration:none;">Sign In</a>
+            </div>`;
+          return;
+        }
+
+        box.style.display = "block";
+        box.innerHTML = `
+          <div style="background:linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border:1.5px solid #fdba74; border-radius:18px; padding:1.1rem 1.15rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; margin-bottom:0.35rem;">
+              <span style="font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:#c2410c;">Unclaimed Guest Points</span>
+              <span style="font-size:0.78rem; font-weight:800; background:#ff5e36; color:#ffffff; padding:0.2rem 0.6rem; border-radius:999px;">+${unclaimedPts.toLocaleString()} pts</span>
+            </div>
+            <div style="font-weight:800; font-size:0.98rem; color:#7c2d12; margin-bottom:0.3rem;">
+              Save your +${unclaimedPts.toLocaleString()} points before leaving!
+            </div>
+            <p style="font-size:0.8rem; color:#9a3412; line-height:1.45; margin-bottom:0.85rem;">
+              Sign in with Google below to claim these points into your account. Guest points do not accumulate if you pay another bill without signing in.
+            </p>
+            <div id="successGoogleBtnSlot" style="display:flex; justify-content:center; min-height:42px;"></div>
+            <div id="successClaimStatus" style="display:none; text-align:center; font-size:0.8rem; font-weight:600; color:#c2410c; margin-top:0.5rem;">Claiming points...</div>
+          </div>`;
+
+        if (st.google_client_id) {
+          renderSuccessGoogleSignIn(st.google_client_id);
+        } else {
+          const slot = document.getElementById("successGoogleBtnSlot");
+          if (slot) {
+            slot.innerHTML = `<a href="/account" style="display:inline-block; background:#0f172a; color:#ffffff; font-size:0.84rem; font-weight:700; padding:0.6rem 1.1rem; border-radius:999px; text-decoration:none;">Go to Account Page to Claim</a>`;
+          }
+        }
+      } catch (e) {}
+    }
+
+    function renderSuccessGoogleSignIn(clientId) {
+      const mountBtn = () => {
+        const slot = document.getElementById("successGoogleBtnSlot");
+        if (!slot || !window.google || !window.google.accounts || !window.google.accounts.id) return;
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (resp) => {
+            if (!resp || !resp.credential) return;
+            const stEl = document.getElementById("successClaimStatus");
+            if (stEl) { stEl.textContent = "Signing in & transferring points..."; stEl.style.display = "block"; }
+            try {
+              const r = await fetch("/api/customer/auth/google", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ credential: resp.credential, session_id: sessionId }),
+              });
+              const d = await r.json().catch(() => ({}));
+              if (!r.ok) {
+                if (stEl) { stEl.textContent = d.detail || "Could not sign in."; stEl.style.display = "block"; }
+                return;
+              }
+              const box = document.getElementById("loyaltySuccessBox");
+              const claimed = (d.claimed && d.claimed.claimed) ? Number(d.claimed.points || 0) : 0;
+              box.innerHTML = `
+                <div style="background:#ecfdf5; border:1.5px solid #a7f3d0; border-radius:16px; padding:1.05rem 1.15rem;">
+                  <div style="font-weight:800; font-size:0.96rem; color:#065f46; margin-bottom:0.25rem;">
+                    ${claimed > 0 ? `Points Claimed! +${claimed.toLocaleString()} pts transferred` : `Signed in successfully!`}
+                  </div>
+                  <div style="font-size:0.82rem; color:#047857; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                    <span>New Balance: <strong>${Number((d.user && d.user.points_balance) || 0).toLocaleString()} pts</strong></span>
+                    <a href="/account" style="color:#065f46; font-weight:800; text-decoration:underline;">View My Rewards</a>
+                  </div>
+                </div>`;
+            } catch (err) {
+              if (stEl) { stEl.textContent = "Network error claiming points."; stEl.style.display = "block"; }
+            }
+          },
+        });
+        slot.innerHTML = "";
+        window.google.accounts.id.renderButton(slot, {
+          theme: "outline",
+          size: "large",
+          shape: "pill",
+          text: "continue_with",
+          width: 280,
+        });
+      };
+
+      if (window.google && window.google.accounts) {
+        mountBtn();
+        return;
+      }
+      if (!successGoogleLoaded) {
+        successGoogleLoaded = true;
+        const s = document.createElement("script");
+        s.src = "https://accounts.google.com/gsi/client";
+        s.async = true;
+        s.defer = true;
+        s.onload = mountBtn;
+        document.head.appendChild(s);
+      }
+    }
   </script>
 </body></html>

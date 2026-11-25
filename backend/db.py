@@ -20,6 +20,8 @@ load_dotenv(ENV_DIR / "rate-limit.env")
 load_dotenv(ROOT / "rate-limit.env")
 load_dotenv(ENV_DIR / "curlec.env")
 load_dotenv(ROOT / "curlec.env")
+load_dotenv(ENV_DIR / "loyalty.env")
+load_dotenv(ROOT / "loyalty.env")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./afrc.db")
 
 _is_sqlite = DATABASE_URL.startswith("sqlite")
@@ -105,6 +107,18 @@ class SessionBill(Base):
     image_key = Column(String, default="")
     retake_count = Column(Integer, default=0)
     client_token = Column(String, default="", index=True)
+    customer_user_id = Column(Integer, nullable=True, index=True)
+    guest_session_id = Column(String, default="", index=True)
+    points_earned = Column(Integer, default=0)
+    points_status = Column(String, default="none")
+    points_claimed_by = Column(Integer, nullable=True)
+    points_claimed_at = Column(DateTime, nullable=True)
+    points_clawed_back = Column(Integer, default=0)
+    points_clawed_back_at = Column(DateTime, nullable=True)
+    voucher_id = Column(Integer, nullable=True)
+    voucher_code = Column(String, default="")
+    discount_amount = Column(Float, default=0.0)
+    voucher_restored_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
     paid_at = Column(DateTime, nullable=True)
@@ -160,6 +174,89 @@ class Feedback(Base):
     prefix_comment = Column(String, default="")
     comment = Column(String(80), default="")
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class CustomerUser(Base):
+    __tablename__ = "customer_users"
+    id = Column(Integer, primary_key=True, index=True)
+    google_id = Column(String(128), unique=True, index=True, nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    name = Column(String(255), default="Customer", nullable=False)
+    avatar_url = Column(String(512), default="")
+    phone_number = Column(String(32), default="")
+    points_balance = Column(Integer, default=0, nullable=False)
+    is_suspended = Column(Boolean, default=False, nullable=False)
+    suspended_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    last_login_at = Column(DateTime, nullable=True)
+
+
+class CustomerSession(Base):
+    __tablename__ = "customer_sessions"
+    token = Column(String(128), primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    ip = Column(String(100), default="")
+    user_agent = Column(String(255), default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False, index=True)
+
+
+class PointsTransaction(Base):
+    __tablename__ = "points_transactions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    points = Column(Integer, nullable=False)
+    transaction_type = Column(String(50), nullable=False, index=True)  # earned, redeemed, admin_add, admin_deduct, cancelled_order
+    reference_id = Column(String(128), nullable=True, index=True)
+    bill_number = Column(String(32), default="")
+    source = Column(String(32), default="direct")  # direct, guest_claim, redemption, refund_clawback, admin
+    description = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class PointRedemptionTier(Base):
+    __tablename__ = "point_redemption_tiers"
+    id = Column(Integer, primary_key=True, index=True)
+    points_required = Column(Integer, nullable=False)
+    discount_amount = Column(Float, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Voucher(Base):
+    __tablename__ = "vouchers"
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(50), unique=True, index=True, nullable=False)
+    type = Column(String(20), nullable=False)  # fixed, percentage
+    discount_value = Column(Float, nullable=False)
+    min_spend = Column(Float, default=0.0, nullable=False)
+    max_discount = Column(Float, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    user_id = Column(Integer, nullable=True, index=True)
+    is_redeemed = Column(Boolean, default=False, nullable=False)
+    max_uses = Column(Integer, default=1, nullable=False)
+    times_used = Column(Integer, default=0, nullable=False)
+    source = Column(String(32), default="manual", nullable=False)  # points_redemption, manual
+    is_archived = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class GuestUnclaimedSession(Base):
+    __tablename__ = "guest_unclaimed_sessions"
+    guest_session_id = Column(String(128), primary_key=True, index=True)
+    active_bill_id = Column(String(64), nullable=False, index=True)
+    unclaimed_points = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class LoyaltySettings(Base):
+    __tablename__ = "loyalty_settings"
+    id = Column(Integer, primary_key=True)
+    voucher_cooldown_hours = Column(Integer, default=12, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
 def format_bill_number(seq: int) -> str:
     seq = max(1, int(seq))
@@ -224,6 +321,45 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN updated_at DATETIME")
         if session_columns and "paid_at" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN paid_at DATETIME")
+        if session_columns and "customer_user_id" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN customer_user_id INTEGER")
+        if session_columns and "guest_session_id" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN guest_session_id TEXT DEFAULT ''")
+        if session_columns and "points_earned" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN points_earned INTEGER DEFAULT 0")
+        if session_columns and "points_status" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN points_status TEXT DEFAULT 'none'")
+        if session_columns and "points_claimed_by" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN points_claimed_by INTEGER")
+        if session_columns and "points_claimed_at" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN points_claimed_at DATETIME")
+        if session_columns and "points_clawed_back" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN points_clawed_back INTEGER DEFAULT 0")
+        if session_columns and "points_clawed_back_at" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN points_clawed_back_at DATETIME")
+        if session_columns and "voucher_id" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN voucher_id INTEGER")
+        if session_columns and "voucher_code" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN voucher_code TEXT DEFAULT ''")
+        if session_columns and "discount_amount" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN discount_amount REAL DEFAULT 0.0")
+        if session_columns and "voucher_restored_at" not in session_columns:
+            conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN voucher_restored_at DATETIME")
+
+        conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS idx_sessions_customer_user_id ON sessions (customer_user_id)"
+        )
+        conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS idx_sessions_guest_session_id ON sessions (guest_session_id)"
+        )
+        conn.exec_driver_sql(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uniq_points_txn_type_ref "
+            "ON points_transactions (transaction_type, reference_id)"
+        )
+        conn.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS idx_points_txn_user_created "
+            "ON points_transactions (user_id, created_at)"
+        )
         cooldown_columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(client_cooldowns)")]
         if cooldown_columns and "reason" not in cooldown_columns:
             conn.exec_driver_sql("ALTER TABLE client_cooldowns ADD COLUMN reason TEXT DEFAULT ''")
@@ -271,5 +407,17 @@ def init_db():
             Dish(name="Lamb", price=9.0, available=False),
         ]
         db.add_all(seeds)
+        db.commit()
+    # Seed default point redemption tiers (from takcakap.com-v2) if empty
+    if db.query(PointRedemptionTier).count() == 0:
+        db.add_all([
+            PointRedemptionTier(points_required=200, discount_amount=1.00, is_active=True),
+            PointRedemptionTier(points_required=800, discount_amount=5.00, is_active=True),
+            PointRedemptionTier(points_required=1480, discount_amount=10.00, is_active=True),
+        ])
+        db.commit()
+    # Seed default loyalty settings if empty
+    if db.query(LoyaltySettings).count() == 0:
+        db.add(LoyaltySettings(id=1, voucher_cooldown_hours=12))
         db.commit()
     db.close()

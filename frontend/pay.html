@@ -646,8 +646,12 @@ input[type="email"]:focus,
 </style>
 </head>
 <body style="max-width: 100%; margin: 0px auto; padding: 1.5rem 1rem 2.5rem; background: rgb(233, 238, 245); color: rgb(15, 23, 42);">
-<div class="header" style="max-width: 480px; margin: 0 auto 1.25rem auto; padding: 0 0.25rem; display: flex; align-items: center; justify-content: space-between;">
+<div class="header" style="max-width: 480px; margin: 0 auto 1.25rem auto; padding: 0 0.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
 <h1>Bill Payment</h1>
+<a href="/account" id="payAccountPill" style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.4rem 0.8rem; border-radius:999px; background:#ffffff; border:1px solid #dbe3ee; color:#0f172a; font-size:0.78rem; font-weight:700; text-decoration:none; box-shadow:0 2px 6px rgba(15,23,42,0.06); white-space:nowrap;">
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff5e36" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+  <span id="payAccountPillText">Sign In / Rewards</span>
+</a>
 </div>
 <div class="bill-card" style="max-width: 480px; width: 100%; margin: 0px auto; padding: 2.25rem 1.75rem 2.5rem; background: rgb(255, 255, 255); mask-image: radial-gradient(9px at 50% 0px, transparent 9px, black 9.5px), radial-gradient(9px at 50% 100%, transparent 9px, black 9.5px); mask-position: 0px 0px, 0px 100%; mask-size: 24px 51%; mask-repeat: repeat-x; box-shadow: rgba(15, 23, 42, 0.14) 0px 18px 30px, rgba(15, 23, 42, 0.08) 0px 2px 6px; border-radius: 0px;">
 <div class="summary-header">
@@ -662,6 +666,7 @@ input[type="email"]:focus,
 </div>
 </div>
 <form id="payForm" hidden>
+<div id="loyaltyCheckoutWidget" style="margin-bottom:0.95rem;"></div>
 <div class="input-group">
 <label for="phoneLocal">Phone number <span style="color:#ef4444;">*</span></label>
 <div class="phone-field-wrap">
@@ -1176,11 +1181,32 @@ async function load() {
         <div class="retry-note ${currentRetakesLeft <= 0 ? 'warn' : ''}">${esc(retryNoteText)}</div>
       </div>`;
     html += '<div class="total-divider"></div>';
+    const subAmt = Number(data.subtotal !== undefined ? data.subtotal : data.total);
+    const discAmt = Number(data.discount_amount || 0);
+    const potPts = Number(data.potential_points !== undefined ? data.potential_points : (Math.floor(subAmt) * 10));
+    if (discAmt > 0) {
+      html += `
+        <div style="display:flex; justify-content:space-between; font-size:0.86rem; color:#64748b; margin-bottom:0.35rem;">
+          <span>Food Subtotal</span>
+          <span>RM ${subAmt.toFixed(2)}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.86rem; color:#059669; font-weight:700; margin-bottom:0.5rem;">
+          <span>Voucher (${esc(data.voucher_code || "DISCOUNT")})</span>
+          <span>− RM ${discAmt.toFixed(2)}</span>
+        </div>`;
+    }
     html += `
       <div class="total-row">
         <span class="total-label">Total Due</span>
         <span class="total-amount">RM ${Number(data.total).toFixed(2)}</span>
       </div>`;
+    if (potPts > 0) {
+      html += `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem; padding:0.45rem 0.7rem; background:#fff7ed; border:1px solid #ffedd5; border-radius:10px; font-size:0.8rem; color:#9a3412;">
+          <span style="font-weight:600;">Loyalty Points to Earn</span>
+          <strong style="font-weight:800; color:#ea580c;">+${potPts.toLocaleString()} pts</strong>
+        </div>`;
+    }
 
     billBox.innerHTML = html;
     form.hidden = false;
@@ -1195,6 +1221,7 @@ async function load() {
       }
     }
     syncButtons();
+    loadCheckoutLoyaltyContext(data);
   } catch (e) {
     billBox.innerHTML = '<p class="note">Could not load this bill. Please try again.</p>';
   }
@@ -1410,6 +1437,126 @@ window.addEventListener("pageshow", () => {
   load();
 });
 load();
+
+let checkoutLoyaltyLoadedOnce = false;
+async function loadCheckoutLoyaltyContext(bill) {
+  const pill = document.getElementById("payAccountPill");
+  const pillTxt = document.getElementById("payAccountPillText");
+  const widget = document.getElementById("loyaltyCheckoutWidget");
+  const nextParam = encodeURIComponent("/pay?session=" + sessionId);
+  if (pill) pill.href = "/account?next=" + nextParam;
+  if (!widget) return;
+
+  try {
+    const stRes = await fetch("/api/loyalty/status?session_id=" + encodeURIComponent(sessionId), { cache: "no-store" });
+    if (!stRes.ok) return;
+    const st = await stRes.json();
+
+    if (!st.authenticated || !st.user) {
+      if (pillTxt) pillTxt.textContent = "Sign In";
+      const pts = Number((bill && bill.potential_points) || 0);
+      widget.innerHTML = `
+        <div style="padding:0.65rem 0.85rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; font-size:0.8rem; color:#475569; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
+          <span>Guest checkout${pts > 0 ? ` — claim <strong>+${pts} pts</strong> after payment` : ''}</span>
+          <a href="/account?next=${nextParam}" style="color:#ff5e36; font-weight:700; text-decoration:none;">Use Voucher / Sign In</a>
+        </div>`;
+      return;
+    }
+
+    const u = st.user;
+    const firstName = String(u.name || "Account").split(" ")[0].slice(0, 12);
+    if (pillTxt) pillTxt.textContent = `${firstName} • ${Number(u.points_balance || 0).toLocaleString()} pts`;
+
+    // Auto-fill phone number once if customer has saved phone and input is empty
+    const phoneInp = document.getElementById("phoneLocal");
+    if (!checkoutLoyaltyLoadedOnce && phoneInp && !phoneInp.value.trim() && u.phone_number) {
+      let d = String(u.phone_number).replace(/\D/g, "");
+      if (d.startsWith("60")) d = d.slice(2);
+      if (d.startsWith("0")) d = d.slice(1);
+      if (d.length >= 9 && d.length <= 10) phoneInp.value = d;
+    }
+    checkoutLoyaltyLoadedOnce = true;
+
+    if (bill && bill.voucher_code) {
+      widget.innerHTML = `
+        <div style="padding:0.75rem 0.9rem; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:12px; display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
+          <div style="font-size:0.83rem; color:#065f46;">
+            <strong>Voucher ${esc(bill.voucher_code)}</strong> applied (−RM ${Number(bill.discount_amount || 0).toFixed(2)})
+          </div>
+          <button type="button" onclick="applyBillVoucher('')" style="background:#ffffff; border:1px solid #6ee7b7; color:#047857; font-size:0.76rem; font-weight:700; padding:0.32rem 0.65rem; border-radius:8px; cursor:pointer;">Remove</button>
+        </div>`;
+      return;
+    }
+
+    if (Number(u.points_balance || 0) < 0) {
+      widget.innerHTML = `
+        <div style="padding:0.65rem 0.85rem; background:#fffbeb; border:1px solid #fde68a; border-radius:12px; font-size:0.8rem; color:#92400e;">
+          ${esc(u.debt_message || "Vouchers are frozen until points debt is cleared.")}
+        </div>`;
+      return;
+    }
+
+    const vRes = await fetch("/api/customer/vouchers?activeOnly=true", { cache: "no-store" });
+    const myVouchers = vRes.ok ? await vRes.json() : [];
+    const subAmt = Number((bill && bill.subtotal) || (bill && bill.total) || 0);
+    const usable = (Array.isArray(myVouchers) ? myVouchers : []).filter(v => subAmt + 1e-6 >= Number(v.min_spend || 0));
+
+    let chipsHtml = "";
+    if (usable.length) {
+      chipsHtml = `<div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.55rem;">` +
+        usable.slice(0, 4).map(v => {
+          const lbl = v.type === "percentage" ? `${v.discount_value}% Off` : `RM ${Number(v.discount_value).toFixed(Number(v.discount_value) % 1 === 0 ? 0 : 2)} Off`;
+          return `<button type="button" onclick="applyBillVoucher('${esc(v.code)}')" style="background:#fff7ed; border:1px solid #fdba74; color:#c2410c; font-size:0.75rem; font-weight:700; padding:0.32rem 0.65rem; border-radius:999px; cursor:pointer;">Tap to use ${esc(v.code)} (${esc(lbl)})</button>`;
+        }).join("") + `</div>`;
+    }
+
+    widget.innerHTML = `
+      <div style="padding:0.8rem 0.9rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.45rem;">
+          <span style="font-size:0.8rem; font-weight:700; color:#334155;">Have a Voucher Code?</span>
+          <a href="/account?next=${nextParam}" style="font-size:0.75rem; font-weight:700; color:#ff5e36; text-decoration:none;">Redeem Pts (${Number(u.points_balance || 0).toLocaleString()} pts)</a>
+        </div>
+        ${chipsHtml}
+        <div style="display:flex; gap:0.45rem;">
+          <input type="text" id="voucherInputBox" placeholder="Enter voucher code" style="flex:1; padding:0.52rem 0.75rem; border:1.5px solid #cbd5e1; border-radius:10px; font-size:0.85rem; text-transform:uppercase;">
+          <button type="button" id="btnApplyVoucher" onclick="applyBillVoucher(document.getElementById('voucherInputBox').value)" style="background:#0f172a; color:#ffffff; border:none; border-radius:10px; padding:0 0.95rem; font-size:0.82rem; font-weight:700; cursor:pointer;">Apply</button>
+        </div>
+        <div id="voucherMsg" style="font-size:0.78rem; color:#dc2626; margin-top:0.35rem; display:none;"></div>
+      </div>`;
+  } catch (e) {}
+}
+
+async function applyBillVoucher(code) {
+  const msgEl = document.getElementById("voucherMsg");
+  const btn = document.getElementById("btnApplyVoucher");
+  if (msgEl) msgEl.style.display = "none";
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/voucher", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: String(code || "").trim() }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (msgEl) {
+        msgEl.textContent = messageOf(data) || "Invalid voucher code.";
+        msgEl.style.display = "block";
+      } else {
+        errorBox.textContent = messageOf(data) || "Could not update voucher.";
+      }
+      return;
+    }
+    await load();
+  } catch (e) {
+    if (msgEl) {
+      msgEl.textContent = "Network error applying voucher.";
+      msgEl.style.display = "block";
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
 </script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 </body>

@@ -26,10 +26,26 @@ from pathlib import Path
 from urllib.parse import quote
 from dotenv import dotenv_values
 
-from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, FailedScan, BillRefund, Feedback, AdminUser, AdminSession, next_bill_number
+from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, FailedScan, BillRefund, Feedback, AdminUser, AdminSession, Voucher, next_bill_number
 from .auth import hash_password, verify_password, create_admin_session, get_current_admin, require_admin_api, revoke_session, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS, get_or_create_setup_token, burn_setup_token
 from .schemas import Dish as DishSchema, BillResponse, BillItem, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
+from .loyalty import (
+    apply_bill_refund_loyalty_effects,
+    apply_or_clear_bill_voucher,
+    clear_unclaimed_points_cookie,
+    compute_points_from_food_subtotal,
+    compute_voucher_discount,
+    get_authoritative_guest_unclaimed,
+    get_current_customer,
+    get_or_create_guest_session_id,
+    process_verified_paid_bill,
+    revalidate_bill_voucher_before_pay,
+    set_guest_loyalty_cookie,
+    set_unclaimed_points_cookie,
+    validate_voucher_for_user,
+)
+from .customer_routes import router as customer_router
 
 import threading
 _IN_FLIGHT_REFUNDS: set[str] = set()
@@ -254,6 +270,7 @@ async def _record_failed_scan(
 
 # Serve frontend
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
+app.include_router(customer_router)
 
 def _clean_description(value) -> str:
     text = str(value or "").strip()
@@ -349,6 +366,13 @@ def _mask_email(email: str) -> str:
 def _verify_bill_ownership(bill, request: Request, db, explicit_token: str = "") -> None:
     current_admin = get_current_admin(request, db)
     if current_admin:
+        return
+    if getattr(bill, "customer_user_id", None):
+        current_cust = get_current_customer(request, db)
+        if current_cust and current_cust.id == bill.customer_user_id:
+            return
+    gsid, _ = get_or_create_guest_session_id(request)
+    if gsid and getattr(bill, "guest_session_id", "") and bill.guest_session_id == gsid:
         return
     if not bill.client_token:
         return
@@ -945,13 +969,17 @@ def robots_txt():
     )
 
 @app.get("/")
-async def root():
+async def root(request: Request):
     settings = _restaurant_settings()
     if settings["maintenance_mode"]:
         return RedirectResponse("/maintenance", status_code=307)
     if settings["coming_soon"]:
         return RedirectResponse("/coming-soon", status_code=307)
-    return FileResponse("frontend/index.html", headers=NO_CACHE_HEADERS)
+    gsid, is_new = get_or_create_guest_session_id(request)
+    resp = FileResponse("frontend/index.html", headers=NO_CACHE_HEADERS)
+    if is_new:
+        set_guest_loyalty_cookie(resp, request, gsid)
+    return resp
 
 @app.get("/coming-soon")
 async def coming_soon_page():
@@ -1268,11 +1296,15 @@ def auth_change_password(payload: dict, request: Request, db: Session = Depends(
 
 @app.get("/pay")
 async def pay_page(request: Request, session: str = "", db: Session = Depends(get_db)):
+    gsid, is_new = get_or_create_guest_session_id(request)
     if session:
         bill = db.query(SessionBill).filter(SessionBill.id == session).first()
         if bill and bill.client_token:
             current_admin = get_current_admin(request, db)
-            if not current_admin:
+            current_cust = get_current_customer(request, db)
+            owns_by_user = bool(current_cust and bill.customer_user_id and current_cust.id == bill.customer_user_id)
+            owns_by_guest = bool(gsid and bill.guest_session_id and bill.guest_session_id == gsid)
+            if not current_admin and not owns_by_user and not owns_by_guest:
                 c_token = _get_client_token(request)
                 if not c_token or c_token != bill.client_token:
                     return Response(
@@ -1280,15 +1312,23 @@ async def pay_page(request: Request, session: str = "", db: Session = Depends(ge
                         status_code=403,
                         media_type="text/html",
                     )
-    return FileResponse("frontend/pay.html", headers=NO_CACHE_HEADERS)
+    resp = FileResponse("frontend/pay.html", headers=NO_CACHE_HEADERS)
+    if is_new:
+        set_guest_loyalty_cookie(resp, request, gsid)
+    return resp
 
 @app.get("/payment/success")
 async def payment_success_page(request: Request, session: str = "", db: Session = Depends(get_db)):
+    gsid, is_new = get_or_create_guest_session_id(request)
+    bill = None
     if session:
         bill = db.query(SessionBill).filter(SessionBill.id == session).first()
         if bill and bill.client_token:
             current_admin = get_current_admin(request, db)
-            if not current_admin:
+            current_cust = get_current_customer(request, db)
+            owns_by_user = bool(current_cust and bill.customer_user_id and current_cust.id == bill.customer_user_id)
+            owns_by_guest = bool(gsid and bill.guest_session_id and bill.guest_session_id == gsid)
+            if not current_admin and not owns_by_user and not owns_by_guest:
                 c_token = _get_client_token(request)
                 if not c_token or c_token != bill.client_token:
                     return Response(
@@ -1296,7 +1336,14 @@ async def payment_success_page(request: Request, session: str = "", db: Session 
                         status_code=403,
                         media_type="text/html",
                     )
-    return FileResponse("frontend/success.html", headers=NO_CACHE_HEADERS)
+    resp = FileResponse("frontend/success.html", headers=NO_CACHE_HEADERS)
+    if is_new:
+        set_guest_loyalty_cookie(resp, request, gsid)
+    if bill and (bill.status or "").lower() == "paid" and (bill.points_status or "").lower() == "unclaimed" and bill.customer_user_id is None:
+        pts_net = max(0, int(bill.points_earned or 0) - int(bill.points_clawed_back or 0))
+        if pts_net > 0:
+            set_unclaimed_points_cookie(resp, request, bill.guest_session_id or gsid, bill.id, pts_net)
+    return resp
 
 @app.get("/api/menu")
 def get_menu(db: Session = Depends(get_db)):
@@ -1870,6 +1917,8 @@ async def recognize(
         ).dict())
 
     # Re-fetch target_bill after rollback if this is a retake (Option B: reuse same bill)
+    gsid, _ = get_or_create_guest_session_id(request)
+    current_cust = get_current_customer(request, db)
     target_bill = None
     if target_bill_id:
         target_bill = db.query(SessionBill).filter(SessionBill.id == target_bill_id).first()
@@ -1898,6 +1947,28 @@ async def recognize(
         target_bill.updated_at = datetime.utcnow()
         if c_token:
             target_bill.client_token = c_token
+        if gsid and not target_bill.guest_session_id:
+            target_bill.guest_session_id = gsid
+        if current_cust and not target_bill.customer_user_id:
+            target_bill.customer_user_id = current_cust.id
+        # Reconcile any attached voucher against the new retake subtotal
+        if target_bill.voucher_id and target_bill.voucher_code:
+            voucher_owner = current_cust
+            if not voucher_owner and target_bill.customer_user_id:
+                from .db import CustomerUser as _CU
+                voucher_owner = db.query(_CU).filter(_CU.id == target_bill.customer_user_id).first()
+            if voucher_owner:
+                try:
+                    _, new_disc = validate_voucher_for_user(db, voucher_owner, target_bill.voucher_code, total)
+                    target_bill.discount_amount = new_disc
+                except HTTPException:
+                    target_bill.voucher_id = None
+                    target_bill.voucher_code = ""
+                    target_bill.discount_amount = 0.0
+            else:
+                target_bill.voucher_id = None
+                target_bill.voucher_code = ""
+                target_bill.discount_amount = 0.0
         db.commit()
     else:
         session_id = str(uuid.uuid4())
@@ -1919,6 +1990,8 @@ async def recognize(
             final_bill=json.dumps([b.dict() for b in bill_items]),
             retake_count=0,
             client_token=c_token,
+            guest_session_id=gsid,
+            customer_user_id=current_cust.id if current_cust else None,
             updated_at=datetime.utcnow(),
         )
         db.add(session)
@@ -1936,6 +2009,7 @@ async def recognize(
     if b_sid:
         resp.set_cookie("afrc_browser_session", b_sid, max_age=86400, path="/", samesite="lax")
     resp.set_cookie("afrc_active_session", session_id, max_age=3600, path="/", samesite="lax")
+    set_guest_loyalty_cookie(resp, request, gsid)
     return resp
 
 def _bill_payload(session: SessionBill, refunded_amount: float = 0.0, is_owner_or_admin: bool = True, alias_map: dict = None) -> dict:
@@ -1953,7 +2027,10 @@ def _bill_payload(session: SessionBill, refunded_amount: float = 0.0, is_owner_o
                 item["name"] = alias_map[raw_n]
             elif raw_n.casefold() in alias_map:
                 item["name"] = alias_map[raw_n.casefold()]
-    total = round(sum(float(item.get("subtotal") or 0) for item in items), 2)
+    food_subtotal = round(sum(float(item.get("subtotal") or 0) for item in items), 2)
+    discount_amount = round(float(session.discount_amount or 0.0), 2)
+    total = round(max(0.0, food_subtotal - discount_amount), 2)
+    potential_points = compute_points_from_food_subtotal(food_subtotal)
     img_path = UPLOAD_DIR / f"{session.id}.jpg"
     retakes_used = int(session.retake_count or 0)
     bill_no_upper = (session.bill_number or "").upper()
@@ -1980,7 +2057,15 @@ def _bill_payload(session: SessionBill, refunded_amount: float = 0.0, is_owner_o
         "session_id": session.id,
         "bill_number": session.bill_number or "AAA-0001",
         "items": items,
+        "subtotal": food_subtotal,
+        "discount_amount": discount_amount,
+        "voucher_code": session.voucher_code or "",
         "total": total,
+        "potential_points": potential_points,
+        "points_earned": int(session.points_earned or 0),
+        "points_clawed_back": int(session.points_clawed_back or 0),
+        "points_status": session.points_status or "none",
+        "customer_user_id": session.customer_user_id,
         "status": status,
         "void_reason": void_reason,
         "retake_count": retakes_used,
@@ -2010,22 +2095,51 @@ def get_session(session_id: str, request: Request, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Bill not found")
     _verify_bill_ownership(bill, request, db)
     c_token = _get_client_token(request)
+    gsid, _ = get_or_create_guest_session_id(request)
+    current_cust = get_current_customer(request, db)
     changed = False
     if bill.status == "retaking":
         bill.status = "open"
         changed = True
-    if bill.status in ("open", "pending") and not bill.client_token and c_token:
-        bill.client_token = c_token
-        changed = True
+    if bill.status in ("open", "pending"):
+        if not bill.client_token and c_token:
+            bill.client_token = c_token
+            changed = True
+        if gsid and not bill.guest_session_id:
+            bill.guest_session_id = gsid
+            changed = True
+        if current_cust and bill.customer_user_id != current_cust.id:
+            bill.customer_user_id = current_cust.id
+            changed = True
     if changed:
         db.commit()
     resp = JSONResponse(content=_bill_payload(bill, alias_map=_dish_alias_map(db)), headers=NO_CACHE_HEADERS)
     resp.set_cookie("afrc_client_id", c_token, max_age=86400 * 30, path="/", samesite="lax")
+    set_guest_loyalty_cookie(resp, request, gsid)
     if bill.status in ("open", "pending"):
         resp.set_cookie("afrc_active_session", bill.id, max_age=3600, path="/", samesite="lax")
     elif bill.status in ("paid", "void", "cancelled"):
         resp.delete_cookie("afrc_active_session", path="/")
+        if bill.status == "paid" and (bill.points_status or "").lower() == "unclaimed" and bill.customer_user_id is None:
+            pts_net = max(0, int(bill.points_earned or 0) - int(bill.points_clawed_back or 0))
+            if pts_net > 0:
+                set_unclaimed_points_cookie(resp, request, bill.guest_session_id or gsid, bill.id, pts_net)
     return resp
+
+@app.post("/api/sessions/{session_id}/voucher")
+def update_session_voucher(session_id: str, payload: dict, request: Request, db: Session = Depends(get_db)):
+    _expire_stale_bills(db)
+    bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    _verify_bill_ownership(bill, request, db, str((payload or {}).get("client_token") or ""))
+    current_cust = get_current_customer(request, db)
+    code = str((payload or {}).get("code") or "")
+    updated_bill = apply_or_clear_bill_voucher(db, bill, current_cust, code)
+    return JSONResponse(
+        content=_bill_payload(updated_bill, alias_map=_dish_alias_map(db)),
+        headers=NO_CACHE_HEADERS,
+    )
 
 @app.post("/api/sessions/{session_id}/start-retake")
 def start_retake(session_id: str, request: Request, payload: dict = None, db: Session = Depends(get_db)):
@@ -2465,6 +2579,12 @@ def _record_captured_payment(bill: SessionBill, payment: dict, db: Session) -> b
     bill.status = "paid"
     bill.paid_at = datetime.utcnow()
     db.commit()
+    # Award loyalty points (or hold as guest unclaimed points, overwriting prior guest session)
+    try:
+        process_verified_paid_bill(db, bill.id)
+        db.refresh(bill)
+    except Exception as e:
+        logger.exception(f"Loyalty processing failed after payment capture for bill {bill.id}: {e}")
     return True
 
 def _verify_and_capture(order_id: str, payment_id: str, signature: str, db: Session):
@@ -2475,6 +2595,13 @@ def _verify_and_capture(order_id: str, payment_id: str, signature: str, db: Sess
     if not bill or order_id != (bill.curlec_order_id or ""):
         return None, "unpaid"
     if bill.status == "paid":
+        # Idempotent safety pass in case webhook captured just moments earlier
+        if (bill.points_status or "none") in ("", "none") and (bill.curlec_payment_id or "").strip():
+            try:
+                process_verified_paid_bill(db, bill.id)
+                db.refresh(bill)
+            except Exception:
+                pass
         return bill, "paid"
     client, _key_id = _curlec_client()
     try:
@@ -2528,16 +2655,29 @@ def pay(payload: dict, request: Request, db: Session = Depends(get_db)):
         import re
         if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email) or len(email) > 100:
             raise HTTPException(status_code=400, detail="Enter a valid email address or leave it blank")
+
+    gsid, _ = get_or_create_guest_session_id(request)
+    current_cust = get_current_customer(request, db)
+    if current_cust:
+        bill.customer_user_id = current_cust.id
+    elif gsid and not bill.guest_session_id:
+        bill.guest_session_id = gsid
+
+    # Re-validate any attached voucher right before creating Curlec order
+    revalidate_bill_voucher_before_pay(db, bill, current_cust)
+
     bill.receipt_phone = phone
     bill.receipt_email = email
     bill.updated_at = datetime.utcnow()
     db.commit()
     checkout = _create_curlec_order(bill, db)
     checkout["status"] = "pending"
-    return checkout
+    resp = JSONResponse(content=checkout, headers=NO_CACHE_HEADERS)
+    set_guest_loyalty_cookie(resp, request, gsid)
+    return resp
 
 @app.post("/api/pay/confirm")
-def pay_confirm(payload: dict, db: Session = Depends(get_db)):
+def pay_confirm(payload: dict, request: Request, db: Session = Depends(get_db)):
     bill, state = _verify_and_capture(
         payload.get("razorpay_order_id"),
         payload.get("razorpay_payment_id"),
@@ -2546,7 +2686,22 @@ def pay_confirm(payload: dict, db: Session = Depends(get_db)):
     )
     if state != "paid" or not bill:
         raise HTTPException(status_code=402, detail="Payment was not completed")
-    return {"status": "paid", "session_id": bill.id}
+    gsid, _ = get_or_create_guest_session_id(request)
+    resp = JSONResponse(
+        content={
+            "status": "paid",
+            "session_id": bill.id,
+            "points_earned": int(bill.points_earned or 0),
+            "points_status": bill.points_status or "none",
+        },
+        headers=NO_CACHE_HEADERS,
+    )
+    set_guest_loyalty_cookie(resp, request, bill.guest_session_id or gsid)
+    if bill.customer_user_id is None and (bill.points_status or "").lower() == "unclaimed" and int(bill.points_earned or 0) > 0:
+        set_unclaimed_points_cookie(resp, request, bill.guest_session_id or gsid, bill.id, int(bill.points_earned))
+    else:
+        clear_unclaimed_points_cookie(resp)
+    return resp
 
 @app.post("/api/pay/callback")
 async def pay_callback(request: Request, db: Session = Depends(get_db)):
@@ -2559,7 +2714,14 @@ async def pay_callback(request: Request, db: Session = Depends(get_db)):
     )
     session_id = bill.id if bill else ""
     if state == "paid" and session_id:
-        return RedirectResponse(f"/payment/success?session={quote(session_id)}", status_code=303)
+        gsid, _ = get_or_create_guest_session_id(request)
+        resp = RedirectResponse(f"/payment/success?session={quote(session_id)}", status_code=303)
+        set_guest_loyalty_cookie(resp, request, bill.guest_session_id or gsid)
+        if bill.customer_user_id is None and (bill.points_status or "").lower() == "unclaimed" and int(bill.points_earned or 0) > 0:
+            set_unclaimed_points_cookie(resp, request, bill.guest_session_id or gsid, bill.id, int(bill.points_earned))
+        else:
+            clear_unclaimed_points_cookie(resp)
+        return resp
     target = "/pay?payment=failed"
     if session_id:
         target = f"/pay?session={quote(session_id)}&payment=failed"
@@ -2637,6 +2799,7 @@ def _compute_overview_data(
             SessionBill.receipt_phone,
             SessionBill.curlec_payment_id,
             SessionBill.retake_count,
+            SessionBill.discount_amount,
             SessionBill.created_at,
             SessionBill.updated_at,
             SessionBill.paid_at,
@@ -2876,6 +3039,7 @@ def _compute_overview_data(
             receipt_phone,
             curlec_payment_id,
             retake_count,
+            discount_amt,
             created_at,
             updated_at,
             paid_at,
@@ -2884,7 +3048,8 @@ def _compute_overview_data(
         st = (raw_status or "open").lower()
         try:
             items = json.loads(final_bill or "[]")
-            bill_total = round(sum(float(i.get("subtotal") or 0) for i in items), 2)
+            raw_sub = round(sum(float(i.get("subtotal") or 0) for i in items), 2)
+            bill_total = round(max(0.0, raw_sub - float(discount_amt or 0.0)), 2)
         except Exception:
             items = []
             bill_total = 0.0
@@ -3312,10 +3477,11 @@ def export_admin_sales_csv(
 
 @app.post("/api/admin/bills/{session_id}/status")
 def update_admin_bill_status(session_id: str, payload: dict, request: Request, db: Session = Depends(get_db)):
-    require_admin_api(request, db)
+    current_admin = require_admin_api(request, db)
     bill = db.query(SessionBill).filter(SessionBill.id == session_id).first()
     if not bill:
         raise HTTPException(status_code=404, detail="Bill not found")
+    prev_status = (bill.status or "").lower()
     new_status = str(payload.get("status") or "").strip().lower()
     if new_status not in ("open", "pending", "paid", "needs_cashier", "void", "cancelled"):
         raise HTTPException(status_code=400, detail="Invalid status")
@@ -3338,6 +3504,19 @@ def update_admin_bill_status(session_id: str, payload: dict, request: Request, d
         details=f"Bill #{bill.bill_number}: status set to {new_status} by admin '{current_admin.username}'"
     ))
     db.commit()
+    if prev_status == "paid" and bill.status == "void":
+        bp = _bill_payload(bill)
+        try:
+            apply_bill_refund_loyalty_effects(
+                db=db,
+                bill_id=bill.id,
+                total_refunded_rm=float(bp["total"]),
+                refund_ref="void",
+                reason="Voided by Admin",
+            )
+            db.refresh(bill)
+        except Exception as e:
+            logger.exception(f"Void loyalty clawback failed for bill {bill.id}: {e}")
     return _bill_payload(bill)
 
 def _build_refund_info(bill: SessionBill, db: Session, sync_curlec_contact: bool = False) -> dict:
@@ -3524,7 +3703,8 @@ def refund_admin_bill(session_id: str, payload: dict, request: Request, db: Sess
             raise HTTPException(status_code=400, detail="Select at least one item with quantity greater than 0")
 
         total_refund = round(total_refund, 2)
-        if total_refund > remaining_refundable + 0.01:
+        has_discount = float(bill.discount_amount or 0.0) > 0
+        if not has_discount and total_refund > remaining_refundable + 0.01:
             raise HTTPException(
                 status_code=400,
                 detail=f"Refund amount RM {total_refund:.2f} exceeds remaining refundable RM {remaining_refundable:.2f}",
@@ -3585,6 +3765,19 @@ def refund_admin_bill(session_id: str, payload: dict, request: Request, db: Sess
         ))
         bill.updated_at = datetime.utcnow()
         db.commit()
+        cumulative_refunded = round(float(info.get("refunded_amount") or 0.0) + total_refund, 2)
+        loyalty_refund_effect = {"clawed_back_points": 0, "voucher_restored": False}
+        try:
+            loyalty_refund_effect = apply_bill_refund_loyalty_effects(
+                db=db,
+                bill_id=bill.id,
+                total_refunded_rm=cumulative_refunded,
+                refund_ref=f"rfnd-{rf_row.id}",
+                reason=reason or "Admin refund",
+            )
+            db.refresh(bill)
+        except Exception as e:
+            logger.exception(f"Refund loyalty clawback failed for bill {bill.id}: {e}")
         return {
             "status": "ok",
             "refund": {
@@ -3594,6 +3787,7 @@ def refund_admin_bill(session_id: str, payload: dict, request: Request, db: Sess
                 "status": refund_status,
                 "items": refund_items_payload,
                 "reason": reason,
+                "loyalty": loyalty_refund_effect,
             },
             "refund_info": _build_refund_info(bill, db, sync_curlec_contact=False),
         }

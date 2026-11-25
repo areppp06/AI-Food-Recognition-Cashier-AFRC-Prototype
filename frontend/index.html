@@ -797,6 +797,13 @@ video, canvas {
 </head>
 <body>
 <div class="mobile-phone-frame">
+<div id="kioskLoyaltyBar" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; margin-bottom:0.65rem; padding:0 0.15rem;">
+  <span style="font-size:0.76rem; font-weight:700; color:#64748b; letter-spacing:0.02em;">AFRC Rewards</span>
+  <a href="/account" id="kioskLoyaltyPill" style="display:inline-flex; align-items:center; gap:0.38rem; padding:0.36rem 0.78rem; border-radius:999px; background:#ffffff; border:1px solid #dbe3ee; color:#0f172a; font-size:0.78rem; font-weight:700; text-decoration:none; box-shadow:0 2px 6px rgba(15,23,42,0.05);">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff5e36" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+    <span id="kioskLoyaltyText">Rewards &amp; Sign In</span>
+  </a>
+</div>
 <div id="stateLockBox"></div>
 <div class="modal-backdrop" id="voidPromptModal">
   <div class="modal-box">
@@ -854,6 +861,8 @@ video, canvas {
     <a href="/about" class="footer-link">About Us</a>
     <span class="dot">•</span>
     <a href="/pricelist" class="footer-link">Menu Prices</a>
+    <span class="dot">•</span>
+    <a href="/account" class="footer-link">Loyalty &amp; Account</a>
     <span class="dot">•</span>
     <a href="/guide" class="footer-link">How to Use</a>
   </div>
@@ -1827,11 +1836,30 @@ function showBill(data) {
     cashierBtn.textContent = 'Help Requested';
     document.getElementById("cashierWait").innerHTML = `
       <div class="wait-alert">
-        <span style="font-size:1.2rem;">🙋</span>
         <div><strong>Cashier notified.</strong> Please remain at the counter — staff is on their way.</div>
       </div>`;
   };
 }
+
+(async function loadKioskLoyaltyPill() {
+  try {
+    const res = await fetch("/api/loyalty/status", { cache: "no-store" });
+    if (!res.ok) return;
+    const data = await res.json();
+    const pill = document.getElementById("kioskLoyaltyPill");
+    const txt = document.getElementById("kioskLoyaltyText");
+    if (!pill || !txt) return;
+    if (data.authenticated && data.user) {
+      const firstName = String(data.user.name || "Account").split(" ")[0].slice(0, 14);
+      txt.textContent = `${firstName} • ${Number(data.user.points_balance || 0).toLocaleString()} pts`;
+    } else if (data.unclaimed && data.unclaimed.has_unclaimed && data.unclaimed.points > 0) {
+      pill.style.background = "#fff7ed";
+      pill.style.borderColor = "#fdba74";
+      pill.style.color = "#c2410c";
+      txt.textContent = `Claim +${Number(data.unclaimed.points).toLocaleString()} Pts`;
+    }
+  } catch (e) {}
+})();
 </script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onRecognizeTurnstileLoad&render=explicit" async defer></script>
 </body>
