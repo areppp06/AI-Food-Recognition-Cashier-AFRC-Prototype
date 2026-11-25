@@ -880,7 +880,7 @@
       </div>
     </div>
 
-    <div class="guest-grid">
+    <div style="max-width: 520px; margin: 0 auto;">
       <div class="surface-card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:2.25rem 1.75rem;">
         <div style="width:56px; height:56px; border-radius:18px; background:#fff7ed; color:#ff5e36; display:inline-flex; align-items:center; justify-content:center; margin:0 auto 1rem; border:1px solid #ffedd5;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
@@ -898,36 +898,6 @@
 
         <div style="margin-top:1.65rem; padding-top:1.15rem; border-top:1px solid #f1f5f9; font-size:0.8rem; color:#64748b;">
           Prefer paying as a guest? <a href="/" id="guestContinueScanLink" style="color:#ff5e36; font-weight:700; text-decoration:none;">Checkout stays open to everyone</a> — you can claim your points right after payment.
-        </div>
-      </div>
-
-      <div class="surface-card" style="margin-bottom:0;">
-        <h2 class="section-subhead">Reward Tiers &amp; How It Works</h2>
-        <p class="section-subdesc">Redeem earned points anytime for 30-day checkout vouchers.</p>
-        <div id="guestTiersPreview" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.65rem;"></div>
-
-        <div class="how-steps">
-          <div class="how-step">
-            <span class="how-step-num">1</span>
-            <div>
-              <div style="font-weight:700; font-size:0.86rem; color:#0f172a;">Scan &amp; Pay Normally</div>
-              <div style="font-size:0.78rem; color:#64748b; margin-top:0.1rem;">Pay while signed in or as a guest — checkout is never blocked.</div>
-            </div>
-          </div>
-          <div class="how-step">
-            <span class="how-step-num">2</span>
-            <div>
-              <div style="font-weight:700; font-size:0.86rem; color:#0f172a;">Earn 10 Points per RM 1</div>
-              <div style="font-size:0.78rem; color:#64748b; margin-top:0.1rem;">Points are verified automatically once payment succeeds.</div>
-            </div>
-          </div>
-          <div class="how-step">
-            <span class="how-step-num">3</span>
-            <div>
-              <div style="font-weight:700; font-size:0.86rem; color:#0f172a;">Redeem Instant RM Vouchers</div>
-              <div style="font-size:0.78rem; color:#64748b; margin-top:0.1rem;">Apply your voucher with one tap on your next bill payment page.</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -1279,21 +1249,6 @@ function renderGuestView(unclaimed) {
     uncCard.style.display = "flex";
   } else {
     uncCard.style.display = "none";
-  }
-
-  const preview = document.getElementById("guestTiersPreview");
-  if (!tiersList.length) {
-    preview.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem;">Reward tiers coming soon.</div>';
-  } else {
-    preview.innerHTML = tiersList.map(t => {
-      const d = Number(t.discount_amount);
-      return `
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:0.9rem; text-align:center;">
-          <div style="font-size:1.15rem; font-weight:800; color:#0f172a;">RM ${d % 1 === 0 ? d.toFixed(0) : d.toFixed(2)} Off</div>
-          <div style="font-size:0.78rem; font-weight:700; color:#ff5e36; margin-top:0.2rem;">${Number(t.points_required).toLocaleString()} pts</div>
-        </div>
-      `;
-    }).join("");
   }
 
   setupGoogleButton();
