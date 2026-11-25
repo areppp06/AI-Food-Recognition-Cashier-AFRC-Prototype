@@ -4,72 +4,144 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>My Loyalty &amp; Account — AFRC</title>
+<title>My Rewards &amp; Account — AFRC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Plus Jakarta Sans", "Segoe UI", Roboto, sans-serif;
-    background: #eef2f7;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f1f5f9;
     color: #0f172a;
     min-height: 100vh;
-    padding: 1rem 1rem 3rem;
     -webkit-font-smoothing: antialiased;
   }
-  .shell {
-    max-width: 780px;
-    margin: 0 auto;
+
+  /* Top App Header */
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid #e2e8f0;
   }
-  .topbar {
+  .app-header-inner {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 0.85rem 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
+    gap: 1rem;
   }
-  .back-btn {
+  .brand-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none;
+    color: #0f172a;
+    min-width: 0;
+  }
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #ff5e36 0%, #ea580c 100%);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 6px 14px -4px rgba(255, 94, 54, 0.45);
+  }
+  .brand-name {
+    font-size: 1.02rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+  .header-cta {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    padding: 0.55rem 0.9rem;
-    background: #ffffff;
-    border: 1px solid #dbe3ee;
-    border-radius: 12px;
-    color: #334155;
-    font-size: 0.86rem;
-    font-weight: 600;
+    padding: 0.55rem 0.95rem;
+    border-radius: 999px;
+    background: #0f172a;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 700;
     text-decoration: none;
-    transition: all 0.15s ease;
-    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+    white-space: nowrap;
   }
-  .back-btn:hover { border-color: #cbd5e1; color: #0f172a; background: #f8fafc; }
-  .brand-title {
-    font-size: 1rem;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -0.02em;
-  }
-  .card {
-    background: #ffffff;
+  .header-cta:hover { background: #1e293b; transform: translateY(-1px); }
+  .header-user-chip {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.7rem 0.3rem 0.35rem;
+    border-radius: 999px;
+    background: #f8fafc;
     border: 1px solid #e2e8f0;
-    border-radius: 20px;
-    padding: 1.5rem;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
-    margin-bottom: 1.1rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #0f172a;
   }
+  .avatar-sm {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ff5e36;
+    color: #ffffff;
+    font-size: 0.76rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .avatar-sm img, .avatar-lg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Main Container */
+  .page-wrap {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 6rem;
+  }
+  @media (min-width: 1024px) {
+    .page-wrap { padding-bottom: 3rem; }
+  }
+  @media (max-width: 640px) {
+    .app-header-inner { padding: 0.75rem 1rem; }
+    .page-wrap { padding: 1rem 1rem 6.25rem; }
+  }
+
+  /* Alert Banners */
   .banner {
     border-radius: 16px;
-    padding: 1rem 1.15rem;
-    margin-bottom: 1.1rem;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.25rem;
     font-size: 0.88rem;
     line-height: 1.5;
     display: flex;
     align-items: flex-start;
-    gap: 0.75rem;
-  }
-  .banner-claim {
-    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
-    border: 1px solid #fed7aa;
-    color: #9a3412;
+    gap: 0.8rem;
   }
   .banner-success {
     background: #ecfdf5;
@@ -85,288 +157,653 @@
     background: #fff7ed;
     border: 1px solid #fed7aa;
     color: #9a3412;
-  }
-  .hero-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.9rem;
-    margin-bottom: 1.1rem;
-  }
-  @media (max-width: 560px) {
-    .hero-grid { grid-template-columns: 1fr; }
-  }
-  .stat-card-pts {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    color: #ffffff;
-    border-radius: 20px;
-    padding: 1.35rem 1.4rem;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16);
-  }
-  .stat-card-pts::after {
-    content: "";
-    position: absolute;
-    right: -24px;
-    top: -24px;
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    background: rgba(255, 94, 54, 0.18);
-    pointer-events: none;
-  }
-  .stat-card-saved {
-    background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
-    color: #ffffff;
-    border-radius: 20px;
-    padding: 1.35rem 1.4rem;
-    box-shadow: 0 12px 26px rgba(5, 150, 105, 0.16);
-  }
-  .stat-eyebrow {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    opacity: 0.85;
-    margin-bottom: 0.35rem;
-  }
-  .stat-big {
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-  }
-  .stat-sub {
-    font-size: 0.8rem;
-    opacity: 0.88;
-    margin-top: 0.4rem;
-    font-weight: 500;
-  }
-  .user-strip {
-    display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 0.85rem 1.1rem;
-    margin-bottom: 1rem;
     flex-wrap: wrap;
   }
-  .user-meta {
+  .banner-claim {
+    background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+    border: 1.5px solid #fdba74;
+    color: #7c2d12;
+    box-shadow: 0 8px 20px -6px rgba(234, 88, 12, 0.15);
+  }
+
+  /* Authenticated Shell: Left Sidebar + Main */
+  .dashboard-layout {
+    display: flex;
+    gap: 1.75rem;
+    align-items: flex-start;
+  }
+  .user-sidebar {
+    width: 256px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 5rem;
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .user-sidebar { display: block; }
+  }
+  .sidebar-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 1.35rem;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  }
+  .sidebar-user-box {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    min-width: 0;
+    padding-bottom: 1.15rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #f1f5f9;
   }
-  .avatar-circle {
-    width: 42px;
-    height: 42px;
+  .avatar-md {
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
-    background: #ff5e36;
-    color: #ffffff;
+    background: rgba(255, 94, 54, 0.12);
+    border: 1.5px solid rgba(255, 94, 54, 0.3);
+    color: #ff5e36;
     font-weight: 800;
     font-size: 1rem;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
     flex-shrink: 0;
   }
-  .avatar-circle img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .tabs-bar {
+  .avatar-md img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .side-nav-list {
     display: flex;
-    gap: 0.4rem;
-    background: #e2e8f0;
-    padding: 0.3rem;
-    border-radius: 14px;
-    margin-bottom: 1.1rem;
-    overflow-x: auto;
+    flex-direction: column;
+    gap: 0.35rem;
   }
-  .tab-btn {
-    flex: 1;
-    white-space: nowrap;
+  .side-nav-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.72rem 0.9rem;
+    border-radius: 12px;
     border: none;
     background: transparent;
     color: #475569;
-    font-size: 0.84rem;
-    font-weight: 700;
-    padding: 0.6rem 0.85rem;
-    border-radius: 11px;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.16s ease;
+    text-align: left;
+    transition: all 0.15s ease;
   }
-  .tab-btn.active {
-    background: #ffffff;
+  .side-nav-btn:hover {
+    background: #f8fafc;
     color: #0f172a;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
   }
-  .tab-pane { display: none; }
-  .tab-pane.active { display: block; }
+  .side-nav-btn.active {
+    background: #ff5e36;
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 6px 16px -4px rgba(255, 94, 54, 0.42);
+  }
+  .side-logout-wrap {
+    margin-top: 1.35rem;
+    padding-top: 1.15rem;
+    border-top: 1px solid #f1f5f9;
+  }
+  .side-logout-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.68rem 0.9rem;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: #dc2626;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .side-logout-btn:hover { background: #fef2f2; }
 
+  .dashboard-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .view-pane { display: none; }
+  .view-pane.active { display: block; }
+  .view-heading {
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: #0f172a;
+    margin-bottom: 1.15rem;
+  }
+
+  /* Rewards 2-Column Layout (matching PointsDashboard.tsx) */
+  .rewards-split {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    .rewards-split {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+    .rewards-left {
+      flex: 1;
+      min-width: 0;
+    }
+    .rewards-right {
+      width: 340px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 5rem;
+    }
+  }
+
+  /* Hero Cards */
+  .hero-banners-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  @media (max-width: 640px) {
+    .hero-banners-grid { grid-template-columns: 1fr; }
+  }
+  .hero-pts-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #334155 100%);
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 1.45rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 12px 26px -6px rgba(15, 23, 42, 0.22);
+  }
+  .hero-pts-card::after {
+    content: "";
+    position: absolute;
+    right: -28px;
+    top: -28px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255, 94, 54, 0.24);
+    pointer-events: none;
+  }
+  .hero-savings-card {
+    background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 1.45rem 1.5rem;
+    box-shadow: 0 12px 26px -6px rgba(5, 150, 105, 0.22);
+  }
+  .hero-eyebrow {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.88;
+    margin-bottom: 0.35rem;
+  }
+  .hero-val {
+    font-size: 2.15rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+  .hero-sub {
+    font-size: 0.82rem;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-top: 0.4rem;
+  }
+
+  /* Surface Cards */
+  .surface-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 1.4rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    margin-bottom: 1.25rem;
+  }
+  .section-subhead {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+  }
+  .section-subdesc {
+    font-size: 0.83rem;
+    color: #64748b;
+    margin-bottom: 1rem;
+  }
+
+  /* Redeem Tiers Grid */
   .tiers-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
-    gap: 0.85rem;
-    margin-top: 0.75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 680px) {
+    .tiers-grid { grid-template-columns: 1fr; }
   }
   .tier-card {
+    background: #ffffff;
     border: 1.5px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 1.15rem;
+    border-radius: 18px;
+    padding: 1.25rem 1.15rem;
+    text-align: center;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    background: #f8fafc;
-    transition: border-color 0.15s ease, transform 0.15s ease;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.025);
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
   .tier-card.eligible {
-    background: #ffffff;
-    border-color: #fed7aa;
+    border-color: #fdba74;
   }
+  .tier-card.eligible:hover {
+    transform: translateY(-2px);
+    border-color: #ff5e36;
+    box-shadow: 0 10px 20px -6px rgba(255, 94, 54, 0.18);
+  }
+  .tier-card.dimmed { opacity: 0.65; }
   .tier-amt {
     font-size: 1.35rem;
     font-weight: 800;
     color: #0f172a;
+    margin-bottom: 0.2rem;
   }
   .tier-pts {
-    font-size: 0.83rem;
+    font-size: 0.84rem;
     color: #64748b;
     font-weight: 600;
-    margin: 0.25rem 0 0.9rem;
+    margin-bottom: 1rem;
   }
+
+  /* Buttons */
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.45rem;
-    padding: 0.7rem 1.1rem;
+    padding: 0.68rem 1.1rem;
     border-radius: 12px;
     border: none;
     font: inherit;
-    font-size: 0.88rem;
+    font-size: 0.86rem;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.15s ease;
     background: #ff5e36;
     color: #ffffff;
+    text-decoration: none;
   }
   .btn:hover:not(:disabled) { background: #ea580c; }
-  .btn:disabled { opacity: 0.48; cursor: not-allowed; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-dark { background: #0f172a; color: #ffffff; }
+  .btn-dark:hover:not(:disabled) { background: #1e293b; }
   .btn-outline {
     background: #ffffff;
     color: #334155;
     border: 1.5px solid #cbd5e1;
   }
-  .btn-outline:hover:not(:disabled) { background: #f8fafc; border-color: #94a3b8; }
-  .btn-danger-outline {
+  .btn-outline:hover:not(:disabled) { background: #f8fafc; border-color: #94a3b8; color: #0f172a; }
+  .btn-danger-soft {
     background: #fef2f2;
     color: #dc2626;
     border: 1px solid #fecaca;
   }
-  .btn-danger-outline:hover:not(:disabled) { background: #fee2e2; }
+  .btn-danger-soft:hover:not(:disabled) { background: #fee2e2; }
 
+  /* Vouchers Cards */
   .vouchers-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 0.85rem;
-    margin-top: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
   }
-  .voucher-ticket {
-    border: 1.5px dashed #cbd5e1;
-    background: #f8fafc;
-    border-radius: 16px;
-    padding: 1rem 1.1rem;
-    position: relative;
+  @media (max-width: 640px) {
+    .vouchers-grid { grid-template-columns: 1fr; }
   }
-  .voucher-ticket.active-ticket {
-    border-style: solid;
-    border-color: #a7f3d0;
+  .voucher-card {
     background: #ffffff;
-  }
-  .voucher-code-pill {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-weight: 800;
-    font-size: 0.92rem;
-    letter-spacing: 0.05em;
-    color: #0f172a;
-    background: #f1f5f9;
-    padding: 0.25rem 0.55rem;
-    border-radius: 8px;
-  }
-  .badge-pill {
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0.2rem 0.55rem;
-    border-radius: 999px;
-    text-transform: uppercase;
-  }
-  .badge-green { background: #dcfce7; color: #15803d; }
-  .badge-gray { background: #e2e8f0; color: #475569; }
-  .badge-amber { background: #fef3c7; color: #b45309; }
-
-  .ledger-list {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 1.15rem 1.2rem;
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    justify-content: space-between;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.025);
   }
-  .ledger-item {
+  .voucher-card.frozen {
+    border-color: #fde68a;
+    opacity: 0.78;
+  }
+  .voucher-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+  .voucher-code-label {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.84rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #334155;
+    background: #f1f5f9;
+    padding: 0.22rem 0.55rem;
+    border-radius: 7px;
+  }
+  .status-pill {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+  }
+  .pill-green { background: #dcfce7; color: #15803d; }
+  .pill-amber { background: #fef3c7; color: #b45309; }
+  .pill-gray { background: #e2e8f0; color: #475569; }
+  .voucher-big-val {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 0.2rem;
+  }
+  .voucher-meta {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-bottom: 0.85rem;
+  }
+  .voucher-actions {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    padding: 0.9rem 1rem;
-    border: 1px solid #f1f5f9;
-    background: #f8fafc;
-    border-radius: 14px;
+    gap: 0.5rem;
   }
-  .ledger-pts {
+  .pager-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.9rem;
+    padding: 0.55rem 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+  }
+
+  /* Chronological Points History Timeline (matching PointsDashboard.tsx) */
+  .history-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 1.35rem 1.35rem 1.15rem;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    display: flex;
+    flex-direction: column;
+    max-height: 620px;
+  }
+  @media (min-width: 1024px) {
+    .history-card {
+      max-height: calc(100vh - 7.5rem);
+    }
+  }
+  .history-scroll {
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 0.35rem;
+    padding-bottom: 0.5rem;
+  }
+  .history-scroll::-webkit-scrollbar { width: 5px; }
+  .history-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+  .timeline-rail {
+    position: relative;
+    border-left: 2px solid #e2e8f0;
+    margin-left: 0.55rem;
+    padding-bottom: 0.25rem;
+  }
+  .timeline-item {
+    position: relative;
+    padding-left: 1.35rem;
+    padding-bottom: 1.25rem;
+  }
+  .timeline-item:last-child { padding-bottom: 0.25rem; }
+  .timeline-dot {
+    position: absolute;
+    left: -6px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px #ffffff;
+  }
+  .timeline-dot.pos { background: #16a34a; }
+  .timeline-dot.neg { background: #dc2626; }
+  .timeline-pts {
     font-size: 1.05rem;
     font-weight: 800;
-    white-space: nowrap;
+    line-height: 1.15;
+    margin-bottom: 0.2rem;
   }
-  .pts-pos { color: #059669; }
-  .pts-neg { color: #dc2626; }
+  .timeline-pts.pos { color: #16a34a; }
+  .timeline-pts.neg { color: #dc2626; }
+  .timeline-desc {
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #1e293b;
+    line-height: 1.38;
+  }
+  .timeline-date {
+    font-size: 0.74rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+  }
+  .timeline-end {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 600;
+    padding: 0.85rem 0 0.25rem;
+  }
+  .timeline-end::before, .timeline-end::after {
+    content: "";
+    width: 28px;
+    height: 1px;
+    background: #e2e8f0;
+  }
 
-  .order-row {
+  /* Orders / Past Bills List */
+  .bill-history-card {
+    background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 1rem 1.15rem;
-    margin-bottom: 0.75rem;
-    background: #f8fafc;
+    border-radius: 18px;
+    padding: 1.15rem 1.3rem;
+    margin-bottom: 0.85rem;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.025);
+    transition: border-color 0.15s ease;
+  }
+  .bill-history-card:hover { border-color: #cbd5e1; }
+  .bill-num-badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-weight: 800;
+    font-size: 0.86rem;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 0.22rem 0.55rem;
+    border-radius: 8px;
+    color: #0f172a;
   }
 
-  .field-group { margin-bottom: 1rem; }
+  /* Profile Form */
+  .profile-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 1.6rem;
+    max-width: 640px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  }
+  .avatar-lg {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(255, 94, 54, 0.12);
+    border: 2px solid #ff5e36;
+    color: #ff5e36;
+    font-weight: 800;
+    font-size: 1.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .field-group { margin-bottom: 1.1rem; }
   .field-group label {
     display: block;
-    font-size: 0.82rem;
+    font-size: 0.83rem;
     font-weight: 700;
     color: #334155;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.38rem;
   }
   .input-el {
     width: 100%;
-    padding: 0.72rem 0.9rem;
+    padding: 0.75rem 0.95rem;
     border: 1.5px solid #cbd5e1;
     border-radius: 12px;
     font: inherit;
     font-size: 0.92rem;
-    background: #ffffff;
+    background: #f8fafc;
     color: #0f172a;
     outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
   }
-  .input-el:focus { border-color: #ff5e36; }
+  .input-el:focus { border-color: #ff5e36; background: #ffffff; }
   .input-el:disabled { background: #f1f5f9; color: #64748b; cursor: not-allowed; }
 
+  /* Guest Layout */
+  .guest-wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .guest-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 1.35rem;
+    align-items: stretch;
+  }
+  @media (max-width: 860px) {
+    .guest-grid { grid-template-columns: 1fr; }
+  }
+  .how-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  .how-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.8rem 0.95rem;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+  .how-step-num {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #0f172a;
+    color: #ffffff;
+    font-size: 0.76rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* Mobile Bottom Tab Bar (matching UserMobileTabBar.tsx) */
+  .mobile-tab-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 80;
+    padding: 0.5rem 0.75rem max(0.65rem, env(safe-area-inset-bottom));
+    pointer-events: none;
+    display: none;
+  }
+  @media (max-width: 1023px) {
+    .mobile-tab-bar.visible { display: block; }
+  }
+  .mobile-tab-inner {
+    pointer-events: auto;
+    max-width: 440px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid #dbe3ee;
+    border-radius: 20px;
+    padding: 0.35rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.25rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  }
+  .m-tab-btn {
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font: inherit;
+    border-radius: 14px;
+    padding: 0.5rem 0.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.22rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .m-tab-btn span {
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .m-tab-btn.active {
+    background: #ff5e36;
+    color: #ffffff;
+  }
+
+  /* Modals & Toast */
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.55);
+    background: rgba(15, 23, 42, 0.58);
     backdrop-filter: blur(3px);
     display: none;
     align-items: center;
@@ -380,21 +817,21 @@
     border-radius: 22px;
     max-width: 400px;
     width: 100%;
-    padding: 1.6rem;
+    padding: 1.65rem;
     text-align: center;
     box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25);
   }
   .toast-msg {
     position: fixed;
-    bottom: 1.25rem;
+    top: 1.15rem;
     left: 50%;
     transform: translateX(-50%);
     background: #0f172a;
     color: #ffffff;
-    padding: 0.65rem 1.15rem;
+    padding: 0.68rem 1.2rem;
     border-radius: 999px;
     font-size: 0.84rem;
-    font-weight: 600;
+    font-weight: 700;
     box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
     z-index: 300;
     display: none;
@@ -402,182 +839,301 @@
 </style>
 </head>
 <body>
-<div class="shell">
-  <div class="topbar">
-    <a class="back-btn" href="/" id="backLink">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-      <span id="backLinkLabel">Back to Scanner</span>
-    </a>
-    <div class="brand-title" id="brandNameTitle">AFRC Rewards</div>
-  </div>
 
+<header class="app-header">
+  <div class="app-header-inner">
+    <a href="/" class="brand-link" id="brandHomeLink">
+      <span class="brand-mark">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      </span>
+      <span class="brand-name" id="brandNameTitle">AFRC Rewards</span>
+    </a>
+
+    <div class="header-right">
+      <div class="header-user-chip" id="headerUserChip">
+        <span class="avatar-sm" id="headerAvatarSm">C</span>
+        <span id="headerChipPts">0 pts</span>
+      </div>
+      <a class="header-cta" href="/" id="backLink">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 012-2h2l1.5-2h5L16 6h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"></path><circle cx="12" cy="12.5" r="3"></circle></svg>
+        <span id="backLinkLabel">Scan &amp; Pay Plate</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="page-wrap">
   <div id="autoClaimedBanner" class="banner banner-success" style="display:none;">
     <svg width="20" height="20" style="flex-shrink:0; margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
     <div id="autoClaimedText"></div>
   </div>
 
-  <div id="loadingBox" class="card" style="text-align:center; padding:2.5rem 1rem; color:#64748b; font-size:0.9rem;">
+  <div id="loadingBox" class="surface-card" style="text-align:center; padding:3rem 1rem; color:#64748b; font-size:0.92rem; max-width:680px; margin:1.5rem auto;">
     Loading loyalty account...
   </div>
 
-  <!-- GUEST VIEW -->
-  <div id="guestSection" style="display:none;">
+  <!-- ==================== GUEST VIEW ==================== -->
+  <div id="guestSection" class="guest-wrap" style="display:none;">
     <div id="guestUnclaimedCard" class="banner banner-claim" style="display:none;">
-      <svg width="22" height="22" style="flex-shrink:0; margin-top:2px; color:#ea580c;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      <svg width="24" height="24" style="flex-shrink:0; margin-top:2px; color:#ea580c;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
       <div style="flex:1;">
-        <div style="font-weight:800; font-size:0.96rem; color:#7c2d12; margin-bottom:0.2rem;">
-          You have <span id="guestUnclaimedPts">0</span> Unclaimed Points!
+        <div style="font-weight:800; font-size:1.02rem; color:#7c2d12; margin-bottom:0.2rem;">
+          You have +<span id="guestUnclaimedPts">0</span> Unclaimed Points Ready to Transfer
         </div>
-        <div style="font-size:0.84rem; color:#9a3412;">
-          Earned from Bill <strong id="guestUnclaimedBill">#AAA-0001</strong>. Sign in with Google below to automatically transfer these points to your account before your next guest transaction.
+        <div style="font-size:0.86rem; color:#9a3412; line-height:1.5;">
+          Earned on Bill <strong id="guestUnclaimedBill">#AAA-0001</strong>. Sign in with Google below to automatically sync these points into your account. Unclaimed guest points do not stack across separate guest bills.
         </div>
-        <div style="margin-top:0.65rem;">
-          <button type="button" class="btn-outline" style="font-size:0.75rem; padding:0.35rem 0.7rem; border-radius:8px;" onclick="handleClearGuestSession()">
+        <div style="margin-top:0.75rem;">
+          <button type="button" class="btn btn-outline" style="font-size:0.76rem; padding:0.38rem 0.75rem; border-radius:9px;" onclick="handleClearGuestSession()">
             Clear Guest Session
           </button>
         </div>
       </div>
     </div>
 
-    <div class="card" style="text-align:center; padding:2rem 1.5rem;">
-      <div style="width:52px; height:52px; border-radius:16px; background:#fff7ed; color:#ff5e36; display:inline-flex; align-items:center; justify-content:center; margin-bottom:0.9rem; border:1px solid #ffedd5;">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-      </div>
-      <h1 style="font-size:1.35rem; font-weight:800; margin-bottom:0.4rem;">Sign In to Loyalty &amp; Rewards</h1>
-      <p style="font-size:0.88rem; color:#64748b; max-width:440px; margin:0 auto 1.35rem; line-height:1.5;">
-        Earn <strong>10 points for every RM 1</strong> spent on meals, claim guest points automatically, and redeem instant RM discount vouchers. No password or SMS required.
-      </p>
+    <div class="guest-grid">
+      <div class="surface-card" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:2.25rem 1.75rem;">
+        <div style="width:56px; height:56px; border-radius:18px; background:#fff7ed; color:#ff5e36; display:inline-flex; align-items:center; justify-content:center; margin:0 auto 1rem; border:1px solid #ffedd5;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        </div>
+        <h1 style="font-size:1.5rem; font-weight:800; letter-spacing:-0.02em; margin-bottom:0.45rem;">Sign In to Loyalty &amp; Rewards</h1>
+        <p style="font-size:0.9rem; color:#64748b; max-width:420px; margin:0 auto 1.5rem; line-height:1.55;">
+          Continue with Google to claim guest points, earn <strong>10 points per RM 1</strong> spent, and redeem instant RM discount vouchers. No password or SMS verification needed.
+        </p>
 
-      <div id="googleBtnContainer" style="display:flex; justify-content:center; min-height:44px;"></div>
-      <div id="googleBusyText" style="display:none; font-size:0.85rem; color:#ff5e36; font-weight:600; margin-top:0.75rem;">
-        Signing you in and syncing points...
-      </div>
-      <div id="googleAuthError" style="display:none; margin-top:0.85rem; padding:0.65rem 0.9rem; border-radius:10px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; font-size:0.84rem;"></div>
-    </div>
+        <div id="googleBtnContainer" style="display:flex; justify-content:center; min-height:44px;"></div>
+        <div id="googleBusyText" style="display:none; font-size:0.85rem; color:#ff5e36; font-weight:700; margin-top:0.85rem;">
+          Verifying Google account and syncing points...
+        </div>
+        <div id="googleAuthError" style="display:none; margin-top:0.9rem; padding:0.7rem 0.95rem; border-radius:12px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; font-size:0.84rem;"></div>
 
-    <div class="card">
-      <h2 style="font-size:1rem; font-weight:800; margin-bottom:0.35rem;">Available Reward Tiers</h2>
-      <p style="font-size:0.82rem; color:#64748b;">Sign in anytime to redeem earned points for checkout discount vouchers.</p>
-      <div id="guestTiersPreview" class="tiers-grid"></div>
+        <div style="margin-top:1.65rem; padding-top:1.15rem; border-top:1px solid #f1f5f9; font-size:0.8rem; color:#64748b;">
+          Prefer paying as a guest? <a href="/" id="guestContinueScanLink" style="color:#ff5e36; font-weight:700; text-decoration:none;">Checkout stays open to everyone</a> — you can claim your points right after payment.
+        </div>
+      </div>
+
+      <div class="surface-card" style="margin-bottom:0;">
+        <h2 class="section-subhead">Reward Tiers &amp; How It Works</h2>
+        <p class="section-subdesc">Redeem earned points anytime for 30-day checkout vouchers.</p>
+        <div id="guestTiersPreview" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:0.65rem;"></div>
+
+        <div class="how-steps">
+          <div class="how-step">
+            <span class="how-step-num">1</span>
+            <div>
+              <div style="font-weight:700; font-size:0.86rem; color:#0f172a;">Scan &amp; Pay Normally</div>
+              <div style="font-size:0.78rem; color:#64748b; margin-top:0.1rem;">Pay while signed in or as a guest — checkout is never blocked.</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <span class="how-step-num">2</span>
+            <div>
+              <div style="font-weight:700; font-size:0.86rem; color:#0f172a;">Earn 10 Points per RM 1</div>
+              <div style="font-size:0.78rem; color:#64748b; margin-top:0.1rem;">Points are verified automatically once payment succeeds.</div>
+            </div>
+          </div>
+          <div class="how-step">
+            <span class="how-step-num">3</span>
+            <div>
+              <div style="font-weight:700; font-size:0.86rem; color:#0f172a;">Redeem Instant RM Vouchers</div>
+              <div style="font-size:0.78rem; color:#64748b; margin-top:0.1rem;">Apply your voucher with one tap on your next bill payment page.</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- AUTHENTICATED VIEW -->
-  <div id="authSection" style="display:none;">
-    <div class="user-strip">
-      <div class="user-meta">
-        <div class="avatar-circle" id="userAvatarBox">U</div>
-        <div style="min-width:0;">
-          <div style="font-weight:800; font-size:0.95rem; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="userNameHeader">Customer</div>
-          <div style="font-size:0.78rem; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="userEmailHeader"></div>
-        </div>
-      </div>
-      <button type="button" class="btn btn-outline" style="padding:0.45rem 0.85rem; font-size:0.8rem;" onclick="handleSignOut()">
-        Sign Out
-      </button>
-    </div>
-
-    <div id="debtBanner" class="banner banner-debt" style="display:none;">
-      <svg width="20" height="20" style="flex-shrink:0; margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-      <div id="debtBannerText"></div>
-    </div>
-
-    <div class="hero-grid">
-      <div class="stat-card-pts">
-        <div class="stat-eyebrow" id="balanceCardEyebrow">Available Points</div>
-        <div class="stat-big" id="balanceCardValue">0 pts</div>
-        <div class="stat-sub" id="balanceCardSub">Earn 10 pts per RM 1 spent</div>
-      </div>
-      <div class="stat-card-saved">
-        <div class="stat-eyebrow">Lifetime Voucher Savings</div>
-        <div class="stat-big" id="savedCardValue">RM 0.00</div>
-        <div class="stat-sub">Total saved on paid bills</div>
-      </div>
-    </div>
-
-    <div class="tabs-bar" role="tablist">
-      <button type="button" class="tab-btn active" onclick="switchTab('rewards', this)">Rewards &amp; Vouchers</button>
-      <button type="button" class="tab-btn" onclick="switchTab('history', this)">Points History</button>
-      <button type="button" class="tab-btn" onclick="switchTab('orders', this)">Past Bills</button>
-      <button type="button" class="tab-btn" onclick="switchTab('profile', this)">Profile</button>
-    </div>
-
-    <!-- TAB: REWARDS & VOUCHERS -->
-    <div id="pane-rewards" class="tab-pane active">
-      <div id="cooldownBanner" class="banner banner-cooldown" style="display:none;">
-        <svg width="19" height="19" style="flex-shrink:0; margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-        <div id="cooldownBannerText"></div>
-      </div>
-
-      <div class="card">
-        <h2 style="font-size:1.05rem; font-weight:800;">Redeem Points for Vouchers</h2>
-        <p style="font-size:0.82rem; color:#64748b; margin-top:0.2rem;">Convert your points into instant RM discount vouchers valid for 30 days.</p>
-        <div id="authTiersGrid" class="tiers-grid"></div>
-      </div>
-
-      <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
-          <div>
-            <h2 style="font-size:1.05rem; font-weight:800;">My Vouchers</h2>
-            <p style="font-size:0.82rem; color:#64748b; margin-top:0.15rem;">Apply any active voucher directly on the Bill Payment page.</p>
+  <!-- ==================== AUTHENTICATED DASHBOARD ==================== -->
+  <div id="authSection" class="dashboard-layout" style="display:none;">
+    <!-- Desktop Sticky Left Sidebar -->
+    <aside class="user-sidebar">
+      <div class="sidebar-card">
+        <div class="sidebar-user-box">
+          <div class="avatar-md" id="userAvatarBox">C</div>
+          <div style="min-width:0;">
+            <div style="font-weight:800; font-size:0.92rem; color:#0f172a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="userNameHeader">Customer</div>
+            <div style="font-size:0.76rem; color:#64748b; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" id="userEmailHeader"></div>
           </div>
         </div>
-        <div id="myVouchersContainer" style="margin-top:0.75rem;"></div>
-      </div>
-    </div>
 
-    <!-- TAB: POINTS HISTORY -->
-    <div id="pane-history" class="tab-pane">
-      <div class="card">
-        <h2 style="font-size:1.05rem; font-weight:800; margin-bottom:0.85rem;">Points Ledger History</h2>
-        <div id="ledgerContainer" class="ledger-list"></div>
-        <div id="ledgerMoreWrap" style="text-align:center; margin-top:1rem; display:none;">
-          <button type="button" class="btn btn-outline" id="btnLoadMoreLedger" onclick="loadMoreLedger()">Load More</button>
+        <nav class="side-nav-list" aria-label="Account sections">
+          <button type="button" class="side-nav-btn active" data-view="rewards" onclick="switchView('rewards')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>My Rewards</span>
+          </button>
+          <button type="button" class="side-nav-btn" data-view="orders" onclick="switchView('orders')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            <span>Order History</span>
+          </button>
+          <button type="button" class="side-nav-btn" data-view="profile" onclick="switchView('profile')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Manage Account</span>
+          </button>
+        </nav>
+
+        <div class="side-logout-wrap">
+          <button type="button" class="side-logout-btn" onclick="handleSignOut()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            <span>Log Out</span>
+          </button>
         </div>
       </div>
-    </div>
+    </aside>
 
-    <!-- TAB: PAST BILLS -->
-    <div id="pane-orders" class="tab-pane">
-      <div class="card">
-        <h2 style="font-size:1.05rem; font-weight:800; margin-bottom:0.85rem;">Paid Bills Linked to Account</h2>
+    <!-- Main View Content -->
+    <main class="dashboard-main">
+      <div id="debtBanner" class="banner banner-debt" style="display:none;">
+        <svg width="20" height="20" style="flex-shrink:0; margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <div>
+          <div style="font-weight:800; margin-bottom:0.15rem;">Points Debt Active</div>
+          <div id="debtBannerText"></div>
+        </div>
+      </div>
+
+      <!-- VIEW 1: MY REWARDS -->
+      <section id="view-rewards" class="view-pane active">
+        <h1 class="view-heading">My Rewards</h1>
+
+        <div class="rewards-split">
+          <!-- Left Column: Banners, Cooldown, Redeem Tiers, Vouchers -->
+          <div class="rewards-left">
+            <div class="hero-banners-grid">
+              <div class="hero-pts-card">
+                <div class="hero-eyebrow" id="balanceCardEyebrow">Total Points</div>
+                <div class="hero-val" id="balanceCardValue">0 pts</div>
+                <div class="hero-sub" id="balanceCardSub">Approx. RM 0.00 (RM 1 = 200 pts)</div>
+              </div>
+              <div class="hero-savings-card">
+                <div class="hero-eyebrow">Lifetime Savings</div>
+                <div class="hero-val" id="savedCardValue">RM 0.00</div>
+                <div class="hero-sub">Total amount saved from vouchers</div>
+              </div>
+            </div>
+
+            <div id="cooldownBanner" class="banner banner-cooldown" style="display:none;">
+              <div style="display:flex; align-items:center; gap:0.7rem;">
+                <svg width="20" height="20" style="flex-shrink:0; color:#ea580c;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <div>
+                  <div style="font-weight:800; color:#7c2d12;">Redemption on Cooldown</div>
+                  <div id="cooldownBannerText" style="font-size:0.83rem;"></div>
+                </div>
+              </div>
+              <div id="cooldownRuleSub" style="font-size:0.76rem; font-weight:600; color:#9a3412;"></div>
+            </div>
+
+            <div id="authTiersGrid" class="tiers-grid"></div>
+
+            <div>
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:0.5rem; margin-bottom:0.75rem;">
+                <h2 style="font-size:1.2rem; font-weight:800; color:#0f172a;">My Vouchers</h2>
+                <span style="font-size:0.8rem; color:#64748b;" id="vouchersCountLabel"></span>
+              </div>
+              <div id="myVouchersContainer"></div>
+            </div>
+          </div>
+
+          <!-- Right Column: Sticky Chronological Points History -->
+          <div class="rewards-right">
+            <div class="history-card">
+              <h2 style="font-size:1.08rem; font-weight:800; color:#0f172a; margin-bottom:1rem; flex-shrink:0;">Points History</h2>
+              <div class="history-scroll" id="historyScrollBox" onscroll="onHistoryScroll(event)">
+                <div id="ledgerContainer"></div>
+                <div id="ledgerMoreWrap" style="text-align:center; padding-top:0.65rem; display:none;">
+                  <button type="button" class="btn btn-outline" id="btnLoadMoreLedger" style="padding:0.45rem 0.9rem; font-size:0.78rem;" onclick="loadMoreLedger()">Load More</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: ORDER / BILL HISTORY -->
+      <section id="view-orders" class="view-pane">
+        <h1 class="view-heading">Order History</h1>
         <div id="ordersContainer"></div>
-      </div>
-    </div>
+      </section>
 
-    <!-- TAB: PROFILE -->
-    <div id="pane-profile" class="tab-pane">
-      <div class="card">
-        <h2 style="font-size:1.05rem; font-weight:800; margin-bottom:0.3rem;">Account Settings</h2>
-        <p style="font-size:0.82rem; color:#64748b; margin-bottom:1.1rem;">Save your Malaysian phone number so checkout fills it in automatically.</p>
-        <form onsubmit="saveProfile(event)">
-          <div class="field-group">
-            <label for="profEmail">Google Email Address</label>
-            <input type="email" id="profEmail" class="input-el" disabled>
+      <!-- VIEW 3: MANAGE ACCOUNT -->
+      <section id="view-profile" class="view-pane">
+        <h1 class="view-heading">Manage Account</h1>
+
+        <div id="profileSavedNotice" class="banner banner-success" style="display:none; max-width:640px;">
+          <svg width="18" height="18" style="flex-shrink:0; margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span id="profileSavedNoticeText">Profile updated successfully.</span>
+        </div>
+
+        <div class="profile-card">
+          <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem;">
+            <div class="avatar-lg" id="profAvatarLarge">C</div>
+            <div>
+              <div style="font-weight:800; font-size:1.05rem; color:#0f172a;" id="profCardName">Customer</div>
+              <div style="font-size:0.82rem; color:#64748b;">Signed in with Google</div>
+            </div>
           </div>
-          <div class="field-group">
-            <label for="profName">Display Name</label>
-            <input type="text" id="profName" class="input-el" maxlength="80" required>
+
+          <form onsubmit="saveProfile(event)">
+            <div class="field-group">
+              <label for="profName">Display Name</label>
+              <input type="text" id="profName" class="input-el" maxlength="80" required>
+            </div>
+
+            <div class="field-group">
+              <label for="profEmail">Email Address</label>
+              <input type="email" id="profEmail" class="input-el" disabled>
+            </div>
+
+            <div class="field-group">
+              <label for="profPhone">Phone Number (Auto-fills on Bill Checkout)</label>
+              <input type="tel" id="profPhone" class="input-el" placeholder="+60 12-345 6789">
+            </div>
+
+            <div style="margin-top:1.5rem; padding-top:1.15rem; border-top:1px solid #f1f5f9; display:flex; justify-content:flex-end; gap:0.65rem; flex-wrap:wrap;">
+              <button type="submit" class="btn" id="btnSaveProfile" style="padding:0.75rem 1.6rem;">Save Changes</button>
+            </div>
+          </form>
+
+          <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid #f1f5f9;">
+            <button type="button" class="btn btn-danger-soft" style="width:100%;" onclick="handleSignOut()">
+              Log Out
+            </button>
           </div>
-          <div class="field-group">
-            <label for="profPhone">Malaysian Phone Number (Optional)</label>
-            <input type="tel" id="profPhone" class="input-el" placeholder="+60123456789">
-          </div>
-          <div style="display:flex; gap:0.65rem; flex-wrap:wrap; margin-top:1.25rem;">
-            <button type="submit" class="btn" id="btnSaveProfile">Save Profile</button>
-            <button type="button" class="btn btn-danger-outline" onclick="handleSignOut()">Sign Out</button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </section>
+    </main>
   </div>
 </div>
 
+<!-- MOBILE BOTTOM TAB BAR -->
+<nav class="mobile-tab-bar" id="mobileTabBar" aria-label="Mobile navigation">
+  <div class="mobile-tab-inner">
+    <a href="/" class="m-tab-btn" id="mobileScanLink">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 012-2h2l1.5-2h5L16 6h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"></path><circle cx="12" cy="12.5" r="3"></circle></svg>
+      <span id="mobileScanLabel">Scanner</span>
+    </a>
+    <button type="button" class="m-tab-btn active" data-mview="rewards" onclick="switchView('rewards')">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      <span>Rewards</span>
+    </button>
+    <button type="button" class="m-tab-btn" data-mview="orders" onclick="switchView('orders')">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>
+      <span>Orders</span>
+    </button>
+    <button type="button" class="m-tab-btn" data-mview="profile" onclick="switchView('profile')">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Account</span>
+    </button>
+  </div>
+</nav>
+
 <!-- CONFIRM REDEEM MODAL -->
-<div class="modal-backdrop" id="redeemConfirmModal">
+<div class="modal-backdrop" id="redeemConfirmModal" onclick="if(event.target===this) closeRedeemModal()">
   <div class="modal-card">
-    <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:0.45rem;">Confirm Point Redemption</h3>
-    <p id="redeemConfirmDesc" style="font-size:0.9rem; color:#475569; line-height:1.5; margin-bottom:1.25rem;"></p>
+    <div style="width:52px; height:52px; border-radius:50%; background:#fff7ed; color:#ff5e36; display:inline-flex; align-items:center; justify-content:center; margin-bottom:0.85rem;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+    </div>
+    <h3 style="font-size:1.2rem; font-weight:800; margin-bottom:0.45rem;">Redeem Points</h3>
+    <p id="redeemConfirmDesc" style="font-size:0.9rem; color:#475569; line-height:1.5; margin-bottom:1.35rem;"></p>
     <div style="display:flex; gap:0.65rem;">
       <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeRedeemModal()">Cancel</button>
       <button type="button" class="btn" style="flex:1;" id="btnConfirmRedeemExec" onclick="executeRedeem()">Confirm</button>
@@ -586,17 +1142,17 @@
 </div>
 
 <!-- REDEEM SUCCESS MODAL -->
-<div class="modal-backdrop" id="redeemSuccessModal">
+<div class="modal-backdrop" id="redeemSuccessModal" onclick="if(event.target===this) this.classList.remove('open')">
   <div class="modal-card">
-    <div style="width:48px; height:48px; border-radius:50%; background:#dcfce7; color:#15803d; display:inline-flex; align-items:center; justify-content:center; margin-bottom:0.75rem;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <div style="width:52px; height:52px; border-radius:50%; background:#dcfce7; color:#15803d; display:inline-flex; align-items:center; justify-content:center; margin-bottom:0.85rem;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
     </div>
-    <h3 style="font-size:1.2rem; font-weight:800; margin-bottom:0.35rem;">Voucher Ready!</h3>
-    <p style="font-size:0.86rem; color:#64748b; margin-bottom:0.85rem;">Your points have been redeemed. Use this code at checkout:</p>
-    <div id="redeemSuccessCode" style="font-family:ui-monospace,monospace; font-size:1.5rem; font-weight:800; letter-spacing:0.1em; padding:0.85rem; background:#fff7ed; border:1.5px dashed #fdba74; color:#c2410c; border-radius:14px; margin-bottom:1rem;"></div>
+    <h3 style="font-size:1.25rem; font-weight:800; margin-bottom:0.35rem;">Voucher Unlocked</h3>
+    <p style="font-size:0.86rem; color:#64748b; margin-bottom:0.9rem;">Your points have been converted into a 30-day discount voucher:</p>
+    <div id="redeemSuccessCode" style="font-family:ui-monospace,monospace; font-size:1.45rem; font-weight:800; letter-spacing:0.08em; padding:0.85rem; background:#fff7ed; border:1.5px dashed #fdba74; color:#c2410c; border-radius:14px; margin-bottom:1.1rem;"></div>
     <div style="display:flex; gap:0.6rem;">
       <button type="button" class="btn btn-outline" style="flex:1;" onclick="copyText(document.getElementById('redeemSuccessCode').textContent)">Copy Code</button>
-      <button type="button" class="btn" style="flex:1;" onclick="document.getElementById('redeemSuccessModal').classList.remove('open')">Done</button>
+      <button type="button" class="btn" style="flex:1;" id="btnSuccessModalAction" onclick="document.getElementById('redeemSuccessModal').classList.remove('open')">Done</button>
     </div>
   </div>
 </div>
@@ -610,7 +1166,13 @@ if (nextUrl && nextUrl.startsWith("/")) {
   const bl = document.getElementById("backLink");
   const lbl = document.getElementById("backLinkLabel");
   bl.href = nextUrl;
-  lbl.textContent = nextUrl.startsWith("/pay") ? "Back to Bill" : "Back";
+  lbl.textContent = nextUrl.startsWith("/pay") ? "Return to Bill" : "Return";
+  const mScan = document.getElementById("mobileScanLink");
+  const mLbl = document.getElementById("mobileScanLabel");
+  if (mScan) mScan.href = nextUrl;
+  if (mLbl && nextUrl.startsWith("/pay")) mLbl.textContent = "Bill";
+  const gCont = document.getElementById("guestContinueScanLink");
+  if (gCont) gCont.href = nextUrl;
 }
 
 let stateUser = null;
@@ -618,10 +1180,17 @@ let googleClientId = "";
 let tiersList = [];
 let pointsInfo = null;
 let vouchersList = [];
+let activeVouchersPage = 1;
+const VOUCHERS_PER_PAGE = 4;
+
+let ledgerItems = [];
 let ledgerPage = 1;
 let ledgerTotal = 0;
+let ledgerLoading = false;
+
 let pendingRedeem = null;
 let googleScriptLoaded = false;
+let cooldownTimerId = null;
 
 function esc(val) {
   return String(val == null ? "" : val).replace(/[&<>"']/g, c => ({
@@ -639,22 +1208,37 @@ function showToast(msg) {
 
 function copyText(code) {
   if (!code) return;
-  navigator.clipboard.writeText(code).then(() => showToast("Voucher code copied: " + code)).catch(() => {});
+  navigator.clipboard.writeText(code).then(() => showToast("Copied voucher code: " + code)).catch(() => {});
 }
 
-function switchTab(name, btn) {
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  if (btn) btn.classList.add("active");
-  document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
-  const pane = document.getElementById("pane-" + name);
+function switchView(viewName) {
+  document.querySelectorAll(".side-nav-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.view === viewName);
+  });
+  document.querySelectorAll(".m-tab-btn[data-mview]").forEach(b => {
+    b.classList.toggle("active", b.dataset.mview === viewName);
+  });
+  document.querySelectorAll(".view-pane").forEach(p => p.classList.remove("active"));
+  const pane = document.getElementById("view-" + viewName);
   if (pane) pane.classList.add("active");
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function fmtDateTime(iso) {
   if (!iso) return "";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "";
-  return d.toLocaleString("en-MY", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString("en-MY", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function fillAvatarBox(el, user) {
+  if (!el) return;
+  const ch = String((user && user.name) || "C").trim().charAt(0).toUpperCase() || "C";
+  if (user && user.avatar_url) {
+    el.innerHTML = `<img src="${esc(user.avatar_url)}" alt="" referrerpolicy="no-referrer" onerror="this.remove();this.parentNode&&(this.parentNode.textContent='${esc(ch)}')">`;
+  } else {
+    el.textContent = ch;
+  }
 }
 
 async function initPage() {
@@ -692,12 +1276,14 @@ async function initPage() {
 function showClaimBanner(claim) {
   const banner = document.getElementById("autoClaimedBanner");
   const txt = document.getElementById("autoClaimedText");
-  txt.innerHTML = `<strong>+${esc(claim.points)} Unclaimed Points Transferred!</strong> Points from Bill #${esc(claim.bill_number)} have been added to your account.`;
+  txt.innerHTML = `<strong>+${esc(claim.points)} Unclaimed Points Synced!</strong> Points from Bill #${esc(claim.bill_number)} have been credited to your account.`;
   banner.style.display = "flex";
 }
 
 function renderGuestView(unclaimed) {
   document.getElementById("authSection").style.display = "none";
+  document.getElementById("mobileTabBar").classList.remove("visible");
+  document.getElementById("headerUserChip").style.display = "none";
   document.getElementById("guestSection").style.display = "block";
 
   const uncCard = document.getElementById("guestUnclaimedCard");
@@ -713,15 +1299,15 @@ function renderGuestView(unclaimed) {
   if (!tiersList.length) {
     preview.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem;">Reward tiers coming soon.</div>';
   } else {
-    preview.innerHTML = tiersList.map(t => `
-      <div class="tier-card">
-        <div>
-          <div class="tier-amt">RM ${Number(t.discount_amount).toFixed(Number(t.discount_amount) % 1 === 0 ? 0 : 2)} Off</div>
-          <div class="tier-pts">${Number(t.points_required).toLocaleString()} points</div>
+    preview.innerHTML = tiersList.map(t => {
+      const d = Number(t.discount_amount);
+      return `
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:0.9rem; text-align:center;">
+          <div style="font-size:1.15rem; font-weight:800; color:#0f172a;">RM ${d % 1 === 0 ? d.toFixed(0) : d.toFixed(2)} Off</div>
+          <div style="font-size:0.78rem; font-weight:700; color:#ff5e36; margin-top:0.2rem;">${Number(t.points_required).toLocaleString()} pts</div>
         </div>
-        <span class="badge-pill badge-gray" style="align-self:flex-start;">Sign in to unlock</span>
-      </div>
-    `).join("");
+      `;
+    }).join("");
   }
 
   setupGoogleButton();
@@ -819,79 +1405,99 @@ async function handleClearGuestSession() {
 
 async function renderAuthenticatedDashboard() {
   document.getElementById("guestSection").style.display = "none";
-  document.getElementById("authSection").style.display = "block";
+  document.getElementById("authSection").style.display = "flex";
+  document.getElementById("mobileTabBar").classList.add("visible");
 
+  // Populate avatars and user info
   document.getElementById("userNameHeader").textContent = stateUser.name || "Customer";
   document.getElementById("userEmailHeader").textContent = stateUser.email || "";
-  const avBox = document.getElementById("userAvatarBox");
-  if (stateUser.avatar_url) {
-    avBox.innerHTML = `<img src="${esc(stateUser.avatar_url)}" alt="" referrerpolicy="no-referrer">`;
-  } else {
-    avBox.textContent = (stateUser.name || "C").charAt(0).toUpperCase();
-  }
+  document.getElementById("profCardName").textContent = stateUser.name || "Customer";
+  fillAvatarBox(document.getElementById("userAvatarBox"), stateUser);
+  fillAvatarBox(document.getElementById("profAvatarLarge"), stateUser);
+  fillAvatarBox(document.getElementById("headerAvatarSm"), stateUser);
 
   document.getElementById("profEmail").value = stateUser.email || "";
   document.getElementById("profName").value = stateUser.name || "";
   document.getElementById("profPhone").value = stateUser.phone_number || "";
 
   const [ptsRes, vRes, ordRes] = await Promise.all([
-    fetch("/api/customer/points?page=1&limit=15", { cache: "no-store" }).then(r => r.json()),
+    fetch("/api/customer/points?page=1&limit=12", { cache: "no-store" }).then(r => r.json()),
     fetch("/api/customer/vouchers", { cache: "no-store" }).then(r => r.json()),
-    fetch("/api/customer/orders?page=1&limit=20", { cache: "no-store" }).then(r => r.json()),
+    fetch("/api/customer/orders?page=1&limit=25", { cache: "no-store" }).then(r => r.json()),
   ]);
 
   pointsInfo = ptsRes;
   vouchersList = Array.isArray(vRes) ? vRes : [];
+  activeVouchersPage = 1;
+  ledgerItems = Array.isArray(ptsRes.transactions) ? ptsRes.transactions : [];
   ledgerPage = 1;
   ledgerTotal = Number(ptsRes.totalTransactions || 0);
 
   const bal = Number(ptsRes.balance || 0);
-  document.getElementById("balanceCardEyebrow").textContent = bal < 0 ? "Points Debt" : "Available Points";
+  const chip = document.getElementById("headerUserChip");
+  chip.style.display = "inline-flex";
+  document.getElementById("headerChipPts").textContent = bal.toLocaleString() + " pts";
+
+  document.getElementById("balanceCardEyebrow").textContent = bal < 0 ? "Points Debt" : "Total Points";
   document.getElementById("balanceCardValue").textContent = bal.toLocaleString() + " pts";
   document.getElementById("balanceCardSub").textContent = bal < 0
-    ? "Cleared automatically by future meal purchases"
-    : `Approx. RM ${(Math.max(0, bal) / 200).toFixed(2)} reward value (RM 1 = 10 pts earned)`;
+    ? "Restored automatically by points from future meals"
+    : `Approx. RM ${(Math.max(0, bal) / 200).toFixed(2)} (RM 1 = 200 pts)`;
 
   document.getElementById("savedCardValue").textContent = "RM " + Number(ptsRes.totalSaved || 0).toFixed(2);
 
   const debtBanner = document.getElementById("debtBanner");
   if (bal < 0 || Number(ptsRes.debtPoints || 0) > 0) {
-    document.getElementById("debtBannerText").textContent = ptsRes.debtMessage || `Points debt: ${Math.abs(bal)}. Redemptions and vouchers are frozen until cleared.`;
+    document.getElementById("debtBannerText").textContent = ptsRes.debtMessage ||
+      `Points debt: ${Math.abs(bal)}. Future meal purchases clear this balance first. Redemptions and vouchers remain frozen until cleared.`;
     debtBanner.style.display = "flex";
   } else {
     debtBanner.style.display = "none";
   }
 
+  setupCooldownBanner(ptsRes, bal);
+  renderMyVouchers(bal);
+  renderLedgerTimeline();
+  renderOrdersList(ordRes.orders || []);
+}
+
+function setupCooldownBanner(ptsRes, balance) {
+  clearInterval(cooldownTimerId);
   const cdBanner = document.getElementById("cooldownBanner");
-  let onCooldown = false;
-  if (ptsRes.cooldownEndsAt) {
-    const ends = new Date(ptsRes.cooldownEndsAt);
-    const diffMs = ends.getTime() - Date.now();
-    if (diffMs > 0) {
-      onCooldown = true;
-      const minsTotal = Math.ceil(diffMs / 60000);
-      const h = Math.floor(minsTotal / 60);
-      const m = minsTotal % 60;
-      document.getElementById("cooldownBannerText").innerHTML =
-        `<strong>Redemption Cooldown Active:</strong> Next voucher redemption unlocks in <strong>${h}h ${m}m</strong> (limit: 1 redemption every ${ptsRes.cooldownLimitHours}h).`;
-      cdBanner.style.display = "flex";
-    } else {
-      cdBanner.style.display = "none";
-    }
-  } else {
+  if (!ptsRes.cooldownEndsAt) {
     cdBanner.style.display = "none";
+    renderAuthTiers(balance, false);
+    return;
   }
 
-  renderAuthTiers(bal, onCooldown);
-  renderMyVouchers(bal);
-  renderLedgerItems(ptsRes.transactions || [], false);
-  renderOrdersList(ordRes.orders || []);
+  const endsAt = new Date(ptsRes.cooldownEndsAt);
+  const tick = () => {
+    const diff = endsAt.getTime() - Date.now();
+    if (diff <= 0) {
+      clearInterval(cooldownTimerId);
+      cdBanner.style.display = "none";
+      renderAuthTiers(balance, false);
+      return;
+    }
+    const totalMins = Math.ceil(diff / 60000);
+    const hrs = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    document.getElementById("cooldownBannerText").innerHTML =
+      `Next redemption unlocks in <strong style="font-family:ui-monospace,monospace;">${hrs}h ${mins}m</strong>`;
+    document.getElementById("cooldownRuleSub").textContent = ptsRes.cooldownLimitHours
+      ? `Limit: 1 voucher every ${ptsRes.cooldownLimitHours}h`
+      : "";
+    cdBanner.style.display = "flex";
+    renderAuthTiers(balance, true);
+  };
+  tick();
+  cooldownTimerId = setInterval(tick, 30000);
 }
 
 function renderAuthTiers(balance, onCooldown) {
   const grid = document.getElementById("authTiersGrid");
   if (!tiersList.length) {
-    grid.innerHTML = '<div style="color:#94a3b8; font-size:0.86rem;">No active reward tiers configured.</div>';
+    grid.innerHTML = '<div class="surface-card" style="grid-column:1/-1; color:#94a3b8; font-size:0.88rem;">No active reward tiers configured.</div>';
     return;
   }
   grid.innerHTML = tiersList.map(t => {
@@ -899,17 +1505,17 @@ function renderAuthTiers(balance, onCooldown) {
     const disc = Number(t.discount_amount);
     const canRedeem = balance >= req && balance >= 0 && !onCooldown;
     let btnLabel = "Redeem";
-    if (balance < 0) btnLabel = "Frozen (Debt)";
+    if (balance < 0) btnLabel = "Frozen";
     else if (onCooldown) btnLabel = "On Cooldown";
-    else if (balance < req) btnLabel = `Need ${(req - balance).toLocaleString()} more pts`;
+    else if (balance < req) btnLabel = `Need ${(req - balance).toLocaleString()} pts`;
 
     return `
-      <div class="tier-card ${canRedeem ? 'eligible' : ''}">
+      <div class="tier-card ${canRedeem ? 'eligible' : ''} ${(onCooldown || balance < 0) ? 'dimmed' : ''}">
         <div>
           <div class="tier-amt">RM ${disc % 1 === 0 ? disc.toFixed(0) : disc.toFixed(2)} Off</div>
-          <div class="tier-pts">Requires ${req.toLocaleString()} pts</div>
+          <div class="tier-pts">(Redeem ${req.toLocaleString()} pts)</div>
         </div>
-        <button type="button" class="btn" ${canRedeem ? '' : 'disabled'} onclick="openRedeemModal(${req}, ${disc})">
+        <button type="button" class="btn" style="width:100%;" ${canRedeem ? '' : 'disabled'} onclick="openRedeemModal(${req}, ${disc})">
           ${esc(btnLabel)}
         </button>
       </div>
@@ -917,43 +1523,76 @@ function renderAuthTiers(balance, onCooldown) {
   }).join("");
 }
 
+function setVouchersPage(p) {
+  activeVouchersPage = p;
+  renderMyVouchers(Number((pointsInfo && pointsInfo.balance) || 0));
+}
+
 function renderMyVouchers(balance) {
   const box = document.getElementById("myVouchersContainer");
+  const countLbl = document.getElementById("vouchersCountLabel");
   const active = vouchersList.filter(v => v.is_active && !v.is_redeemed && !v.is_expired);
   const past = vouchersList.filter(v => !v.is_active || v.is_redeemed || v.is_expired);
 
+  if (countLbl) {
+    countLbl.textContent = active.length ? `${active.length} active` : "0 active";
+  }
+
   if (!active.length && !past.length) {
-    box.innerHTML = '<p style="color:#94a3b8; font-size:0.88rem; padding:0.5rem 0;">You do not have any vouchers yet. Redeem points above to generate one!</p>';
+    box.innerHTML = '<div class="surface-card" style="color:#64748b; font-size:0.88rem; text-align:center; padding:1.75rem 1rem;">No vouchers available yet. Redeem your points above to unlock instant RM discounts.</div>';
     return;
   }
 
   let html = "";
   if (active.length) {
-    html += '<div class="vouchers-grid">' + active.map(v => {
+    const totalPages = Math.max(1, Math.ceil(active.length / VOUCHERS_PER_PAGE));
+    if (activeVouchersPage > totalPages) activeVouchersPage = totalPages;
+    const slice = active.slice((activeVouchersPage - 1) * VOUCHERS_PER_PAGE, activeVouchersPage * VOUCHERS_PER_PAGE);
+    const frozen = balance < 0;
+
+    html += '<div class="vouchers-grid">' + slice.map(v => {
       const valText = v.type === "percentage"
         ? `${v.discount_value}% Off`
         : `RM ${Number(v.discount_value).toFixed(Number(v.discount_value) % 1 === 0 ? 0 : 2)} Off`;
       const minText = Number(v.min_spend || 0) > 0 ? `Min spend RM ${Number(v.min_spend).toFixed(2)}` : "No min spend";
-      const expText = v.expires_at ? `Expires ${new Date(v.expires_at).toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "2-digit" })}` : "";
-      const frozen = balance < 0;
+      const expText = v.expires_at
+        ? `Expires ${new Date(v.expires_at).toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "numeric" })}`
+        : "";
+      const returnBtn = (nextUrl && nextUrl.startsWith("/pay") && !frozen)
+        ? `<a href="${esc(nextUrl)}" class="btn" style="padding:0.42rem 0.75rem; font-size:0.76rem; border-radius:9px;">Use on Bill</a>`
+        : "";
       return `
-        <div class="voucher-ticket active-ticket">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.55rem;">
-            <span class="voucher-code-pill">${esc(v.code)}</span>
-            <span class="badge-pill ${frozen ? 'badge-amber' : 'badge-green'}">${frozen ? 'Frozen' : 'Active'}</span>
+        <div class="voucher-card ${frozen ? 'frozen' : ''}">
+          <div>
+            <div class="voucher-top">
+              <span class="voucher-code-label">VOUCHER · ${esc(v.code)}</span>
+              <span class="status-pill ${frozen ? 'pill-amber' : 'pill-green'}">${frozen ? 'Frozen' : 'Active'}</span>
+            </div>
+            <div class="voucher-big-val">${esc(valText)}</div>
+            <div class="voucher-meta">${esc(minText)}${expText ? ' · ' + esc(expText) : ''}</div>
           </div>
-          <div style="font-size:1.2rem; font-weight:800; color:#0f172a;">${esc(valText)}</div>
-          <div style="font-size:0.78rem; color:#64748b; margin-top:0.2rem;">${esc(minText)}${expText ? ' • ' + esc(expText) : ''}</div>
-          <div style="margin-top:0.8rem;">
-            <button type="button" class="btn btn-outline" style="width:100%; padding:0.48rem; font-size:0.8rem;" ${frozen ? 'disabled' : ''} onclick="copyText('${esc(v.code)}')">
-              Copy Voucher Code
+          <div class="voucher-actions">
+            <button type="button" class="btn btn-outline" style="padding:0.42rem 0.8rem; font-size:0.78rem; border-radius:9px;" ${frozen ? 'disabled' : ''} onclick="copyText('${esc(v.code)}')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy Code</span>
             </button>
+            ${returnBtn}
           </div>
         </div>
       `;
     }).join("") + '</div>';
+
+    if (totalPages > 1) {
+      html += `
+        <div class="pager-bar">
+          <button type="button" class="btn btn-outline" style="padding:0.32rem 0.7rem; font-size:0.76rem;" ${activeVouchersPage <= 1 ? 'disabled' : ''} onclick="setVouchersPage(${activeVouchersPage - 1})">Prev</button>
+          <span>Page ${activeVouchersPage} of ${totalPages}</span>
+          <button type="button" class="btn btn-outline" style="padding:0.32rem 0.7rem; font-size:0.76rem;" ${activeVouchersPage >= totalPages ? 'disabled' : ''} onclick="setVouchersPage(${activeVouchersPage + 1})">Next</button>
+        </div>
+      `;
+    }
   } else {
-    html += '<p style="color:#94a3b8; font-size:0.88rem; margin-bottom:0.75rem;">No active unused vouchers right now.</p>';
+    html += '<div class="surface-card" style="color:#64748b; font-size:0.86rem; padding:1.1rem 1.25rem;">No active unused vouchers right now.</div>';
   }
 
   if (past.length) {
@@ -962,88 +1601,106 @@ function renderMyVouchers(balance) {
         <summary style="cursor:pointer; font-size:0.82rem; font-weight:700; color:#64748b;">Used / Expired Vouchers (${past.length})</summary>
         <div class="vouchers-grid" style="margin-top:0.65rem; opacity:0.68;">
           ${past.slice(0, 12).map(v => `
-            <div class="voucher-ticket">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
-                <span class="voucher-code-pill">${esc(v.code)}</span>
-                <span class="badge-pill badge-gray">${v.is_redeemed ? 'Used' : 'Expired'}</span>
+            <div class="voucher-card">
+              <div class="voucher-top">
+                <span class="voucher-code-label">${esc(v.code)}</span>
+                <span class="status-pill pill-gray">${v.is_redeemed ? 'Used' : 'Expired'}</span>
               </div>
-              <div style="font-weight:700; font-size:0.95rem;">${v.type === 'percentage' ? esc(v.discount_value) + '% Off' : 'RM ' + Number(v.discount_value).toFixed(2) + ' Off'}</div>
+              <div style="font-weight:800; font-size:1rem; color:#334155;">${v.type === 'percentage' ? esc(v.discount_value) + '% Off' : 'RM ' + Number(v.discount_value).toFixed(2) + ' Off'}</div>
             </div>
           `).join("")}
         </div>
       </details>
     `;
   }
+
   box.innerHTML = html;
 }
 
-function renderLedgerItems(items, append) {
+function renderLedgerTimeline() {
   const box = document.getElementById("ledgerContainer");
-  if (!append && (!items || !items.length)) {
-    box.innerHTML = '<p style="color:#94a3b8; font-size:0.88rem; padding:0.5rem 0;">No points transactions yet.</p>';
-    document.getElementById("ledgerMoreWrap").style.display = "none";
+  const moreWrap = document.getElementById("ledgerMoreWrap");
+  if (!ledgerItems.length) {
+    box.innerHTML = '<p style="color:#94a3b8; font-size:0.86rem; padding:0.5rem 0;">No recent points transactions.</p>';
+    moreWrap.style.display = "none";
     return;
   }
-  const html = items.map(tx => {
+
+  const rowsHtml = ledgerItems.map(tx => {
     const pts = Number(tx.points || 0);
-    const pos = pts > 0;
+    const isPos = pts > 0;
     return `
-      <div class="ledger-item">
-        <div>
-          <div style="font-weight:700; font-size:0.9rem; color:#0f172a;">${esc(tx.description || tx.transaction_type)}</div>
-          <div style="font-size:0.76rem; color:#64748b; margin-top:0.18rem;">${esc(fmtDateTime(tx.created_at))}</div>
-        </div>
-        <div class="ledger-pts ${pos ? 'pts-pos' : 'pts-neg'}">${pos ? '+' : ''}${pts.toLocaleString()} pts</div>
+      <div class="timeline-item">
+        <span class="timeline-dot ${isPos ? 'pos' : 'neg'}"></span>
+        <div class="timeline-pts ${isPos ? 'pos' : 'neg'}">${isPos ? '+' : ''}${pts.toLocaleString()} pts</div>
+        <div class="timeline-desc">${esc(tx.description || tx.transaction_type)}</div>
+        <div class="timeline-date">${esc(fmtDateTime(tx.created_at))}</div>
       </div>
     `;
   }).join("");
 
-  if (append) box.insertAdjacentHTML("beforeend", html);
-  else box.innerHTML = html;
+  const hasMore = ledgerItems.length < ledgerTotal;
+  const endMarker = !hasMore
+    ? '<div class="timeline-end">You reached the beginning</div>'
+    : '';
 
-  const currentShown = box.querySelectorAll(".ledger-item").length;
-  document.getElementById("ledgerMoreWrap").style.display = currentShown < ledgerTotal ? "block" : "none";
+  box.innerHTML = `<div class="timeline-rail">${rowsHtml}</div>${endMarker}`;
+  moreWrap.style.display = hasMore ? "block" : "none";
+}
+
+function onHistoryScroll(e) {
+  const el = e.currentTarget;
+  if (!el || ledgerLoading || ledgerItems.length >= ledgerTotal) return;
+  if (el.scrollHeight - el.scrollTop <= el.clientHeight + 80) {
+    loadMoreLedger();
+  }
 }
 
 async function loadMoreLedger() {
+  if (ledgerLoading || ledgerItems.length >= ledgerTotal) return;
+  ledgerLoading = true;
   const btn = document.getElementById("btnLoadMoreLedger");
-  btn.disabled = true;
+  if (btn) { btn.disabled = true; btn.textContent = "Loading..."; }
   try {
     const nextP = ledgerPage + 1;
-    const res = await fetch(`/api/customer/points?page=${nextP}&limit=15`, { cache: "no-store" });
+    const res = await fetch(`/api/customer/points?page=${nextP}&limit=12`, { cache: "no-store" });
     if (res.ok) {
       const data = await res.json();
       ledgerPage = nextP;
-      renderLedgerItems(data.transactions || [], true);
+      const incoming = Array.isArray(data.transactions) ? data.transactions : [];
+      ledgerItems = ledgerItems.concat(incoming);
+      renderLedgerTimeline();
     }
   } finally {
-    btn.disabled = false;
+    ledgerLoading = false;
+    if (btn) { btn.disabled = false; btn.textContent = "Load More"; }
   }
 }
 
 function renderOrdersList(orders) {
   const box = document.getElementById("ordersContainer");
   if (!orders || !orders.length) {
-    box.innerHTML = '<p style="color:#94a3b8; font-size:0.88rem; padding:0.5rem 0;">No paid bills linked to this account yet.</p>';
+    box.innerHTML = '<div class="surface-card" style="color:#64748b; font-size:0.9rem; text-align:center; padding:2.25rem 1rem;">No paid bills linked to this account yet.</div>';
     return;
   }
   box.innerHTML = orders.map(o => {
     const itemsStr = (o.items || []).map(i => `${i.quantity}x ${i.name}`).join(", ");
     const netPts = Number(o.net_points || 0);
     return `
-      <div class="order-row">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.4rem; flex-wrap:wrap;">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <strong style="font-size:0.95rem;">Bill #${esc(o.bill_number)}</strong>
-            ${netPts > 0 ? `<span class="badge-pill badge-green">+${netPts} pts</span>` : ''}
-            ${o.voucher_code ? `<span class="badge-pill badge-amber">Voucher ${esc(o.voucher_code)}</span>` : ''}
+      <div class="bill-history-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.6rem; margin-bottom:0.55rem; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <span class="bill-num-badge">Bill #${esc(o.bill_number)}</span>
+            <span class="status-pill pill-green">Paid</span>
+            ${netPts > 0 ? `<span class="status-pill pill-green">+${netPts.toLocaleString()} pts</span>` : ''}
+            ${o.voucher_code ? `<span class="status-pill pill-amber">Voucher ${esc(o.voucher_code)}</span>` : ''}
           </div>
-          <span style="font-weight:800; font-size:1rem; color:#0f172a;">RM ${Number(o.total).toFixed(2)}</span>
+          <div style="font-weight:800; font-size:1.1rem; color:#0f172a;">RM ${Number(o.total).toFixed(2)}</div>
         </div>
-        <div style="font-size:0.84rem; color:#334155; margin-bottom:0.45rem;">${esc(itemsStr || "Plate items")}</div>
-        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:#64748b;">
+        <div style="font-size:0.88rem; color:#334155; font-weight:500; margin-bottom:0.6rem;">${esc(itemsStr || "Plate items")}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap; padding-top:0.55rem; border-top:1px solid #f1f5f9; font-size:0.8rem; color:#64748b;">
           <span>${esc(fmtDateTime(o.paid_at || o.created_at))}</span>
-          <a href="/payment/success?session=${encodeURIComponent(o.session_id)}" style="color:#ff5e36; font-weight:700; text-decoration:none;">View Receipt</a>
+          <a href="/payment/success?session=${encodeURIComponent(o.session_id)}" class="btn btn-outline" style="padding:0.38rem 0.8rem; font-size:0.78rem; border-radius:9px;">View Official Receipt</a>
         </div>
       </div>
     `;
@@ -1052,8 +1709,9 @@ function renderOrdersList(orders) {
 
 function openRedeemModal(points, discount) {
   pendingRedeem = { points, discount };
+  const dFmt = discount % 1 === 0 ? discount.toFixed(0) : discount.toFixed(2);
   document.getElementById("redeemConfirmDesc").textContent =
-    `Redeem ${Number(points).toLocaleString()} points for an RM ${Number(discount).toFixed(Number(discount) % 1 === 0 ? 0 : 2)} discount voucher (valid for 30 days)?`;
+    `Are you sure you want to redeem ${Number(points).toLocaleString()} points for an RM ${dFmt} Off voucher (valid for 30 days)?`;
   document.getElementById("redeemConfirmModal").classList.add("open");
 }
 
@@ -1066,7 +1724,7 @@ async function executeRedeem() {
   if (!pendingRedeem) return;
   const btn = document.getElementById("btnConfirmRedeemExec");
   btn.disabled = true;
-  btn.textContent = "Redeeming...";
+  btn.textContent = "Processing...";
   try {
     const res = await fetch("/api/customer/points/redeem", {
       method: "POST",
@@ -1080,6 +1738,11 @@ async function executeRedeem() {
       return;
     }
     document.getElementById("redeemSuccessCode").textContent = data.code;
+    const actBtn = document.getElementById("btnSuccessModalAction");
+    if (nextUrl && nextUrl.startsWith("/pay")) {
+      actBtn.textContent = "Return to Bill";
+      actBtn.onclick = () => { location.href = nextUrl; };
+    }
     document.getElementById("redeemSuccessModal").classList.add("open");
     await renderAuthenticatedDashboard();
   } catch (e) {
@@ -1093,7 +1756,9 @@ async function executeRedeem() {
 async function saveProfile(event) {
   event.preventDefault();
   const btn = document.getElementById("btnSaveProfile");
+  const notice = document.getElementById("profileSavedNotice");
   btn.disabled = true;
+  btn.textContent = "Saving...";
   try {
     const res = await fetch("/api/customer/profile", {
       method: "PUT",
@@ -1110,13 +1775,22 @@ async function saveProfile(event) {
     }
     stateUser = data.user;
     document.getElementById("userNameHeader").textContent = stateUser.name;
-    showToast("Profile saved!");
+    document.getElementById("profCardName").textContent = stateUser.name;
+    fillAvatarBox(document.getElementById("userAvatarBox"), stateUser);
+    fillAvatarBox(document.getElementById("profAvatarLarge"), stateUser);
+    if (notice) {
+      notice.style.display = "flex";
+      setTimeout(() => { notice.style.display = "none"; }, 2600);
+    }
+    showToast("Profile updated");
   } finally {
     btn.disabled = false;
+    btn.textContent = "Save Changes";
   }
 }
 
 async function handleSignOut() {
+  clearInterval(cooldownTimerId);
   await fetch("/api/customer/auth/logout", { method: "POST" });
   stateUser = null;
   document.getElementById("autoClaimedBanner").style.display = "none";

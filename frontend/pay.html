@@ -1453,19 +1453,27 @@ async function loadCheckoutLoyaltyContext(bill) {
     const st = await stRes.json();
 
     if (!st.authenticated || !st.user) {
-      if (pillTxt) pillTxt.textContent = "Sign In";
+      if (pillTxt) pillTxt.textContent = "Sign In / Rewards";
       const pts = Number((bill && bill.potential_points) || 0);
       widget.innerHTML = `
-        <div style="padding:0.65rem 0.85rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; font-size:0.8rem; color:#475569; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
-          <span>Guest checkout${pts > 0 ? ` — claim <strong>+${pts} pts</strong> after payment` : ''}</span>
-          <a href="/account?next=${nextParam}" style="color:#ff5e36; font-weight:700; text-decoration:none;">Use Voucher / Sign In</a>
+        <div style="padding:0.75rem 0.9rem; background:linear-gradient(135deg, #fff7ed 0%, #ffffff 100%); border:1px solid #fed7aa; border-radius:14px; display:flex; align-items:center; justify-content:space-between; gap:0.65rem; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:0.55rem; min-width:0;">
+            <span style="width:28px; height:28px; border-radius:9px; background:#ffedd5; color:#ea580c; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </span>
+            <div style="font-size:0.79rem; color:#7c2d12; line-height:1.35;">
+              <div style="font-weight:800;">Guest Checkout${pts > 0 ? ` · +${pts} pts eligible` : ""}</div>
+              <div style="color:#9a3412; font-size:0.73rem;">Pay now and claim after, or sign in to apply vouchers</div>
+            </div>
+          </div>
+          <a href="/account?next=${nextParam}" style="background:#0f172a; color:#ffffff; font-size:0.75rem; font-weight:700; padding:0.42rem 0.8rem; border-radius:999px; text-decoration:none; white-space:nowrap;">Sign In / Vouchers</a>
         </div>`;
       return;
     }
 
     const u = st.user;
     const firstName = String(u.name || "Account").split(" ")[0].slice(0, 12);
-    if (pillTxt) pillTxt.textContent = `${firstName} • ${Number(u.points_balance || 0).toLocaleString()} pts`;
+    if (pillTxt) pillTxt.textContent = `${firstName} · ${Number(u.points_balance || 0).toLocaleString()} pts`;
 
     // Auto-fill phone number once if customer has saved phone and input is empty
     const phoneInp = document.getElementById("phoneLocal");

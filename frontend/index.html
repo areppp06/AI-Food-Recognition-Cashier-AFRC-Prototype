@@ -797,11 +797,18 @@ video, canvas {
 </head>
 <body>
 <div class="mobile-phone-frame">
-<div id="kioskLoyaltyBar" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; margin-bottom:0.65rem; padding:0 0.15rem;">
-  <span style="font-size:0.76rem; font-weight:700; color:#64748b; letter-spacing:0.02em;">AFRC Rewards</span>
-  <a href="/account" id="kioskLoyaltyPill" style="display:inline-flex; align-items:center; gap:0.38rem; padding:0.36rem 0.78rem; border-radius:999px; background:#ffffff; border:1px solid #dbe3ee; color:#0f172a; font-size:0.78rem; font-weight:700; text-decoration:none; box-shadow:0 2px 6px rgba(15,23,42,0.05);">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ff5e36" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-    <span id="kioskLoyaltyText">Rewards &amp; Sign In</span>
+<div id="kioskLoyaltyBar" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:0.6rem; margin-bottom:0.8rem; padding:0.55rem 0.75rem 0.55rem 0.85rem; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 4px 12px rgba(15,23,42,0.04);">
+  <div style="display:flex; align-items:center; gap:0.55rem; min-width:0;">
+    <span id="kioskLoyaltyIconWrap" style="width:28px; height:28px; border-radius:9px; background:#fff7ed; border:1px solid #ffedd5; color:#ff5e36; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; font-size:0.75rem; font-weight:800;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+    </span>
+    <div style="min-width:0;">
+      <div id="kioskLoyaltyTitle" style="font-size:0.78rem; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Loyalty &amp; Rewards</div>
+      <div id="kioskLoyaltySub" style="font-size:0.69rem; font-weight:600; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Earn 10 pts per RM 1 spent</div>
+    </div>
+  </div>
+  <a href="/account" id="kioskLoyaltyPill" style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.42rem 0.82rem; border-radius:999px; background:#0f172a; color:#ffffff; font-size:0.75rem; font-weight:700; text-decoration:none; white-space:nowrap; flex-shrink:0;">
+    <span id="kioskLoyaltyText">My Account</span>
   </a>
 </div>
 <div id="stateLockBox"></div>
@@ -1848,15 +1855,27 @@ function showBill(data) {
     const data = await res.json();
     const pill = document.getElementById("kioskLoyaltyPill");
     const txt = document.getElementById("kioskLoyaltyText");
+    const titleEl = document.getElementById("kioskLoyaltyTitle");
+    const subEl = document.getElementById("kioskLoyaltySub");
+    const iconWrap = document.getElementById("kioskLoyaltyIconWrap");
     if (!pill || !txt) return;
     if (data.authenticated && data.user) {
-      const firstName = String(data.user.name || "Account").split(" ")[0].slice(0, 14);
-      txt.textContent = `${firstName} • ${Number(data.user.points_balance || 0).toLocaleString()} pts`;
+      const firstName = String(data.user.name || "Member").split(" ")[0].slice(0, 16);
+      const pts = Number(data.user.points_balance || 0);
+      if (titleEl) titleEl.textContent = `Hi, ${firstName}`;
+      if (subEl) subEl.textContent = `${pts.toLocaleString()} pts available`;
+      if (iconWrap && data.user.avatar_url) {
+        iconWrap.style.borderRadius = "50%";
+        iconWrap.innerHTML = `<img src="${esc(data.user.avatar_url)}" alt="" style="width:100%;height:100%;object-fit:cover;" referrerpolicy="no-referrer">`;
+      }
+      pill.style.background = "#ff5e36";
+      txt.textContent = "My Rewards";
     } else if (data.unclaimed && data.unclaimed.has_unclaimed && data.unclaimed.points > 0) {
-      pill.style.background = "#fff7ed";
-      pill.style.borderColor = "#fdba74";
-      pill.style.color = "#c2410c";
-      txt.textContent = `Claim +${Number(data.unclaimed.points).toLocaleString()} Pts`;
+      const uPts = Number(data.unclaimed.points).toLocaleString();
+      if (titleEl) titleEl.textContent = `+${uPts} Unclaimed Points`;
+      if (subEl) subEl.textContent = `Sign in to save Bill #${data.unclaimed.bill_number || ''} points`;
+      pill.style.background = "#ff5e36";
+      txt.textContent = "Claim Points";
     }
   } catch (e) {}
 })();
