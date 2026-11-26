@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>Menu Categories Management — AFRC Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="/static/admin/shared/admin.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar"></aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<div class="main-wrapper">
+  <header class="topbar" id="topbar"></header>
+  <main class="content">
+    <section class="section-pane active" id="tab-categories">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Add New Category</div>
+            <p style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Create categories for organizing menu items. Each menu item can be tagged with up to 3 categories.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <form onsubmit="handleAddCategory(event)" style="display:flex; flex-direction:column; gap:1rem;">
+            <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end;">
+              <label class="field-label" style="flex:1; min-width:220px;">Category Name
+                <input type="text" id="newCatNameInput" class="input-box" placeholder="e.g. Sarapan, Ala carte, Minuman" maxlength="60" required>
+              </label>
+              <div class="field-label">Icon
+                <div class="icon-picker-grid" id="newCatIconPicker">
+                  <button type="button" class="icon-choice-btn active" data-icon="restaurant" onclick="selectNewCatIcon('restaurant', this)" title="Restaurant"><span class="material-symbols-outlined" style="font-size:18px;">restaurant</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="coffee" onclick="selectNewCatIcon('coffee', this)" title="Coffee / Tea"><span class="material-symbols-outlined" style="font-size:18px;">local_cafe</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="bakery_dining" onclick="selectNewCatIcon('bakery_dining', this)" title="Breakfast / Bakery"><span class="material-symbols-outlined" style="font-size:18px;">bakery_dining</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="lunch_dining" onclick="selectNewCatIcon('lunch_dining', this)" title="Lunch / Ala carte"><span class="material-symbols-outlined" style="font-size:18px;">lunch_dining</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="glass_cup" onclick="selectNewCatIcon('glass_cup', this)" title="Cold Drinks"><span class="material-symbols-outlined" style="font-size:18px;">glass_cup</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="cake" onclick="selectNewCatIcon('cake', this)" title="Desserts &amp; Cake"><span class="material-symbols-outlined" style="font-size:18px;">cake</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="dinner_dining" onclick="selectNewCatIcon('dinner_dining', this)" title="Main Dish / Rice"><span class="material-symbols-outlined" style="font-size:18px;">dinner_dining</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="tapas" onclick="selectNewCatIcon('tapas', this)" title="Sides &amp; Snacks"><span class="material-symbols-outlined" style="font-size:18px;">tapas</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="set_meal" onclick="selectNewCatIcon('set_meal', this)" title="Set Meal"><span class="material-symbols-outlined" style="font-size:18px;">set_meal</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="ramen_dining" onclick="selectNewCatIcon('ramen_dining', this)" title="Noodles / Soup"><span class="material-symbols-outlined" style="font-size:18px;">ramen_dining</span></button>
+                </div>
+              </div>
+              <button type="submit" class="btn" id="btnAddCategorySubmit">+ Add Category</button>
+            </div>
+          </form>
+          <p id="categoryError" style="color:#ef4444; font-size:0.84rem; margin-top:0.5rem; min-height:1rem;"></p>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Arrange Categories Order (Drag &amp; Drop)</div>
+            <p style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Drag and drop rows (or use the up/down arrows) to arrange the exact order categories appear.</p>
+          </div>
+          <span id="catOrderSaveBadge" style="font-size:0.78rem; font-weight:600; color:#10b981;">Order synced</span>
+        </div>
+        <div class="panel-body">
+          <div class="cat-drag-list" id="categoriesDragList">
+            <div class="empty-state-sm">Loading categories...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+
+<script src="/static/admin/shared/admin-shell.js"></script>
+<script src="/static/admin/js/categories.js"></script>
+<script>
+  initAdminShell({
+    activeTab: "categories",
+    title: "Menu Categories Management",
+    onRefresh: loadCategories
+  });
+</script>
+</body>
+</html>

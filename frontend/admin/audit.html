@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>Audit Log — AFRC Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="/static/admin/shared/admin.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar"></aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<div class="main-wrapper">
+  <header class="topbar" id="topbar"></header>
+  <main class="content">
+    <section class="section-pane active" id="tab-audit">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">Audit Log</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Log ID</th>
+                <th>Timestamp</th>
+                <th>Cashier</th>
+                <th>Action</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="auditBody"></tbody>
+          </table>
+        </div>
+        <div class="audit-mobile-list" id="auditMobileList"></div>
+        <div class="pagination-bar" id="auditPaginationBar">
+          <div class="pagination-info" id="auditPaginationInfo">Showing 0 logs</div>
+          <div class="pagination-controls" id="auditPaginationControls"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+
+<script src="/static/admin/shared/admin-shell.js"></script>
+<script src="/static/admin/js/audit.js"></script>
+<script>
+  initAdminShell({
+    activeTab: "audit",
+    title: "Audit Log",
+    onRefresh: () => loadAuditLogs(auditCurrentPage, auditPageSize)
+  });
+</script>
+</body>
+</html>

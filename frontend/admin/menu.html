@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>Daily Menu Configuration — AFRC Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="/static/admin/shared/admin.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar"></aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<div class="main-wrapper">
+  <header class="topbar" id="topbar"></header>
+  <main class="content">
+    <section class="section-pane active" id="tab-menu">
+      <div class="panel-card" id="addDishPanel">
+        <div class="panel-header" onclick="toggleAddDishForm()">
+          <div>
+            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+              <span>Add New Dish to Menu</span>
+              <span class="mobile-only-badge" id="addDishToggleBadge">Tap to open</span>
+            </div>
+            <p class="add-dish-subtext" style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Names added here are the exact names the AI vision model returns. Use Description to describe what 1 serving looks like.</p>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm mobile-add-toggle-btn" id="addDishToggleBtn" aria-label="Toggle add dish form">
+            <svg style="width:16px; height:16px; transition:transform 0.2s ease;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" id="addDishChevron">
+              <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="panel-body" id="addDishBody">
+          <form class="menu-form-grid" onsubmit="addDish(event)" novalidate>
+            <label class="field-label">AI Dish Name
+              <input class="input-box" id="newName" placeholder="e.g. Ayam goreng" required type="text">
+            </label>
+            <label class="field-label">Customer Alias (optional)
+              <input class="input-box" id="newAlias" placeholder="e.g. Signature Fried Chicken" type="text">
+            </label>
+            <label class="field-label">Price
+              <div class="price-stepper-wrap">
+                <button type="button" class="price-step-btn" onclick="stepPriceInput('newPrice', -1)" aria-label="Decrease price by 1">−</button>
+                <div class="input-with-prefix">
+                  <span class="currency-prefix">RM</span>
+                  <input class="input-box prefix-input" id="newPrice" min="0" required step="1" type="number" value="1">
+                </div>
+                <button type="button" class="price-step-btn" onclick="stepPriceInput('newPrice', 1)" aria-label="Increase price by 1">+</button>
+              </div>
+            </label>
+            <label class="field-label">Pieces / Portion
+              <input class="input-box" id="newPieces" max="100" min="1" required step="1" type="number" value="1" style="width:110px;">
+            </label>
+            <label class="field-label">AI Visual Description (optional)
+              <input class="input-box" id="newDescription" maxlength="500" placeholder="e.g. fried chicken piece with crispy skin" type="text">
+            </label>
+            <label class="field-label" style="grid-column: 1 / -1;">Categories (Max 3)
+              <div id="newDishCategoriesPicker" style="margin-top:0.35rem;"></div>
+            </label>
+            <button class="btn" type="submit">+ Add Dish</button>
+          </form>
+          <p id="error" style="color:#ef4444; font-size:0.84rem; margin-top:0.6rem; min-height:1.1rem;"></p>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-header">
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <div class="panel-title">Current Menu Items</div>
+            <span id="menuAutoSaveStatus" style="font-size:0.78rem; font-weight:600; color:#10b981; display:flex; align-items:center; gap:0.35rem; transition:all 0.2s ease;">
+              <svg style="width:14px; height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              <span>All changes saved</span>
+            </span>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline" onclick="exportMenuCsv()" id="btnExportMenuCsv" title="Export current menu as a CSV spreadsheet">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Export CSV</span>
+            </button>
+            <button type="button" class="btn btn-outline" onclick="triggerImportMenuCsv()" id="btnImportMenuCsv" title="Import menu from CSV (overwrites existing dishes)">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 19V7m0 0l-4 4m4-4l4 4M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Import CSV</span>
+            </button>
+            <input type="file" id="menuCsvFileInput" accept=".csv" style="display:none;" onchange="handleMenuCsvFileSelected(event)">
+            <button class="btn btn-dark" onclick="saveMenu()" id="btnSaveMenuManual" title="Manual save shortcut">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 4h11l3 3v13H5V4z" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M8 4v5h7V4M8 20v-6h8v6" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Save Menu Changes</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Menu Search & Filter Bar -->
+        <div style="padding: 0.85rem 1.25rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 240px; max-width: 440px; position: relative;">
+            <svg style="width: 16px; height: 16px; position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="menuSearchInput" class="search-input" placeholder="Search dish name, alias, description..." oninput="filterMenuItems()" onkeydown="if(event.key==='Escape')clearMenuSearch()" style="width: 100%; padding-left: 2.35rem; padding-right: 2.2rem; font-size: 0.86rem; box-sizing: border-box; background: #ffffff;">
+            <button type="button" id="clearMenuSearchBtn" onclick="clearMenuSearch()" style="position: absolute; right: 0.65rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.15rem; line-height: 1; padding: 2px 4px; display: none;" title="Clear search">&times;</button>
+          </div>
+          <div id="menuItemsCount" style="font-size: 0.82rem; color: #64748b; font-weight: 500;">
+            Showing all items
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="menuTable">
+            <thead>
+              <tr>
+                <th style="min-width:140px;">AI Dish Name</th>
+                <th style="min-width:160px;">Customer Alias</th>
+                <th style="min-width:180px;">Categories</th>
+                <th>Description for AI</th>
+                <th style="width:110px;">Pieces / Portion</th>
+                <th style="width:190px;">Price</th>
+                <th style="width:100px; text-align:center;">Available Today</th>
+                <th style="width:80px;"></th>
+              </tr>
+            </thead>
+            <tbody id="menuBody"></tbody>
+          </table>
+        </div>
+        <div class="menu-mobile-list" id="menuMobileList"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop cat-picker-modal-backdrop" id="dishCategoryPickerModal" onclick="if(event.target===this) closeDishCategoryPicker()">
+  <div class="cat-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="catPickerTitle">
+    <div class="cat-picker-head">
+      <div class="cat-picker-head-left">
+        <h3 id="catPickerTitle" class="cat-picker-title">Choose categories</h3>
+        <span class="cat-picker-badge" id="catPickerCountBadge">0/3 selected</span>
+      </div>
+      <button type="button" class="cat-picker-close-btn" onclick="closeDishCategoryPicker()" aria-label="Close picker modal">✕</button>
+    </div>
+    <div class="cat-picker-search-wrap">
+      <span class="cat-picker-search-icon">🔍</span>
+      <input type="text" id="catPickerSearchInput" class="cat-picker-search-input" placeholder="Search categories..." oninput="onFilterPickerCategories(this.value)">
+      <button type="button" id="catPickerClearSearch" class="cat-picker-clear-search" onclick="clearPickerSearch()" style="display:none;" aria-label="Clear search">✕</button>
+    </div>
+    <div class="cat-picker-list" id="catPickerList"></div>
+    <div class="cat-picker-foot">
+      <button type="button" class="btn cat-picker-done-btn" onclick="closeDishCategoryPicker()">Done</button>
+    </div>
+  </div>
+</div>
+<script src="/static/admin/shared/admin-shell.js"></script>
+<script src="/static/admin/js/menu.js"></script>
+<script>
+  initAdminShell({
+    activeTab: "menu",
+    title: "Daily Menu Configuration",
+    onRefresh: async () => { await loadCategories(); await loadMenu(); }
+  });
+</script>
+</body>
+</html>

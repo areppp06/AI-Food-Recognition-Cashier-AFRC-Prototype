@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>Dashboard Overview — AFRC Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="/static/admin/shared/admin.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar"></aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<div class="main-wrapper">
+  <header class="topbar" id="topbar"></header>
+  <main class="content">
+    <section class="section-pane active" id="tab-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Today's Paid Revenue</div>
+          <div class="stat-value orange" id="statTodayRev">RM 0.00</div>
+          <div class="stat-sub" id="statTodayPaidSub">0 paid bills today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Weekly Revenue</div>
+          <div class="stat-value green" id="statWeeklyRev">RM 0.00</div>
+          <div class="stat-sub" id="statWeeklyPaidSub">Last 7 days · 0 paid bills</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Today's Bills</div>
+          <div class="stat-value" id="statTodayBills">0</div>
+          <div class="stat-sub" id="statTodayBillsSub">Logged today · 0 all-time</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Today's Voided / Pending Bills</div>
+          <div class="stat-value amber" id="statAttention">0</div>
+          <div class="stat-sub" id="statAttentionSub">0 voided · 0 pending today</div>
+        </div>
+      </div>
+
+      <div class="overview-toolbar">
+        <div class="range-pills">
+          <button class="range-pill" data-period="today" type="button" onclick="setAnalyticsRange('today', this)">Today (Hourly)</button>
+          <button class="range-pill active" data-period="7d" type="button" onclick="setAnalyticsRange('7d', this)">Last 7 Days</button>
+          <button class="range-pill" data-period="30d" type="button" onclick="setAnalyticsRange('30d', this)">Last 30 Days</button>
+          <button class="range-pill" data-period="monthly" type="button" onclick="setAnalyticsRange('monthly', this)">Monthly</button>
+          <button class="range-pill" data-period="quarterly" type="button" onclick="setAnalyticsRange('quarterly', this)">Quarterly</button>
+          <button class="range-pill" data-period="all" type="button" onclick="setAnalyticsRange('all', this)">All Time</button>
+          <select class="range-subselect" id="monthSelect" style="display:none;" aria-label="Select Month" onchange="onMonthSelectChange()">
+            <option value="">Last 12 Months</option>
+          </select>
+          <select class="range-subselect" id="quarterSelect" style="display:none;" aria-label="Select Quarter" onchange="onQuarterSelectChange()">
+            <option value="">Last 4 Quarters</option>
+          </select>
+        </div>
+        <div class="export-actions">
+          <button class="btn btn-outline" type="button" onclick="exportOverviewCsv()">
+            <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>Export Sales CSV</span>
+          </button>
+          <button class="btn btn-dark" type="button" onclick="exportOverviewPdf()">
+            <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 3h7l5 5v13H7a2 2 0 01-2-2V5a2 2 0 012-2z" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M14 3v5h5M9 13h6M9 17h4" stroke-linecap="round"></path>
+            </svg>
+            <span>Export Overview PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="analytics-grid">
+        <div class="panel-card" style="margin-bottom:0;">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Sales Revenue &amp; Bill Activity</div>
+              <div class="stat-sub" id="salesChartSubtitle" style="margin-top:0.15rem;">Paid revenue (RM) vs paid &amp; voided bills</div>
+            </div>
+            <div style="font-size:0.84rem; font-weight:700; color:#0f172a;" id="periodRevenueBadge">Period Revenue: RM 0.00</div>
+          </div>
+          <div class="panel-body">
+            <div class="chart-wrap">
+              <div class="svg-legend" aria-label="Toggle chart series visibility">
+                <button class="svg-legend-toggle" data-series="void" type="button" aria-pressed="true" onclick="toggleSalesSeries('void')">
+                  <span class="swatch-line red"></span>
+                  <span>Voided Bills</span>
+                </button>
+                <button class="svg-legend-toggle" data-series="paid" type="button" aria-pressed="true" onclick="toggleSalesSeries('paid')">
+                  <span class="swatch-line green"></span>
+                  <span>Paid Bills</span>
+                </button>
+                <button class="svg-legend-toggle" data-series="scans" type="button" aria-pressed="true" onclick="toggleSalesSeries('scans')">
+                  <span class="swatch-line blue"></span>
+                  <span>Scanned Images</span>
+                </button>
+                <button class="svg-legend-toggle" data-series="revenue" type="button" aria-pressed="true" onclick="toggleSalesSeries('revenue')">
+                  <span class="swatch-bar"></span>
+                  <span>Paid Revenue (RM)</span>
+                </button>
+              </div>
+              <div class="chart-stage" id="salesChartStage">
+                <svg id="salesChartSvg" role="img" aria-label="Sales Revenue and Bill Activity Chart"></svg>
+                <div class="chart-tooltip" id="salesChartTooltip"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="analytics-side">
+          <div class="panel-card" style="margin-bottom:0;">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Bill Outcomes</div>
+                <div class="stat-sub" id="outcomeChartSub" style="margin-top:0.15rem;">Paid vs voided vs pending</div>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div class="chart-wrap-sm" id="outcomeChartHost"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="breakdown-grid" style="margin-top:1.25rem;">
+        <div class="panel-card" style="margin-bottom:0;">
+          <div class="panel-header">
+            <div class="panel-title">Top Selling Dishes</div>
+            <span class="stat-sub" style="margin-top:0;">From paid bills · By quantities sold</span>
+          </div>
+          <div class="panel-body" id="topDishesList">
+            <div class="empty-state-sm">Loading dish analytics...</div>
+          </div>
+        </div>
+
+        <div class="panel-card" style="margin-bottom:0;">
+          <div class="panel-header">
+            <div class="panel-title">Void Causes Breakdown</div>
+            <span class="stat-sub" style="margin-top:0;">Why bills were voided</span>
+          </div>
+          <div class="panel-body" id="voidCausesList">
+            <div class="empty-state-sm">No voided bills in this period.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="/static/admin/shared/admin-shell.js"></script>
+<script src="/static/admin/js/dashboard.js"></script>
+<script>
+  initAdminShell({
+    activeTab: "dashboard",
+    title: "Dashboard Overview",
+    onRefresh: fetchAnalyticsUpdate
+  });
+</script>
+</body>
+</html>
