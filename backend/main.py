@@ -1135,16 +1135,19 @@ def get_public_profile():
 @app.get("/api/pricelist")
 def get_public_pricelist(db: Session = Depends(get_db)):
     dishes = db.query(Dish).order_by(Dish.name.asc()).all()
+    categories = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc()).all()
     latest_audit = (
         db.query(AuditLog)
-        .filter(AuditLog.action.like("MENU_%"))
+        .filter(or_(AuditLog.action.like("MENU_%"), AuditLog.action.like("CATEGORY_%")))
         .order_by(AuditLog.timestamp.desc())
         .first()
     )
     if latest_audit and latest_audit.timestamp:
         last_updated = latest_audit.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     else:
-        db_path = ROOT / "afrc.db"
+        db_path = ROOT / "database.db"
+        if not db_path.exists():
+            db_path = ROOT / "afrc.db"
         if db_path.exists():
             last_updated = datetime.fromtimestamp(db_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
         else:
@@ -1157,6 +1160,7 @@ def get_public_pricelist(db: Session = Depends(get_db)):
         price = round(float(d.price or 0.0), 2)
         price_per_piece = round(price / pieces, 2) if pieces > 0 else price
         display_name = (d.alias or "").strip() or d.name
+        cats = _parse_dish_categories(getattr(d, "categories", "[]"))
         items.append({
             "id": d.id,
             "name": display_name,
@@ -1168,6 +1172,7 @@ def get_public_pricelist(db: Session = Depends(get_db)):
             "price_per_piece": price_per_piece,
             "available": bool(d.available),
             "description": d.description or "",
+            "categories": cats,
         })
 
     prof = _restaurant_profile()
@@ -1175,6 +1180,14 @@ def get_public_pricelist(db: Session = Depends(get_db)):
         "restaurant_name": prof["restaurant_name"],
         "last_updated": last_updated,
         "items": items,
+        "categories": [
+            {
+                "id": c.id,
+                "name": c.name,
+                "icon": c.icon or _guess_category_icon(c.name),
+            }
+            for c in categories
+        ],
     }
 
 @app.get("/login")
