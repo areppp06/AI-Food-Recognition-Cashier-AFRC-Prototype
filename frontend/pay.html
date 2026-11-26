@@ -1461,9 +1461,8 @@ async function loadCheckoutLoyaltyContext(bill) {
             <span style="width:28px; height:28px; border-radius:9px; background:#ffedd5; color:#ea580c; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             </span>
-            <div style="font-size:0.79rem; color:#7c2d12; line-height:1.35;">
-              <div style="font-weight:800;">Guest Checkout${pts > 0 ? ` · +${pts} pts eligible` : ""}</div>
-              <div style="color:#9a3412; font-size:0.73rem;">${pts > 0 ? `Sign in / Sign up to claim this ${pts.toLocaleString()} pts` : "Sign in / Sign up to earn points"}</div>
+            <div style="font-size:0.86rem; color:#7c2d12; line-height:1.35; font-weight:800;">
+              ${pts > 0 ? `Sign in / Sign up to claim this ${pts.toLocaleString()} pts` : "Sign in / Sign up to earn points"}
             </div>
           </div>
           <a href="/account?next=${nextParam}" style="background:#0f172a; color:#ffffff; font-size:0.75rem; font-weight:700; padding:0.42rem 0.8rem; border-radius:999px; text-decoration:none; white-space:nowrap;">Sign In / Vouchers</a>
@@ -1518,18 +1517,22 @@ async function loadCheckoutLoyaltyContext(bill) {
         }).join("") + `</div>`;
     }
 
+    const redeemPts = Number(u.points_balance || 0).toLocaleString();
     widget.innerHTML = `
-      <div style="padding:0.8rem 0.9rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.45rem;">
-          <span style="font-size:0.8rem; font-weight:700; color:#334155;">Have a Voucher Code?</span>
-          <a href="/account?next=${nextParam}" style="font-size:0.75rem; font-weight:700; color:#ff5e36; text-decoration:none;">Redeem Pts (${Number(u.points_balance || 0).toLocaleString()} pts)</a>
-        </div>
+      <div style="padding:0.85rem 0.9rem; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px;">
+        <div style="font-size:0.8rem; font-weight:700; color:#334155; margin-bottom:0.45rem;">Have a Voucher Code?</div>
         ${chipsHtml}
         <div style="display:flex; gap:0.45rem;">
-          <input type="text" id="voucherInputBox" placeholder="Enter voucher code" style="flex:1; padding:0.52rem 0.75rem; border:1.5px solid #cbd5e1; border-radius:10px; font-size:0.85rem; text-transform:uppercase;">
+          <input type="text" id="voucherInputBox" placeholder="Enter voucher code" style="flex:1; min-width:0; padding:0.52rem 0.75rem; border:1.5px solid #cbd5e1; border-radius:10px; font-size:0.85rem; text-transform:uppercase;">
           <button type="button" id="btnApplyVoucher" onclick="applyBillVoucher(document.getElementById('voucherInputBox').value)" style="background:#0f172a; color:#ffffff; border:none; border-radius:10px; padding:0 0.95rem; font-size:0.82rem; font-weight:700; cursor:pointer;">Apply</button>
         </div>
         <div id="voucherMsg" style="font-size:0.78rem; color:#dc2626; margin-top:0.35rem; display:none;"></div>
+        <div style="display:flex; align-items:center; gap:0.65rem; margin:0.8rem 0 0.7rem;">
+          <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+          <span style="font-size:0.68rem; font-weight:800; letter-spacing:0.06em; color:#94a3b8;">OR</span>
+          <div style="flex:1; height:1px; background:#e2e8f0;"></div>
+        </div>
+        <a href="/account?next=${nextParam}" style="display:flex; align-items:center; justify-content:center; width:100%; box-sizing:border-box; background:#fff7ed; color:#c2410c; border:1.5px solid #fdba74; font-size:0.88rem; font-weight:800; padding:0.68rem 0.9rem; border-radius:12px; text-decoration:none;">Redeem ${redeemPts}pts</a>
       </div>`;
   } catch (e) {}
 }

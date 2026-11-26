@@ -516,6 +516,7 @@
   }
   .pill-green { background: #dcfce7; color: #15803d; }
   .pill-amber { background: #fef3c7; color: #b45309; }
+  .pill-red { background: #fee2e2; color: #b91c1c; }
   .pill-gray { background: #e2e8f0; color: #475569; }
   .voucher-big-val {
     font-size: 1.35rem;
@@ -1108,7 +1109,12 @@
     </div>
     <h3 style="font-size:1.25rem; font-weight:800; margin-bottom:0.35rem;">Voucher Unlocked</h3>
     <p style="font-size:0.86rem; color:#64748b; margin-bottom:0.9rem;">Your points have been converted into a 30-day discount voucher:</p>
-    <div id="redeemSuccessCode" style="font-family:ui-monospace,monospace; font-size:1.45rem; font-weight:800; letter-spacing:0.08em; padding:0.85rem; background:#fff7ed; border:1.5px dashed #fdba74; color:#c2410c; border-radius:14px; margin-bottom:1.1rem;"></div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:0.55rem; padding:0.7rem 0.75rem 0.7rem 0.9rem; background:#fff7ed; border:1.5px dashed #fdba74; border-radius:14px; margin-bottom:1.1rem;">
+      <span id="redeemSuccessCode" style="font-family:ui-monospace,monospace; font-size:1.35rem; font-weight:800; letter-spacing:0.08em; color:#c2410c;"></span>
+      <button type="button" aria-label="Copy voucher code" onclick="copyText(document.getElementById('redeemSuccessCode').textContent)" style="width:32px; height:32px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; border-radius:9px; border:1px solid #fdba74; background:#ffffff; color:#c2410c; cursor:pointer; padding:0;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </button>
+    </div>
     <div style="display:flex; gap:0.6rem;">
       <button type="button" class="btn btn-outline" style="flex:1;" onclick="copyText(document.getElementById('redeemSuccessCode').textContent)">Copy Code</button>
       <button type="button" class="btn" style="flex:1;" id="btnSuccessModalAction" onclick="document.getElementById('redeemSuccessModal').classList.remove('open')">Done</button>
@@ -1221,6 +1227,10 @@ async function initPage() {
     if (statusRes.authenticated && statusRes.user) {
       stateUser = statusRes.user;
       await renderAuthenticatedDashboard();
+      const requested = new URLSearchParams(location.search).get("view");
+      if (requested === "profile" || requested === "orders" || requested === "rewards") {
+        switchView(requested);
+      }
     } else {
       renderGuestView(statusRes.unclaimed || {});
     }
@@ -1472,8 +1482,8 @@ function setVouchersPage(p) {
 function renderMyVouchers(balance) {
   const box = document.getElementById("myVouchersContainer");
   const countLbl = document.getElementById("vouchersCountLabel");
-  const active = vouchersList.filter(v => v.is_active && !v.is_redeemed && !v.is_expired);
-  const past = vouchersList.filter(v => !v.is_active || v.is_redeemed || v.is_expired);
+  const active = vouchersList.filter(v => v.is_active && !v.is_redeemed && !v.is_expired && !v.is_revoked);
+  const past = vouchersList.filter(v => v.is_revoked || !v.is_active || v.is_redeemed || v.is_expired);
 
   if (countLbl) {
     countLbl.textContent = active.length ? `${active.length} active` : "0 active";
@@ -1539,17 +1549,25 @@ function renderMyVouchers(balance) {
   if (past.length) {
     html += `
       <details style="margin-top:1rem;">
-        <summary style="cursor:pointer; font-size:0.82rem; font-weight:700; color:#64748b;">Used / Expired Vouchers (${past.length})</summary>
-        <div class="vouchers-grid" style="margin-top:0.65rem; opacity:0.68;">
-          ${past.slice(0, 12).map(v => `
+        <summary style="cursor:pointer; font-size:0.82rem; font-weight:700; color:#64748b;">Used / Expired / Revoked Vouchers (${past.length})</summary>
+        <div class="vouchers-grid" style="margin-top:0.65rem; opacity:0.85;">
+          ${past.slice(0, 12).map(v => {
+            const status = v.is_revoked ? "Revoked" : (v.is_redeemed ? "Used" : "Expired");
+            const pill = v.is_revoked ? "pill-red" : "pill-gray";
+            const when = v.is_revoked && v.revoked_at
+              ? `Revoked ${new Date(v.revoked_at).toLocaleDateString("en-MY", { year: "numeric", month: "short", day: "numeric" })}`
+              : "";
+            return `
             <div class="voucher-card">
               <div class="voucher-top">
                 <span class="voucher-code-label">${esc(v.code)}</span>
-                <span class="status-pill pill-gray">${v.is_redeemed ? 'Used' : 'Expired'}</span>
+                <span class="status-pill ${pill}">${status}</span>
               </div>
               <div style="font-weight:800; font-size:1rem; color:#334155;">${v.type === 'percentage' ? esc(v.discount_value) + '% Off' : 'RM ' + Number(v.discount_value).toFixed(2) + ' Off'}</div>
+              ${when ? `<div class="voucher-meta">${esc(when)}</div>` : ""}
             </div>
-          `).join("")}
+          `;
+          }).join("")}
         </div>
       </details>
     `;
@@ -1627,13 +1645,23 @@ function renderOrdersList(orders) {
   box.innerHTML = orders.map(o => {
     const itemsStr = (o.items || []).map(i => `${i.quantity}x ${i.name}`).join(", ");
     const netPts = Number(o.net_points || 0);
+    const clawed = Number(o.points_clawed_back || 0);
+    const refunded = Number(o.refunded_amount || 0);
+    const total = Number(o.total || 0);
+    const fullyRefunded = refunded > 0.009 && refunded + 0.009 >= total;
+    const partiallyRefunded = refunded > 0.009 && !fullyRefunded;
+    const statusLabel = fullyRefunded ? "Refunded" : (partiallyRefunded ? "Partial Refund" : "Paid");
+    const statusClass = fullyRefunded ? "pill-red" : (partiallyRefunded ? "pill-amber" : "pill-green");
+    const ptsHtml = clawed > 0
+      ? `<span class="status-pill pill-red">-${clawed.toLocaleString()} pts</span>`
+      : (netPts > 0 ? `<span class="status-pill pill-green">+${netPts.toLocaleString()} pts</span>` : "");
     return `
       <div class="bill-history-card">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:0.6rem; margin-bottom:0.55rem; flex-wrap:wrap;">
           <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
             <span class="bill-num-badge">Bill #${esc(o.bill_number)}</span>
-            <span class="status-pill pill-green">Paid</span>
-            ${netPts > 0 ? `<span class="status-pill pill-green">+${netPts.toLocaleString()} pts</span>` : ''}
+            <span class="status-pill ${statusClass}">${statusLabel}</span>
+            ${ptsHtml}
             ${o.voucher_code ? `<span class="status-pill pill-amber">Voucher ${esc(o.voucher_code)}</span>` : ''}
           </div>
           <div style="font-weight:800; font-size:1.1rem; color:#0f172a;">RM ${Number(o.total).toFixed(2)}</div>
@@ -1641,7 +1669,7 @@ function renderOrdersList(orders) {
         <div style="font-size:0.88rem; color:#334155; font-weight:500; margin-bottom:0.6rem;">${esc(itemsStr || "Plate items")}</div>
         <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap; padding-top:0.55rem; border-top:1px solid #f1f5f9; font-size:0.8rem; color:#64748b;">
           <span>${esc(fmtDateTime(o.paid_at || o.created_at))}</span>
-          <a href="/payment/success?session=${encodeURIComponent(o.session_id)}" class="btn btn-outline" style="padding:0.38rem 0.8rem; font-size:0.78rem; border-radius:9px;">View Official Receipt</a>
+          <a href="/payment/success?session=${encodeURIComponent(o.session_id)}" class="btn btn-outline" style="padding:0.38rem 0.8rem; font-size:0.78rem; border-radius:9px;">View Receipt</a>
         </div>
       </div>
     `;

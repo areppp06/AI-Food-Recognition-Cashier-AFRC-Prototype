@@ -240,6 +240,8 @@ class Voucher(Base):
     times_used = Column(Integer, default=0, nullable=False)
     source = Column(String(32), default="manual", nullable=False)  # points_redemption, manual
     is_archived = Column(Boolean, default=False, nullable=False)
+    archived_at = Column(DateTime, nullable=True)
+    archived_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 
@@ -379,6 +381,11 @@ def init_db():
             "UPDATE sessions SET void_reason = 'Bill timed out' "
             "WHERE status = 'void' AND (void_reason IS NULL OR void_reason = '' OR void_reason LIKE 'Ghosted / Stale Bill%')"
         )
+        voucher_columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(vouchers)")]
+        if voucher_columns and "archived_at" not in voucher_columns:
+            conn.exec_driver_sql("ALTER TABLE vouchers ADD COLUMN archived_at DATETIME")
+        if voucher_columns and "archived_by" not in voucher_columns:
+            conn.exec_driver_sql("ALTER TABLE vouchers ADD COLUMN archived_by TEXT")
     db = SessionLocal()
     # Backfill bill_number for any existing sessions missing one
     missing_bills = (
@@ -419,5 +426,31 @@ def init_db():
     # Seed default loyalty settings if empty
     if db.query(LoyaltySettings).count() == 0:
         db.add(LoyaltySettings(id=1, voucher_cooldown_hours=12))
+        db.commit()
+    missing_archive_stamp = (
+        db.query(Voucher)
+        .filter(Voucher.is_archived == True, Voucher.archived_at == None)
+        .all()
+    )
+    if missing_archive_stamp:
+        logs = (
+            db.query(AuditLog)
+            .filter(AuditLog.action == "VOUCHER_DELETE")
+            .order_by(AuditLog.timestamp.asc())
+            .all()
+        )
+        by_code = {}
+        for log in logs:
+            details = log.details or ""
+            marker = "voucher '"
+            if marker in details:
+                code = details.split(marker, 1)[1].split("'", 1)[0]
+                if code:
+                    by_code[code] = log
+        for voucher in missing_archive_stamp:
+            log = by_code.get(voucher.code)
+            if log:
+                voucher.archived_at = log.timestamp
+                voucher.archived_by = log.admin_username or ""
         db.commit()
     db.close()

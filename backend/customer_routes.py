@@ -612,9 +612,10 @@ def get_customer_vouchers(
 ):
     user = require_customer_api(request, db)
     now = datetime.utcnow()
-    q = db.query(Voucher).filter(Voucher.user_id == user.id, Voucher.is_archived == False)
+    q = db.query(Voucher).filter(Voucher.user_id == user.id)
     if str(activeOnly).strip().lower() in ("true", "1", "yes"):
         q = q.filter(
+            Voucher.is_archived == False,
             Voucher.is_active == True,
             Voucher.times_used < Voucher.max_uses,
             or_(Voucher.expires_at == None, Voucher.expires_at > now),
@@ -632,6 +633,8 @@ def get_customer_vouchers(
             "is_active": bool(v.is_active),
             "is_redeemed": bool(v.is_redeemed or (v.times_used >= v.max_uses)),
             "is_expired": bool(v.expires_at and v.expires_at < now),
+            "is_revoked": bool(v.is_archived),
+            "revoked_at": (v.archived_at.isoformat() + "Z") if v.archived_at else "",
             "max_uses": int(v.max_uses or 1),
             "times_used": int(v.times_used or 0),
             "source": v.source,
@@ -1304,6 +1307,7 @@ def admin_adjust_customer_points(
 def admin_list_vouchers(
     request: Request,
     source: str = "manual",
+    archived: int = 0,
     page: int = 1,
     limit: int = 15,
     db: Session = Depends(_get_db),
@@ -1314,12 +1318,21 @@ def admin_list_vouchers(
     offset = (safe_page - 1) * safe_limit
 
     src = (source or "manual").strip()
-    q = db.query(Voucher).filter(Voucher.is_archived == False)
-    if src in ("manual", "points_redemption"):
+    show_archived = int(archived or 0) == 1
+    q = db.query(Voucher).filter(Voucher.is_archived == show_archived)
+    if not show_archived and src in ("manual", "points_redemption"):
         q = q.filter(Voucher.source == src)
 
     total = q.count()
-    rows = q.order_by(Voucher.created_at.desc(), Voucher.id.desc()).offset(offset).limit(safe_limit).all()
+    if show_archived:
+        rows = (
+            q.order_by(func.coalesce(Voucher.archived_at, Voucher.created_at).desc(), Voucher.id.desc())
+            .offset(offset)
+            .limit(safe_limit)
+            .all()
+        )
+    else:
+        rows = q.order_by(Voucher.created_at.desc(), Voucher.id.desc()).offset(offset).limit(safe_limit).all()
 
     uids = list({int(v.user_id) for v in rows if v.user_id is not None})
     user_map: dict[int, CustomerUser] = {}
@@ -1348,6 +1361,9 @@ def admin_list_vouchers(
                 "max_uses": int(v.max_uses or 1),
                 "times_used": int(v.times_used or 0),
                 "source": v.source,
+                "is_archived": bool(v.is_archived),
+                "archived_at": (v.archived_at.isoformat() + "Z") if v.archived_at else "",
+                "archived_by": v.archived_by or "",
                 "user_id": v.user_id,
                 "user_name": user_map[v.user_id].name if (v.user_id and v.user_id in user_map) else "",
                 "user_email": user_map[v.user_id].email if (v.user_id and v.user_id in user_map) else "",
@@ -1479,14 +1495,26 @@ def admin_archive_voucher(
     v = db.query(Voucher).filter(Voucher.id == voucher_id).first()
     if not v:
         raise HTTPException(status_code=404, detail="Voucher not found.")
+    owner = ""
+    if v.user_id:
+        owner_row = db.query(CustomerUser.email).filter(CustomerUser.id == v.user_id).first()
+        owner = owner_row[0] if owner_row and owner_row[0] else f"user #{v.user_id}"
+    else:
+        owner = "public"
     v.is_archived = True
     v.is_active = False
+    v.archived_at = datetime.utcnow()
+    v.archived_by = admin.username or ""
     db.add(
         AuditLog(
             cashier_id=admin.id,
             admin_username=admin.username,
             action="VOUCHER_DELETE",
-            details=f"Archived voucher '{v.code}'",
+            details=(
+                f"Revoked voucher '{v.code}' by {admin.username} "
+                f"(source={v.source}, {v.type} {v.discount_value}, "
+                f"uses {int(v.times_used or 0)}/{int(v.max_uses or 1)}, owner={owner})"
+            ),
         )
     )
     db.commit()
@@ -1515,7 +1543,7 @@ def admin_export_vouchers_csv(request: Request, db: Session = Depends(_get_db)):
         "Uses",
         "Assigned To",
         "Active",
-        "Archived",
+        "Revoked",
         "Expires At",
         "Created At",
     ])

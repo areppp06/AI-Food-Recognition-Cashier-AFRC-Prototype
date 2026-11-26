@@ -4,14 +4,14 @@ Rules:
 1. Look at the photo and the menu list together.
 2. Include a dish only when that listed dish is visibly on the plate.
 3. The name field must be copied exactly from the menu list. Same spelling and punctuation. Do not translate, shorten, or describe the food in your own words.
-4. If there is a visible dish or item on the plate that is NOT on today's menu, cannot be identified with certainty, or the plate is too crowded/dense to identify accurately: DO NOT guess or assume. Set items to [] and reject with error_code UNLISTED_OR_TOO_DENSE.
+4. If a visible item is not on today's menu, skip it. Do not guess a menu name for it, and do not reject the photo because of it. Return only the listed dishes you can identify. If the plate is crowded, return only the dishes you can clearly see.
 5. Text after a colon describes what one serving of that dish looks like. Use it to recognize the dish and to see which pieces belong to one serving. Never return the description as the name.
 6. quantity is how many separate servings of that dish are on the plate, unless that menu line says to count pieces. One serving is one unit of what that menu name is sold as. A serving may contain more than one piece. Do not count the pieces inside a serving. Two separate servings of the same dish means quantity 2. If a menu line says to count pieces, quantity is the number of pieces you can see. Do not turn that piece count into portions. Count only what you can clearly see. If some are hidden or cut off, leave them out. Do not count food that is not on the plate.
 7. Each visible piece belongs to only one dish. Do not count the same piece under two names.
 8. Sauce and gravy handling: many dishes are covered in sauce, sambal, or gravy. Take a look closely. Rice, mixed gravy, and kuah campur are normal and not unlisted dishes.
 9. Reject with error_code FAKE_OR_SPOOFED_PHOTO and items [] if the photo is taken of a digital screen/monitor, printed poster/paper, or contains sample labels like "EXAMPLE" or "CONTOH".
-10. If the photo is blurry, dark, or not a plate, return error_code UNREADABLE_PHOTO or NOT_A_PLATE and items [].
-11. If the plate is readable but none of the listed dishes are on it, return error_code NO_FOOD_DETECTED and items [].
+10. If the photo is blurry or dark, return error_code UNREADABLE_PHOTO and items [].
+11. If there is no plate, or the plate is readable but none of the listed dishes are on it, return error_code NO_FOOD_DETECTED and items [].
 12. Return JSON only. Do not return prices.
 
 Today's available menu:
@@ -23,7 +23,7 @@ Rules:
 - quantity = number of separate servings (unless the menu line explicitly says "count pieces").
 - One piece belongs to only one dish.
 - Sauce/gravy and rice are normal — do not reject dishes because of plain rice, mixed gravy, or kuah campur.
-- If an unlisted/foreign dish is present, cannot be identified, or the plate is too dense: do not guess. Reject with UNLISTED_OR_TOO_DENSE.
+- Skip unlisted items. Do not guess, and do not reject the photo for an unlisted item or a crowded plate. Return only listed dishes you can clearly see.
 
 Output format (JSON only, no other text). Use only these keys:
 {
@@ -33,7 +33,7 @@ Output format (JSON only, no other text). Use only these keys:
   ]
 }
 
-If the photo cannot be billed, set items to [] and set error_code to UNLISTED_OR_TOO_DENSE, FAKE_OR_SPOOFED_PHOTO, UNREADABLE_PHOTO, NOT_A_PLATE, or NO_FOOD_DETECTED.
+If the photo cannot be billed, set items to [] and set error_code to FAKE_OR_SPOOFED_PHOTO, UNREADABLE_PHOTO, or NO_FOOD_DETECTED.
 
 Today's available menu:
 {menu}

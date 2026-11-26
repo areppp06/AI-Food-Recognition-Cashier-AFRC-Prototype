@@ -201,17 +201,18 @@ def _recognize_with_openai_compatible(
             )
     if data.get("error_code"):
         code = str(data["error_code"]).strip()
-        default_msgs = {
-            "UNLISTED_OR_TOO_DENSE": "Foreign dish detected or plate is too crowded to bill accurately. Please head to the counter for manual payment.",
-            "UNLISTED_DISH": "Foreign or unlisted dish detected. Please head to the counter for manual payment.",
-            "PLATE_TOO_DENSE": "Plate is too crowded to identify dishes accurately. Please head to the counter for manual payment.",
-            "FAKE_OR_SPOOFED_PHOTO": "Photo appears to be taken from a screen, poster, or sample. Please scan real food on a plate.",
-            "UNREADABLE_PHOTO": "Photo is blurry or unreadable. Please retake with good lighting.",
-            "NOT_A_PLATE": "No dining plate detected. Please ensure your food plate is clearly visible in the camera frame.",
-            "NO_FOOD_DETECTED": "No recognized food items detected on the plate.",
-        }
-        msg = data.get("error_message") or default_msgs.get(code, "Unable to recognize food.")
-        raise RecognitionError(code, msg, raw_response=content)
+        if code in ("UNLISTED_OR_TOO_DENSE", "UNLISTED_DISH", "PLATE_TOO_DENSE"):
+            data["error_code"] = None
+        else:
+            if code == "NOT_A_PLATE":
+                code = "NO_FOOD_DETECTED"
+            default_msgs = {
+                "FAKE_OR_SPOOFED_PHOTO": "Photo appears to be taken from a screen, poster, or sample. Please scan real food on a plate.",
+                "UNREADABLE_PHOTO": "Photo is blurry or unreadable. Please retake with good lighting.",
+                "NO_FOOD_DETECTED": "No recognized food items detected on the plate.",
+            }
+            msg = data.get("error_message") or default_msgs.get(code, "Unable to recognize food.")
+            raise RecognitionError(code, msg, raw_response=content)
     items = _snap_to_menu([AIItem(name=item["name"], quantity=item["quantity"]) for item in data.get("items", [])], allowed_names)
     log.info("Menu match from %s: %s", model, [item.name for item in items])
     return items

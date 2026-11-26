@@ -98,6 +98,10 @@ video, canvas {
 .learn-guide-wrap {
   text-align: center;
   margin-top: 0.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
 }
 .learn-guide-link {
   display: inline-flex;
@@ -377,6 +381,90 @@ video, canvas {
   border-radius: 6px;
   font-size: 0.8rem;
   margin-bottom: 1.25rem;
+}
+.retake-card {
+  background: #ffffff;
+  border: 1px solid #fde68a;
+  border-radius: 22px;
+  padding: 1.35rem 1.2rem 1.25rem;
+  text-align: center;
+  margin: 0.85rem 0 0.2rem;
+  box-shadow: 0 16px 40px -24px rgba(180, 83, 9, 0.55);
+}
+.retake-mark {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 0.85rem;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: #d97706;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  animation: caution-pulse 1.6s ease-out infinite;
+}
+@keyframes caution-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+  70% { box-shadow: 0 0 0 14px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+.retake-kicker {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b45309;
+  margin-bottom: 0.4rem;
+}
+.retake-message {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.45;
+  margin-bottom: 0.85rem;
+}
+.retake-code {
+  display: inline-block;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-family: ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.retake-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem;
+  background: rgba(15, 23, 42, 0.62);
+}
+.retake-overlay.is-open {
+  display: flex;
+}
+.retake-overlay .retake-card {
+  width: 100%;
+  margin: 0;
+  padding: 1.1rem 0.95rem;
+  box-shadow: none;
+}
+.retake-overlay .retake-mark {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 0.65rem;
+  font-size: 1.75rem;
+}
+.retake-overlay .retake-message {
+  font-size: 0.92rem;
+  margin-bottom: 0.7rem;
 }
 .turnstile-slot {
   display: flex;
@@ -797,20 +885,6 @@ video, canvas {
 </head>
 <body>
 <div class="mobile-phone-frame">
-<div id="kioskLoyaltyBar" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:0.6rem; margin-bottom:0.8rem; padding:0.55rem 0.75rem 0.55rem 0.85rem; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 4px 12px rgba(15,23,42,0.04);">
-  <div style="display:flex; align-items:center; gap:0.55rem; min-width:0;">
-    <span id="kioskLoyaltyIconWrap" style="width:28px; height:28px; border-radius:9px; background:#fff7ed; border:1px solid #ffedd5; color:#ff5e36; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; font-size:0.75rem; font-weight:800;">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-    </span>
-    <div style="min-width:0;">
-      <div id="kioskLoyaltyTitle" style="font-size:0.78rem; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Sign up for vouchers and points</div>
-      <div id="kioskLoyaltySub" style="font-size:0.69rem; font-weight:600; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Earn 10 pts per RM 1 spent</div>
-    </div>
-  </div>
-  <a href="/account" id="kioskLoyaltyPill" style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.42rem 0.82rem; border-radius:999px; background:#0f172a; color:#ffffff; font-size:0.75rem; font-weight:700; text-decoration:none; white-space:nowrap; flex-shrink:0;">
-    <span id="kioskLoyaltyText">Sign In</span>
-  </a>
-</div>
 <div id="stateLockBox"></div>
 <div class="modal-backdrop" id="voidPromptModal">
   <div class="modal-box">
@@ -834,6 +908,7 @@ video, canvas {
 </div>
 <video autoplay="" playsinline="" muted="" id="video" style="display:none;"></video>
 <canvas id="canvas" style="display:none;"></canvas>
+<div class="retake-overlay" id="retakeOverlay"></div>
 </div>
 <div class="turnstile-slot" id="recognize-turnstile"></div>
 <div class="controls-group" id="controls">
@@ -842,10 +917,28 @@ video, canvas {
 <svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
       Capture Plate
     </button>
+  <div id="kioskLoyaltyBar" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:0.6rem; margin-top:0.15rem; padding:0.55rem 0.75rem 0.55rem 0.85rem; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 4px 12px rgba(15,23,42,0.04); text-align:left;">
+    <div style="display:flex; align-items:center; justify-content:flex-start; gap:0.55rem; min-width:0; flex:1;">
+      <span id="kioskLoyaltyIconWrap" style="width:28px; height:28px; border-radius:9px; background:#fff7ed; border:1px solid #ffedd5; color:#ff5e36; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; font-size:0.75rem; font-weight:800;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      </span>
+      <div style="min-width:0; text-align:left;">
+        <div id="kioskLoyaltyTitle" style="font-size:0.78rem; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Daftar masuk untuk kupon</div>
+        <div id="kioskLoyaltySub" style="font-size:0.69rem; font-weight:600; color:#64748b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;">Earn 10 pts per RM 1 spent</div>
+      </div>
+    </div>
+    <a href="/account" id="kioskLoyaltyPill" style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.42rem 0.82rem; border-radius:999px; background:#0f172a; color:#ffffff; font-size:0.75rem; font-weight:700; text-decoration:none; white-space:nowrap; flex-shrink:0;">
+      <span id="kioskLoyaltyText">Sign In</span>
+    </a>
+  </div>
   <div class="learn-guide-wrap">
     <a href="/guide" class="learn-guide-link">
       <svg fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="14"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-      Learn how to use
+      Belajar cara guna
+    </a>
+    <a href="/account" id="kioskOrderHistoryLink" class="learn-guide-link">
+      <svg fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+      Sejarah Pesanan
     </a>
   </div>
 </div>
@@ -882,6 +975,8 @@ video, canvas {
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const capBtn = document.getElementById('capture');
+const captureDefaultHtml = capBtn ? capBtn.innerHTML : "";
+const retakeOverlay = document.getElementById("retakeOverlay");
 const result = document.getElementById('result');
 const status = document.getElementById('status');
 const videoBox = document.getElementById('videoBox');
@@ -1632,7 +1727,26 @@ if (videoBox) {
   });
 }
 
+function resumeCameraAfterReject() {
+  if (retakeOverlay) {
+    retakeOverlay.classList.remove("is-open");
+    retakeOverlay.innerHTML = "";
+  }
+  canvas.style.display = "none";
+  if (stream) video.style.display = "block";
+  if (capBtn) {
+    capBtn.dataset.mode = "";
+    capBtn.innerHTML = captureDefaultHtml;
+    capBtn.disabled = !stream;
+  }
+  if (status) status.style.display = "none";
+}
+
 capBtn.onclick = async () => {
+  if (capBtn.dataset.mode === "resume") {
+    resumeCameraAfterReject();
+    return;
+  }
   status.style.display = "inline-flex";
   capBtn.disabled = true;
   result.innerHTML = "";
@@ -1746,25 +1860,53 @@ capBtn.onclick = async () => {
   }, "image/jpeg", 0.85);
 };
 
+function malayRetakeMessage(code, message) {
+  const key = String(code || "UNKNOWN").trim();
+  const raw = String(message || "");
+  const noFood = "Lauk atau isi pinggan tidak kelihatan. Sila ambil semula, atau ke kaunter.";
+  const capture = "Gambar tidak berjaya diambil. Sila guna kamera dan cuba lagi.";
+  const system = "Sistem sedang bermasalah sebentar. Sila cuba lagi.";
+  const known = {
+    NO_FOOD_DETECTED: noFood,
+    NOT_A_PLATE: noFood,
+    FAKE_OR_SPOOFED_PHOTO: "Gambar kelihatan seperti screen, poster atau media contoh. Sila imbas makanan sebenar.",
+    UNREADABLE_PHOTO: "Gambar kabur atau terlalu gelap. Sila ambil semula dengan cahaya yang cukup.",
+    NO_MENU: "Menu hari ini belum sedia. Sila tanya staf di kaunter.",
+    INVALID_IMAGE: capture,
+    UPLOAD_FAILED: capture,
+    IMAGE_TOO_LARGE: capture,
+    AI_SERVICE_ERROR: system,
+    NETWORK_ERROR: system,
+    UNKNOWN: system,
+    CAPTCHA_FAILED: "Pengesahan keselamatan gagal. Sila cuba lagi.",
+  };
+  if (known[key]) return known[key];
+  if (/maintenance/i.test(raw)) return "Sistem sedang diselenggara. Sila cuba lagi sebentar lagi.";
+  if (/coming soon/i.test(raw)) return "Sistem belum dibuka lagi. Sila datang semula nanti.";
+  return "Gambar ini tidak dapat digunakan. Sila ambil semula, atau ke kaunter jika perlukan bantuan.";
+}
+
 function showError(code, message) {
-  if (stream) {
-    canvas.style.display = "none";
-    video.style.display = "block";
-  }
-  result.innerHTML = `
-    <div class="error-card">
-      <div class="error-title">Retake Required</div>
-      <p class="error-text">${message}</p>
-      <div class="error-badge">CODE: ${code}</div>
-      <div>
-        <button class="btn btn-secondary" onclick="location.reload()">
-          Try Again
-        </button>
+  const safeCode = esc(code || "UNKNOWN");
+  const spoken = esc(malayRetakeMessage(code, message));
+  if (result) result.innerHTML = "";
+  if (retakeOverlay) {
+    retakeOverlay.innerHTML = `
+      <div class="retake-card">
+        <div class="retake-mark" aria-hidden="true">!</div>
+        <div class="retake-kicker">Perlu ambil semula</div>
+        <p class="retake-message">${spoken}</p>
+        <div class="retake-code">CODE: ${safeCode}</div>
       </div>
-    </div>
-  `;
-  status.style.display = "none";
-  capBtn.disabled = !stream;
+    `;
+    retakeOverlay.classList.add("is-open");
+  }
+  if (status) status.style.display = "none";
+  if (capBtn) {
+    capBtn.dataset.mode = "resume";
+    capBtn.innerHTML = "AMBIL SEMULA";
+    capBtn.disabled = false;
+  }
 }
 
 function esc(value) {
@@ -1864,12 +2006,28 @@ function showBill(data) {
       const pts = Number(data.user.points_balance || 0);
       if (titleEl) titleEl.textContent = `Hi, ${firstName}`;
       if (subEl) subEl.textContent = `${pts.toLocaleString()} pts available`;
-      if (iconWrap && data.user.avatar_url) {
-        iconWrap.style.borderRadius = "50%";
-        iconWrap.innerHTML = `<img src="${esc(data.user.avatar_url)}" alt="" style="width:100%;height:100%;object-fit:cover;" referrerpolicy="no-referrer">`;
+      if (iconWrap) {
+        const avatarLink = document.createElement("a");
+        avatarLink.href = "/account?view=profile";
+        avatarLink.id = "kioskLoyaltyIconWrap";
+        avatarLink.setAttribute("aria-label", "Account");
+        avatarLink.style.cssText = iconWrap.getAttribute("style") || "";
+        avatarLink.style.textDecoration = "none";
+        avatarLink.style.color = "inherit";
+        avatarLink.style.cursor = "pointer";
+        if (data.user.avatar_url) {
+          avatarLink.style.borderRadius = "50%";
+          avatarLink.innerHTML = `<img src="${esc(data.user.avatar_url)}" alt="" style="width:100%;height:100%;object-fit:cover;" referrerpolicy="no-referrer">`;
+        } else {
+          avatarLink.innerHTML = iconWrap.innerHTML;
+        }
+        iconWrap.replaceWith(avatarLink);
       }
+      pill.style.display = "inline-flex";
       pill.style.background = "#ff5e36";
-      txt.textContent = "My Rewards";
+      txt.textContent = "View Rewards";
+      const ordersLink = document.getElementById("kioskOrderHistoryLink");
+      if (ordersLink) ordersLink.href = "/account?view=orders";
     } else if (data.unclaimed && data.unclaimed.has_unclaimed && data.unclaimed.points > 0) {
       const uPts = Number(data.unclaimed.points).toLocaleString();
       if (titleEl) titleEl.textContent = `+${uPts} Unclaimed Points`;

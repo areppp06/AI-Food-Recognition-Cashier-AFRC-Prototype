@@ -1004,16 +1004,13 @@
             <div style="background:#ecfdf5; border:1.5px solid #a7f3d0; border-radius:16px; padding:1rem 1.1rem;">
               <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap;">
                 <div style="font-weight:800; font-size:0.95rem; color:#065f46;">
-                  ${claimedPts > 0 ? `+${claimedPts.toLocaleString()} Loyalty Points Credited!` : `Loyalty Account Linked`}
+                  ${claimedPts > 0 ? `${claimedPts.toLocaleString()} Loyalty points Earned` : `Loyalty Account Linked`}
                 </div>
                 <span style="font-size:0.76rem; font-weight:800; background:#d1fae5; color:#047857; padding:0.2rem 0.55rem; border-radius:999px;">
                   Balance: ${Number(st.user.points_balance || 0).toLocaleString()} pts
                 </span>
               </div>
-              <div style="margin-top:0.55rem; display:flex; align-items:center; justify-content:space-between; gap:0.5rem; flex-wrap:wrap; font-size:0.8rem; color:#047857;">
-                <span>Signed in as ${escHtml(st.user.email)}</span>
-                <a href="/account" style="color:#065f46; font-weight:800; text-decoration:underline;">Open My Rewards</a>
-              </div>
+              <a href="/account" style="display:flex; align-items:center; justify-content:center; margin-top:0.85rem; background:#065f46; color:#ffffff; font-size:0.9rem; font-weight:700; padding:0.72rem 1rem; border-radius:999px; text-decoration:none;">View Points</a>
             </div>`;
           return;
         }
@@ -1032,15 +1029,12 @@
         box.style.display = "block";
         box.innerHTML = `
           <div style="background:linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border:1.5px solid #fdba74; border-radius:18px; padding:1.1rem 1.15rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem; margin-bottom:0.35rem;">
-              <span style="font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:#c2410c;">Unclaimed Guest Points</span>
-              <span style="font-size:0.78rem; font-weight:800; background:#ff5e36; color:#ffffff; padding:0.2rem 0.6rem; border-radius:999px;">+${unclaimedPts.toLocaleString()} pts</span>
-            </div>
-            <div style="font-weight:800; font-size:0.98rem; color:#7c2d12; margin-bottom:0.3rem;">
-              Save your +${unclaimedPts.toLocaleString()} points before leaving!
+            <div style="margin-bottom:0.85rem;">
+              <div style="font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; color:#c2410c;">Poin anda tidak dituntut!</div>
+              <div style="margin-top:0.2rem; font-size:1.65rem; font-weight:800; line-height:1.1; color:#dc2626;">+${unclaimedPts.toLocaleString()}pts</div>
             </div>
             <p style="font-size:0.8rem; color:#9a3412; line-height:1.45; margin-bottom:0.85rem;">
-              Sign in with Google below to claim these points into your account. Guest points do not accumulate if you pay another bill without signing in.
+              Log masuk dengan Google untuk dapatkan poin ini ke akaun anda. Poin akan hilang jika tidak log masuk.
             </p>
             <div id="successGoogleBtnSlot" style="display:flex; justify-content:center; min-height:42px;"></div>
             <div id="successClaimStatus" style="display:none; text-align:center; font-size:0.8rem; font-weight:600; color:#c2410c; margin-top:0.5rem;">Claiming points...</div>

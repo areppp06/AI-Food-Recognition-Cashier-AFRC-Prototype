@@ -1902,8 +1902,8 @@ async def recognize(
         await _record_failed_scan(
             db=db,
             image_bytes=image_bytes,
-            rejection_code="NO_MATCHING_DISHES",
-            rejection_message="Recognized items are not on today's menu. Please retake or ask staff.",
+            rejection_code="NO_FOOD_DETECTED",
+            rejection_message="No matching dishes found on the plate. Please retake or check today's menu.",
             raw_ai=json.dumps([i.dict() for i in ai_items]),
             session_id=scan_sid_val,
             bill_number=scan_bill_no,
@@ -1912,8 +1912,8 @@ async def recognize(
             device_id=d_id,
         )
         raise HTTPException(status_code=422, detail=ErrorResponse(
-            error_code="NO_MATCHING_DISHES",
-            message="Recognized items are not on today's menu. Please retake or ask staff."
+            error_code="NO_FOOD_DETECTED",
+            message="No matching dishes found on the plate. Please retake or check today's menu."
         ).dict())
 
     # Re-fetch target_bill after rollback if this is a retake (Option B: reuse same bill)

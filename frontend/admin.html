@@ -2446,14 +2446,9 @@
           <div class="stat-sub">Total positive points across accounts</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Estimated Value (RM)</div>
+          <div class="stat-label">Estimated Circulating Value</div>
           <div class="stat-value orange" id="loyKpiPointsVal">RM 0.00</div>
           <div class="stat-sub">Baseline value at 200 pts = RM 1.00</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Unclaimed Guest Points</div>
-          <div class="stat-value" id="loyKpiUnclaimed">0 pts</div>
-          <div class="stat-sub" id="loyKpiUnclaimedSub">0 active guest bill(s) awaiting claim</div>
         </div>
       </div>
 
@@ -2602,6 +2597,7 @@
             <div class="voucher-folder-tabs" id="adminVoucherSourceTabs">
               <button type="button" class="voucher-folder-tab active" data-vsrc="manual" onclick="setAdminVoucherSource('manual', this)">Manual Generated</button>
               <button type="button" class="voucher-folder-tab" data-vsrc="points_redemption" onclick="setAdminVoucherSource('points_redemption', this)">Auto Generated</button>
+              <button type="button" class="voucher-folder-tab" data-vsrc="deleted" onclick="setAdminVoucherSource('deleted', this)">Revoked</button>
             </div>
             <a href="/api/admin/loyalty/vouchers/export" class="btn btn-outline" style="text-decoration:none;">
               <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
@@ -2844,9 +2840,7 @@
               <select class="input-box" id="archiveCodeFilter" style="width:auto; min-width:160px; padding:0.4rem 0.65rem; font-size:0.82rem;" onchange="onArchiveFilterChange()">
                 <option value="all">All Rejection Types</option>
                 <option value="UNREADABLE_PHOTO">Unreadable / Blurry Photo</option>
-                <option value="NOT_A_PLATE">Not a Food Plate</option>
                 <option value="NO_FOOD_DETECTED">No Food Detected</option>
-                <option value="NO_MATCHING_DISHES">Dishes Not On Menu</option>
                 <option value="AI_SERVICE_ERROR">AI Service Error</option>
                 <option value="IMAGE_TOO_LARGE">Image Too Large</option>
               </select>
@@ -2993,20 +2987,20 @@
 <div class="modal-backdrop" id="loyaltyDeleteVoucherModal" onclick="if(event.target===this) closeDeleteVoucherModal()">
   <div class="refund-modal-card" style="max-width:440px;" role="dialog" aria-modal="true">
     <div class="refund-modal-head">
-      <div class="refund-modal-title" style="color:#b91c1c;">Delete Voucher</div>
+      <div class="refund-modal-title" style="color:#b91c1c;">Revoke Voucher</div>
       <button type="button" class="refund-modal-close" onclick="closeDeleteVoucherModal()">&times;</button>
     </div>
     <div class="refund-modal-body" style="padding:1.25rem 1.5rem;">
       <p style="font-size:0.88rem; color:#475569; line-height:1.5; margin-bottom:0.9rem;">
-        Are you sure you want to delete voucher <strong id="loyDelVoucherCodeLabel" style="color:#0f172a; font-family:ui-monospace,monospace;"></strong>? It will be deactivated and archived immediately.
+        Are you sure you want to revoke voucher <strong id="loyDelVoucherCodeLabel" style="color:#0f172a; font-family:ui-monospace,monospace;"></strong>? It will stop working. The owner will see it marked Revoked, and the record stays in the Revoked list.
       </p>
-      <label class="field-label">Type "DELETE" to confirm
-        <input type="text" class="input-box" id="loyDelVoucherConfirmInput" placeholder="DELETE" autocomplete="off" oninput="onDeleteVoucherConfirmInput()" style="font-family:ui-monospace,monospace; font-weight:700; letter-spacing:0.04em;">
+      <label class="field-label">Type "REVOKE" to confirm
+        <input type="text" class="input-box" id="loyDelVoucherConfirmInput" placeholder="REVOKE" autocomplete="off" oninput="onDeleteVoucherConfirmInput()" style="font-family:ui-monospace,monospace; font-weight:700; letter-spacing:0.04em;">
       </label>
     </div>
     <div class="refund-modal-foot">
       <button type="button" class="btn btn-outline" onclick="closeDeleteVoucherModal()">Cancel</button>
-      <button type="button" class="btn" id="btnConfirmDeleteVoucher" style="background:#dc2626;" onclick="executeDeleteVoucher()" disabled>Delete Voucher</button>
+      <button type="button" class="btn" id="btnConfirmDeleteVoucher" style="background:#dc2626;" onclick="executeDeleteVoucher()" disabled>Revoke Voucher</button>
     </div>
   </div>
 </div>
@@ -5881,9 +5875,7 @@ function formatRejectionCode(code) {
   if (!code || code === "None") return "None";
   const map = {
     UNREADABLE_PHOTO: "Unreadable / Blurry",
-    NOT_A_PLATE: "Not a Food Plate",
     NO_FOOD_DETECTED: "No Food Detected",
-    NO_MATCHING_DISHES: "Dishes Not on Menu",
     AI_SERVICE_ERROR: "AI Service Error",
     IMAGE_TOO_LARGE: "Image Too Large",
   };
@@ -5897,12 +5889,8 @@ function rejectionBadge(code) {
   let border = "#e2e8f0";
   if (c === "UNREADABLE_PHOTO") {
     bg = "#fef3c7"; fg = "#92400e"; border = "#fde68a";
-  } else if (c === "NOT_A_PLATE") {
-    bg = "#fee2e2"; fg = "#b91c1c"; border = "#fecaca";
   } else if (c === "NO_FOOD_DETECTED") {
     bg = "#ffedd5"; fg = "#c2410c"; border = "#fed7aa";
-  } else if (c === "NO_MATCHING_DISHES") {
-    bg = "#f3e8ff"; fg = "#7e22ce"; border = "#e9d5ff";
   } else if (c === "AI_SERVICE_ERROR") {
     bg = "#ffe4e6"; fg = "#be123c"; border = "#fecdd3";
   }
@@ -6253,8 +6241,6 @@ async function loadAdminLoyaltyOverview() {
     // Points stats
     setEl("loyKpiPoints", Number(d.circulating_points || 0).toLocaleString() + " pts");
     setEl("loyKpiPointsVal", "RM " + Number(d.est_value_rm || 0).toFixed(2));
-    setEl("loyKpiUnclaimed", Number(d.unclaimed_points_total || 0).toLocaleString() + " pts");
-    setEl("loyKpiUnclaimedSub", `${Number(d.unclaimed_bills_count || 0)} active guest bill(s) awaiting claim`);
 
     // Voucher stats
     const vs = d.voucher_stats || {};
@@ -6860,12 +6846,23 @@ async function loadAdminVouchers(page = 1) {
   const mList = document.getElementById("loyVouchersMobileList");
   if (!tbody) return;
   try {
-    const res = await fetch(`/api/admin/loyalty/vouchers?source=${encodeURIComponent(loyVoucherSource)}&page=${page}&limit=15`, { cache: "no-store" });
+    const viewingDeleted = loyVoucherSource === "deleted";
+    const query = viewingDeleted
+      ? `archived=1&page=${page}&limit=15`
+      : `source=${encodeURIComponent(loyVoucherSource)}&page=${page}&limit=15`;
+    const res = await fetch(`/api/admin/loyalty/vouchers?${query}`, { cache: "no-store" });
     if (!res.ok) return;
     const data = await res.json();
     const list = data.vouchers || [];
+    const deletedMeta = (v) => {
+      if (!v.is_archived && !viewingDeleted) return "";
+      const when = v.archived_at ? new Date(v.archived_at).toLocaleString("en-MY", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "time not recorded";
+      const who = v.archived_by ? esc(v.archived_by) : "unknown admin";
+      const kind = v.source === "points_redemption" ? "Auto generated" : "Manual";
+      return `<div style="font-size:0.74rem; color:#b91c1c; margin-top:0.15rem;">Revoked by ${who} · ${esc(when)} · ${kind}</div>`;
+    };
     if (!list.length) {
-      const lbl = loyVoucherSource === "manual" ? "manual" : "auto-generated";
+      const lbl = viewingDeleted ? "revoked" : (loyVoucherSource === "manual" ? "manual" : "auto-generated");
       tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2.5rem 1rem; color:#94a3b8;">No ${lbl} vouchers found.</td></tr>`;
       if (mList) mList.innerHTML = `<div class="empty-state-sm">No ${lbl} vouchers found.</div>`;
     } else {
@@ -6873,14 +6870,16 @@ async function loadAdminVouchers(page = 1) {
         const valStr = v.type === "percentage" ? `${v.discount_value}%` : `RM ${Number(v.discount_value).toFixed(2)}`;
         const maxDiscSub = v.max_discount ? `<div style="font-size:0.74rem; color:#64748b; font-weight:600;">Max: RM ${Number(v.max_discount).toFixed(2)}</div>` : "";
         const isExhausted = !!v.is_redeemed;
-        const stBadge = isExhausted
+        const stBadge = viewingDeleted
+          ? '<span class="badge badge-cancelled">Revoked</span>'
+          : (isExhausted
           ? '<span class="badge badge-pending">Exhausted</span>'
-          : (v.is_expired ? '<span class="badge badge-cancelled">Expired</span>' : (v.is_active ? '<span class="badge badge-paid">Active</span>' : '<span class="badge badge-cancelled">Paused</span>'));
+          : (v.is_expired ? '<span class="badge badge-cancelled">Expired</span>' : (v.is_active ? '<span class="badge badge-paid">Active</span>' : '<span class="badge badge-cancelled">Paused</span>')));
         const expStr = fmtShortDate(v.expires_at);
         const ownerSub = v.user_email
           ? `<div style="font-size:0.74rem; color:#64748b; margin-top:0.15rem;">For: ${esc(v.user_email)}</div>`
           : `<div style="font-size:0.74rem; color:#94a3b8; margin-top:0.15rem;">Public (any signed-in user)</div>`;
-        const switchHtml = (loyVoucherSource === "manual" && !isExhausted && !v.is_expired)
+        const switchHtml = (!viewingDeleted && loyVoucherSource === "manual" && !isExhausted && !v.is_expired)
           ? `<label class="switch-wrap" title="${v.is_active ? 'Click to pause' : 'Click to activate'}" onclick="event.preventDefault(); toggleAdminVoucher(${v.id})">
                <span class="switch-toggle">
                  <input type="checkbox" class="switch-input" ${v.is_active ? "checked" : ""} style="pointer-events:none;">
@@ -6889,10 +6888,11 @@ async function loadAdminVouchers(page = 1) {
              </label>`
           : "";
         return `
-          <tr style="${isExhausted ? 'opacity:0.65;' : ''}">
+          <tr style="${isExhausted || viewingDeleted ? 'opacity:0.72;' : ''}">
             <td>
               <span class="bill-code">${esc(v.code)}</span>
               ${ownerSub}
+              ${deletedMeta(v)}
             </td>
             <td>
               <div style="font-weight:800; color:#059669;">${esc(valStr)}</div>
@@ -6905,10 +6905,10 @@ async function loadAdminVouchers(page = 1) {
             <td style="font-size:0.83rem; color:#334155;">${esc(expStr)}</td>
             <td>${stBadge}</td>
             <td style="text-align:center;">
-              <div style="display:inline-flex; align-items:center; gap:0.55rem;">
+              ${viewingDeleted ? '<span style="color:#94a3b8; font-size:0.78rem;">Kept</span>' : `<div style="display:inline-flex; align-items:center; gap:0.55rem;">
                 ${switchHtml}
-                <button type="button" class="btn btn-danger btn-sm" title="Delete voucher" onclick="openDeleteVoucherModal(${v.id}, '${esc(v.code)}')">Delete</button>
-              </div>
+                <button type="button" class="btn btn-danger btn-sm" title="Revoke voucher" onclick="openDeleteVoucherModal(${v.id}, '${esc(v.code)}')">Revoke</button>
+              </div>`}
             </td>
           </tr>
         `;
@@ -6918,15 +6918,18 @@ async function loadAdminVouchers(page = 1) {
         mList.innerHTML = list.map(v => {
           const valStr = v.type === "percentage" ? `${v.discount_value}%` : `RM ${Number(v.discount_value).toFixed(2)}`;
           const isExhausted = !!v.is_redeemed;
-          const stBadge = isExhausted
+          const stBadge = viewingDeleted
+            ? '<span class="badge badge-cancelled">Revoked</span>'
+            : (isExhausted
             ? '<span class="badge badge-pending">Exhausted</span>'
-            : (v.is_expired ? '<span class="badge badge-cancelled">Expired</span>' : (v.is_active ? '<span class="badge badge-paid">Active</span>' : '<span class="badge badge-cancelled">Paused</span>'));
+            : (v.is_expired ? '<span class="badge badge-cancelled">Expired</span>' : (v.is_active ? '<span class="badge badge-paid">Active</span>' : '<span class="badge badge-cancelled">Paused</span>')));
           return `
             <div class="bill-mobile-card">
               <div class="bmc-header">
                 <div>
                   <span class="bill-code">${esc(v.code)}</span>
                   <div style="font-size:0.75rem; color:#64748b; margin-top:0.2rem;">${v.user_email ? esc(v.user_email) : "Public voucher"}</div>
+                  ${deletedMeta(v)}
                 </div>
                 ${stBadge}
               </div>
@@ -6940,12 +6943,12 @@ async function loadAdminVouchers(page = 1) {
                 <div style="color:#64748b;">Expires</div>
                 <div style="text-align:right; font-weight:600;">${esc(fmtShortDate(v.expires_at))}</div>
               </div>
-              <div class="bmc-actions">
+              ${viewingDeleted ? "" : `<div class="bmc-actions">
                 <div class="bmc-actions-row">
                   ${(!isExhausted && !v.is_expired && loyVoucherSource === "manual") ? `<button type="button" class="btn btn-outline btn-sm bmc-btn" onclick="toggleAdminVoucher(${v.id})">${v.is_active ? "Pause" : "Activate"}</button>` : ""}
-                  <button type="button" class="btn btn-danger btn-sm bmc-btn" onclick="openDeleteVoucherModal(${v.id}, '${esc(v.code)}')">Delete</button>
+                  <button type="button" class="btn btn-danger btn-sm bmc-btn" onclick="openDeleteVoucherModal(${v.id}, '${esc(v.code)}')">Revoke</button>
                 </div>
-              </div>
+              </div>`}
             </div>
           `;
         }).join("");
@@ -7026,24 +7029,24 @@ function onDeleteVoucherConfirmInput() {
   const inp = document.getElementById("loyDelVoucherConfirmInput");
   const btn = document.getElementById("btnConfirmDeleteVoucher");
   if (btn && inp) {
-    btn.disabled = inp.value.trim() !== "DELETE";
+    btn.disabled = inp.value.trim() !== "REVOKE";
   }
 }
 
 async function executeDeleteVoucher() {
   if (!loyPendingDeleteVoucher) return;
   const inp = document.getElementById("loyDelVoucherConfirmInput");
-  if (!inp || inp.value.trim() !== "DELETE") return;
+  if (!inp || inp.value.trim() !== "REVOKE") return;
   const btn = document.getElementById("btnConfirmDeleteVoucher");
   btn.disabled = true;
   try {
     const res = await fetch(`/api/admin/loyalty/vouchers/${loyPendingDeleteVoucher.id}`, { method: "DELETE" });
     if (res.ok) {
-      showToast(`Voucher ${loyPendingDeleteVoucher.code} deleted`);
+      showToast(`Voucher ${loyPendingDeleteVoucher.code} revoked`);
       closeDeleteVoucherModal();
       loadAdminVouchers(loyVoucherPage);
     } else {
-      alert("Failed to delete voucher.");
+      alert("Failed to revoke voucher.");
     }
   } finally {
     onDeleteVoucherConfirmInput();
