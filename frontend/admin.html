@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -1789,6 +1790,370 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
+
+  /* Compact Category Selection Chips & Modal (Light White & Orange Theme matching Admin) */
+  .cat-select-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 32px;
+  }
+  .cat-selected-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #fff7ed;
+    border: 1.5px solid #fed7aa;
+    color: #c2410c;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.32rem 0.65rem;
+    border-radius: 8px;
+    user-select: none;
+    line-height: 1.2;
+    transition: all 0.15s ease;
+  }
+  .cat-selected-chip-remove {
+    background: transparent;
+    border: none;
+    color: #f97316;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+  .cat-selected-chip-remove:hover {
+    color: #9a3412;
+    transform: scale(1.18);
+  }
+  .cat-add-trigger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #334155;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 0.32rem 0.72rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+    line-height: 1.2;
+  }
+  .cat-add-trigger-btn:hover {
+    background: #fff7ed;
+    border-color: #ff5e36;
+    color: #ea580c;
+  }
+
+  /* Choose Categories Modal / Bottom Sheet (White & Orange Theme) */
+  .cat-picker-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(15, 23, 42, 0.58);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .cat-picker-modal-backdrop.open {
+    display: flex;
+  }
+  .cat-picker-sheet {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 440px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 55px rgba(15, 23, 42, 0.22);
+    animation: modalScaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes modalScaleUp {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @media (max-width: 767px) {
+    .cat-picker-modal-backdrop {
+      align-items: flex-end;
+      padding: 0;
+    }
+    .cat-picker-sheet {
+      max-width: 100%;
+      border-radius: 20px 20px 0 0;
+      max-height: 85vh;
+      animation: sheetSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes sheetSlideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+  }
+  .cat-picker-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.25rem 0.85rem;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .cat-picker-head-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .cat-picker-title {
+    font-size: 1.18rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+  }
+  .cat-picker-badge {
+    background: #fff7ed;
+    border: 1px solid #ffedd5;
+    color: #ea580c;
+    border-radius: 9999px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+  .cat-picker-close-btn {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0.35rem 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .cat-picker-close-btn:hover {
+    background: #fff7ed;
+    color: #ea580c;
+  }
+  .cat-picker-search-wrap {
+    position: relative;
+    padding: 0.85rem 1.25rem 0.65rem;
+    background: #ffffff;
+  }
+  .cat-picker-search-icon {
+    position: absolute;
+    left: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.95rem;
+    color: #94a3b8;
+    pointer-events: none;
+  }
+  .cat-picker-search-input {
+    width: 100%;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    color: #0f172a;
+    border-radius: 12px;
+    padding: 0.72rem 2.2rem 0.72rem 2.4rem;
+    font-size: 0.92rem;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.15s ease;
+  }
+  .cat-picker-search-input:focus {
+    background: #ffffff;
+    border-color: #ff5e36;
+    box-shadow: 0 0 0 2px rgba(255, 94, 54, 0.18);
+  }
+  .cat-picker-search-input::placeholder {
+    color: #94a3b8;
+  }
+  .cat-picker-clear-search {
+    position: absolute;
+    right: 1.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    cursor: pointer;
+    padding: 0.2rem;
+  }
+  .cat-picker-clear-search:hover {
+    color: #ff5e36;
+  }
+  .cat-picker-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.25rem 1.25rem;
+    -webkit-overflow-scrolling: touch;
+    background: #ffffff;
+  }
+  .cat-picker-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 0.65rem;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    user-select: none;
+    border-radius: 10px;
+  }
+  .cat-picker-item:last-child {
+    border-bottom: none;
+  }
+  .cat-picker-item:hover {
+    background: #fffaf5;
+  }
+  .cat-picker-item.selected {
+    background: #fff7ed;
+  }
+  .cat-picker-item.selected .cat-picker-item-name {
+    color: #c2410c;
+    font-weight: 700;
+  }
+  .cat-picker-item-name {
+    font-size: 0.96rem;
+    font-weight: 600;
+    color: #0f172a;
+    transition: color 0.12s ease;
+  }
+  .cat-picker-radio {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+  .cat-picker-radio.checked {
+    background: #ff5e36;
+    border-color: #ff5e36;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(255, 94, 54, 0.35);
+  }
+  .cat-picker-checkmark {
+    font-size: 14px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .cat-picker-foot {
+    padding: 0.85rem 1.25rem 1.25rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+  .cat-picker-done-btn {
+    width: 100%;
+    background: #ff5e36;
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 12px;
+    padding: 0.75rem;
+    font-size: 0.94rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 12px rgba(255, 94, 54, 0.25);
+  }
+  .cat-picker-done-btn:hover {
+    background: #ea580c;
+    box-shadow: 0 6px 16px rgba(255, 94, 54, 0.35);
+  }
+
+  .cat-drag-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .cat-drag-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    padding: 0.85rem 1.1rem;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    transition: all 0.15s ease;
+    cursor: grab;
+  }
+  .cat-drag-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+  .cat-drag-item.dragging {
+    opacity: 0.45;
+    border-color: #ff5e36;
+    background: #fff7ed;
+  }
+  .cat-drag-item.drag-over {
+    border-color: #ff5e36;
+    box-shadow: 0 0 0 3px rgba(255, 94, 54, 0.15);
+  }
+  .cat-drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    cursor: grab;
+    padding: 0.25rem;
+  }
+  .cat-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #fff7ed;
+    color: #ff5e36;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .icon-picker-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .icon-choice-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    color: #475569;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .icon-choice-btn:hover {
+    border-color: #94a3b8;
+    color: #0f172a;
+  }
+  .icon-choice-btn.active {
+    background: #fff7ed;
+    border-color: #ff5e36;
+    color: #ea580c;
+  }
 </style>
 </head>
 <body>
@@ -1822,6 +2187,14 @@
           <path d="M4 3v7a3 3 0 003 3v8M7 3v6M10 3v7a3 3 0 01-3 3M16 3v18M16 3c2.5 0 4 2 4 5.5S18.5 14 16 14" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
         <span>Daily Menu</span>
+      </span>
+    </button>
+    <button class="nav-btn" data-tab="categories" onclick="switchTab('categories', 'Menu Categories Management')">
+      <span class="nav-btn-left">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Categories</span>
       </span>
     </button>
     <button class="nav-btn" data-tab="restaurant" onclick="switchTab('restaurant', 'Restaurant Settings')">
@@ -2152,6 +2525,9 @@
             <label class="field-label">AI Visual Description (optional)
               <input class="input-box" id="newDescription" maxlength="500" placeholder="e.g. fried chicken piece with crispy skin" type="text">
             </label>
+            <label class="field-label" style="grid-column: 1 / -1;">Categories (Max 3)
+              <div id="newDishCategoriesPicker" style="margin-top:0.35rem;"></div>
+            </label>
             <button class="btn" type="submit">+ Add Dish</button>
           </form>
           <p id="error" style="color:#ef4444; font-size:0.84rem; margin-top:0.6rem; min-height:1.1rem;"></p>
@@ -2212,6 +2588,7 @@
               <tr>
                 <th style="min-width:140px;">AI Dish Name</th>
                 <th style="min-width:160px;">Customer Alias</th>
+                <th style="min-width:180px;">Categories</th>
                 <th>Description for AI</th>
                 <th style="width:110px;">Pieces / Portion</th>
                 <th style="width:190px;">Price</th>
@@ -2223,6 +2600,58 @@
           </table>
         </div>
         <div class="menu-mobile-list" id="menuMobileList"></div>
+      </div>
+    </section>
+
+    <!-- TAB: CATEGORIES -->
+    <section class="section-pane" id="tab-categories">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Add New Category</div>
+            <p style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Create categories for organizing menu items. Each menu item can be tagged with up to 3 categories.</p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <form onsubmit="handleAddCategory(event)" style="display:flex; flex-direction:column; gap:1rem;">
+            <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end;">
+              <label class="field-label" style="flex:1; min-width:220px;">Category Name
+                <input type="text" id="newCatNameInput" class="input-box" placeholder="e.g. Sarapan, Ala carte, Minuman" maxlength="60" required>
+              </label>
+              <div class="field-label">Icon
+                <div class="icon-picker-grid" id="newCatIconPicker">
+                  <button type="button" class="icon-choice-btn active" data-icon="restaurant" onclick="selectNewCatIcon('restaurant', this)" title="Restaurant"><span class="material-symbols-outlined" style="font-size:18px;">restaurant</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="coffee" onclick="selectNewCatIcon('coffee', this)" title="Coffee / Tea"><span class="material-symbols-outlined" style="font-size:18px;">local_cafe</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="bakery_dining" onclick="selectNewCatIcon('bakery_dining', this)" title="Breakfast / Bakery"><span class="material-symbols-outlined" style="font-size:18px;">bakery_dining</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="lunch_dining" onclick="selectNewCatIcon('lunch_dining', this)" title="Lunch / Ala carte"><span class="material-symbols-outlined" style="font-size:18px;">lunch_dining</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="glass_cup" onclick="selectNewCatIcon('glass_cup', this)" title="Cold Drinks"><span class="material-symbols-outlined" style="font-size:18px;">glass_cup</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="cake" onclick="selectNewCatIcon('cake', this)" title="Desserts &amp; Cake"><span class="material-symbols-outlined" style="font-size:18px;">cake</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="dinner_dining" onclick="selectNewCatIcon('dinner_dining', this)" title="Main Dish / Rice"><span class="material-symbols-outlined" style="font-size:18px;">dinner_dining</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="tapas" onclick="selectNewCatIcon('tapas', this)" title="Sides &amp; Snacks"><span class="material-symbols-outlined" style="font-size:18px;">tapas</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="set_meal" onclick="selectNewCatIcon('set_meal', this)" title="Set Meal"><span class="material-symbols-outlined" style="font-size:18px;">set_meal</span></button>
+                  <button type="button" class="icon-choice-btn" data-icon="ramen_dining" onclick="selectNewCatIcon('ramen_dining', this)" title="Noodles / Soup"><span class="material-symbols-outlined" style="font-size:18px;">ramen_dining</span></button>
+                </div>
+              </div>
+              <button type="submit" class="btn" id="btnAddCategorySubmit">+ Add Category</button>
+            </div>
+          </form>
+          <p id="categoryError" style="color:#ef4444; font-size:0.84rem; margin-top:0.5rem; min-height:1rem;"></p>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Arrange Categories Order (Drag &amp; Drop)</div>
+            <p style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">Drag and drop rows (or use the up/down arrows) to arrange the exact order categories appear.</p>
+          </div>
+          <span id="catOrderSaveBadge" style="font-size:0.78rem; font-weight:600; color:#10b981;">Order synced</span>
+        </div>
+        <div class="panel-body">
+          <div class="cat-drag-list" id="categoriesDragList">
+            <div class="empty-state-sm">Loading categories...</div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -3133,6 +3562,27 @@
     </div>
   </div>
 </div>
+<div class="modal-backdrop cat-picker-modal-backdrop" id="dishCategoryPickerModal" onclick="if(event.target===this) closeDishCategoryPicker()">
+  <div class="cat-picker-sheet" role="dialog" aria-modal="true" aria-labelledby="catPickerTitle">
+    <div class="cat-picker-head">
+      <div class="cat-picker-head-left">
+        <h3 id="catPickerTitle" class="cat-picker-title">Choose categories</h3>
+        <span class="cat-picker-badge" id="catPickerCountBadge">0/3 selected</span>
+      </div>
+      <button type="button" class="cat-picker-close-btn" onclick="closeDishCategoryPicker()" aria-label="Close picker modal">✕</button>
+    </div>
+    <div class="cat-picker-search-wrap">
+      <span class="cat-picker-search-icon">🔍</span>
+      <input type="text" id="catPickerSearchInput" class="cat-picker-search-input" placeholder="Search categories..." oninput="onFilterPickerCategories(this.value)">
+      <button type="button" id="catPickerClearSearch" class="cat-picker-clear-search" onclick="clearPickerSearch()" style="display:none;" aria-label="Clear search">✕</button>
+    </div>
+    <div class="cat-picker-list" id="catPickerList"></div>
+    <div class="cat-picker-foot">
+      <button type="button" class="btn cat-picker-done-btn" onclick="closeDishCategoryPicker()">Done</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
@@ -3240,6 +3690,9 @@ function switchTab(tabId, title) {
     initVoucherFormDefaults();
     loadAdminLoyaltyOverview();
     loadAdminVouchers(loyVoucherPage);
+  }
+  if (tabId === "categories") {
+    loadCategories();
   }
   if (tabId === "feedbacks") {
     loadFeedbacks();
@@ -4803,6 +5256,487 @@ async function viewBillPdfPreview(billIdentifier) {
 }
 
 /* Menu Management */
+/* ==================== CATEGORIES & MENU MANAGEMENT ==================== */
+let allAdminCategories = [];
+let currentMenuDishes = [];
+let newDishSelectedCategories = [];
+let newCatSelectedIcon = "restaurant";
+let draggedCatId = null;
+let activePickerDishId = null;
+let pickerSearchQuery = "";
+
+function showCategoryError(message) {
+  const el = document.getElementById("categoryError");
+  if (el) el.textContent = message || "";
+}
+
+function getCategoryIcon(catName) {
+  const found = allAdminCategories.find(c => (c.name || "").toLowerCase() === String(catName || "").toLowerCase());
+  return (found && found.icon) ? found.icon : "restaurant";
+}
+
+function selectNewCatIcon(icon, btn) {
+  newCatSelectedIcon = icon || "restaurant";
+  document.querySelectorAll("#newCatIconPicker .icon-choice-btn").forEach(b => {
+    b.classList.toggle("active", b === btn || b.dataset.icon === newCatSelectedIcon);
+  });
+}
+
+async function loadCategories() {
+  try {
+    const res = await fetch("/api/categories?_t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return;
+    allAdminCategories = await res.json();
+    renderCategoriesDragList();
+    renderNewDishCategoriesPicker();
+  } catch (err) {
+    console.error("Failed to load categories:", err);
+  }
+}
+
+function renderNewDishCategoriesPicker() {
+  const host = document.getElementById("newDishCategoriesPicker");
+  if (!host) return;
+  const validNames = new Set(allAdminCategories.map(c => c.name));
+  newDishSelectedCategories = newDishSelectedCategories.filter(n => validNames.has(n));
+  host.innerHTML = renderDishCategoryBox("new", newDishSelectedCategories);
+}
+
+function renderCategoriesDragList() {
+  const host = document.getElementById("categoriesDragList");
+  if (!host) return;
+  if (!allAdminCategories.length) {
+    host.innerHTML = `<div class="empty-state-sm">No categories added yet. Create your first category above.</div>`;
+    return;
+  }
+  host.innerHTML = allAdminCategories.map((cat, idx) => `
+    <div class="cat-drag-item" draggable="true" data-cat-id="${cat.id}"
+         ondragstart="onCategoryDragStart(event, ${cat.id})"
+         ondragover="onCategoryDragOver(event)"
+         ondragleave="onCategoryDragLeave(event)"
+         ondrop="onCategoryDrop(event, ${cat.id})"
+         ondragend="onCategoryDragEnd(event)">
+      <span class="cat-drag-handle" title="Drag to reorder">⋮⋮</span>
+      <span class="badge" style="background:#f1f5f9; color:#475569; font-weight:800; min-width:32px; text-align:center;">#${idx + 1}</span>
+      <div class="cat-icon-box">
+        <span class="material-symbols-outlined" style="font-size:20px;">${esc(cat.icon || "restaurant")}</span>
+      </div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-weight:700; color:#0f172a; font-size:0.94rem;">${esc(cat.name)}</div>
+        <div style="font-size:0.76rem; color:#64748b;">${cat.dish_count || 0} menu items tagged (${cat.available_count || 0} available today)</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.35rem; flex-wrap:wrap;">
+        <button type="button" class="btn btn-outline btn-sm" style="padding:0.3rem 0.5rem;" ${idx === 0 ? "disabled" : ""} onclick="moveCategoryOrder(${idx}, -1)" title="Move up">↑</button>
+        <button type="button" class="btn btn-outline btn-sm" style="padding:0.3rem 0.5rem;" ${idx === allAdminCategories.length - 1 ? "disabled" : ""} onclick="moveCategoryOrder(${idx}, 1)" title="Move down">↓</button>
+        <button type="button" class="btn btn-outline btn-sm" data-id="${cat.id}" data-name="${esc(cat.name)}" onclick="editCategoryPrompt(this.dataset.id, this.dataset.name)">Edit</button>
+        <button type="button" class="btn btn-danger btn-sm" data-id="${cat.id}" data-name="${esc(cat.name)}" onclick="deleteCategory(this.dataset.id, this.dataset.name)">Delete</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+async function editCategoryPrompt(catId, currentName) {
+  const nextName = prompt("Edit Category Name:", currentName || "");
+  if (nextName === null) return;
+  const trimmed = nextName.trim();
+  if (!trimmed || trimmed === currentName) return;
+  showCategoryError("");
+  try {
+    const res = await fetch(`/api/admin/categories/${encodeURIComponent(catId)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showCategoryError(data.detail || "Failed to update category.");
+      return;
+    }
+    showToast(`Category renamed to "${trimmed}"`);
+    await loadCategories();
+    await loadMenu();
+  } catch (err) {
+    showCategoryError("Network error updating category.");
+  }
+}
+
+function onCategoryDragStart(event, catId) {
+  draggedCatId = Number(catId);
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(catId));
+  }
+  const el = event.currentTarget;
+  if (el) setTimeout(() => el.classList.add("dragging"), 0);
+}
+
+function onCategoryDragOver(event) {
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+  const el = event.currentTarget;
+  if (el && !el.classList.contains("dragging")) {
+    el.classList.add("drag-over");
+  }
+}
+
+function onCategoryDragLeave(event) {
+  const el = event.currentTarget;
+  if (el) el.classList.remove("drag-over");
+}
+
+async function onCategoryDrop(event, targetCatId) {
+  event.preventDefault();
+  const el = event.currentTarget;
+  if (el) el.classList.remove("drag-over");
+  const fromId = Number(draggedCatId || (event.dataTransfer && event.dataTransfer.getData("text/plain")));
+  const toId = Number(targetCatId);
+  if (!fromId || !toId || fromId === toId) return;
+
+  const fromIdx = allAdminCategories.findIndex(c => Number(c.id) === fromId);
+  const toIdx = allAdminCategories.findIndex(c => Number(c.id) === toId);
+  if (fromIdx < 0 || toIdx < 0) return;
+
+  const [moved] = allAdminCategories.splice(fromIdx, 1);
+  allAdminCategories.splice(toIdx, 0, moved);
+  renderCategoriesDragList();
+  renderNewDishCategoriesPicker();
+  await saveCategoriesOrder();
+}
+
+function onCategoryDragEnd(event) {
+  draggedCatId = null;
+  document.querySelectorAll(".cat-drag-item").forEach(item => {
+    item.classList.remove("dragging", "drag-over");
+  });
+}
+
+async function moveCategoryOrder(idx, delta) {
+  const nextIdx = idx + delta;
+  if (nextIdx < 0 || nextIdx >= allAdminCategories.length) return;
+  const [moved] = allAdminCategories.splice(idx, 1);
+  allAdminCategories.splice(nextIdx, 0, moved);
+  renderCategoriesDragList();
+  renderNewDishCategoriesPicker();
+  await saveCategoriesOrder();
+}
+
+async function saveCategoriesOrder() {
+  const badge = document.getElementById("catOrderSaveBadge");
+  if (badge) {
+    badge.style.color = "#f59e0b";
+    badge.textContent = "Saving order...";
+  }
+  try {
+    const res = await fetch("/api/admin/categories/reorder", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category_ids: allAdminCategories.map(c => c.id) }),
+    });
+    if (!res.ok) throw new Error("Failed to save category order");
+    const data = await res.json();
+    allAdminCategories = Array.isArray(data) ? data : (data.categories || allAdminCategories);
+    renderCategoriesDragList();
+    renderNewDishCategoriesPicker();
+    if (badge) {
+      badge.style.color = "#10b981";
+      badge.textContent = "Order synced ✓";
+    }
+    showToast("Category order updated");
+    await loadMenu();
+  } catch (err) {
+    console.error("Category reorder error:", err);
+    if (badge) {
+      badge.style.color = "#ef4444";
+      badge.textContent = "Failed to save order";
+    }
+    showToast("Failed to save category order");
+  }
+}
+
+async function handleAddCategory(event) {
+  event.preventDefault();
+  showCategoryError("");
+  const inp = document.getElementById("newCatNameInput");
+  const name = (inp ? inp.value : "").trim();
+  if (!name) {
+    showCategoryError("Category name is required.");
+    return;
+  }
+  const btn = document.getElementById("btnAddCategorySubmit");
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch("/api/admin/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, icon: newCatSelectedIcon || "restaurant" }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showCategoryError(data.detail || "Failed to add category.");
+      return;
+    }
+    if (inp) inp.value = "";
+    showToast(`Category "${data.name || name}" added`);
+    await loadCategories();
+    await loadMenu();
+  } catch (err) {
+    showCategoryError("Network error adding category.");
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function deleteCategory(catId, catName) {
+  if (!confirm(`Delete category "${catName}"?\n\nIt will be untagged from all menu items.`)) return;
+  showCategoryError("");
+  try {
+    const res = await fetch(`/api/admin/categories/${encodeURIComponent(catId)}`, {
+      method: "DELETE",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showCategoryError(data.detail || "Failed to delete category.");
+      return;
+    }
+    showToast(`Category "${catName}" deleted`);
+    await loadCategories();
+    await loadMenu();
+  } catch (err) {
+    showCategoryError("Network error deleting category.");
+  }
+}
+
+function renderDishCategoryBox(dishId, selectedCategories) {
+  const selected = Array.isArray(selectedCategories) ? selectedCategories.slice(0, 3) : [];
+
+  return `
+    <div class="cat-select-chips-container" data-dish-cat-chips="${dishId}">
+      ${selected.map(cat => `
+        <span class="cat-selected-chip" data-cat="${esc(cat)}">
+          <span>${esc(cat)}</span>
+          <button type="button" class="cat-selected-chip-remove" onclick="removeDishCategoryTag('${dishId}', '${esc(cat)}', event)" aria-label="Remove ${esc(cat)}">×</button>
+        </span>
+      `).join("")}
+      <button type="button" class="cat-add-trigger-btn" onclick="openDishCategoryPicker('${dishId}')">
+        <span>+ Add</span>
+        <svg style="width:12px; height:12px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </button>
+    </div>
+  `;
+}
+
+function updateDishCategoryBoxes(dishId) {
+  let selected = [];
+  if (String(dishId) === "new") {
+    selected = newDishSelectedCategories;
+    const boxHost = document.getElementById("newDishCategoriesPicker");
+    if (boxHost) {
+      boxHost.innerHTML = renderDishCategoryBox("new", selected);
+    }
+    return;
+  }
+  const dishObj = currentMenuDishes.find(x => Number(x.id) === Number(dishId));
+  if (dishObj && Array.isArray(dishObj.categories)) {
+    selected = dishObj.categories.slice(0, 3);
+  }
+  document.querySelectorAll(`[data-dish-cat-chips="${dishId}"]`).forEach(host => {
+    host.innerHTML = `
+      ${selected.map(cat => `
+        <span class="cat-selected-chip" data-cat="${esc(cat)}">
+          <span>${esc(cat)}</span>
+          <button type="button" class="cat-selected-chip-remove" onclick="removeDishCategoryTag('${dishId}', '${esc(cat)}', event)" aria-label="Remove ${esc(cat)}">×</button>
+        </span>
+      `).join("")}
+      <button type="button" class="cat-add-trigger-btn" onclick="openDishCategoryPicker('${dishId}')">
+        <span>+ Add</span>
+        <svg style="width:12px; height:12px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </button>
+    `;
+  });
+}
+
+function removeDishCategoryTag(dishId, catName, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  if (!catName) return;
+
+  if (String(dishId) === "new") {
+    const idx = newDishSelectedCategories.indexOf(catName);
+    if (idx >= 0) newDishSelectedCategories.splice(idx, 1);
+    updateDishCategoryBoxes("new");
+    if (String(activePickerDishId) === "new") renderPickerCategoriesList();
+    return;
+  }
+
+  let dishObj = currentMenuDishes.find(x => Number(x.id) === Number(dishId));
+  if (!dishObj) {
+    dishObj = { id: Number(dishId), categories: getDishSelectedCategories(dishId) };
+    currentMenuDishes.push(dishObj);
+  }
+  if (!Array.isArray(dishObj.categories)) dishObj.categories = [];
+
+  const idx = dishObj.categories.indexOf(catName);
+  if (idx >= 0) {
+    dishObj.categories.splice(idx, 1);
+  }
+  updateDishCategoryBoxes(dishId);
+  if (String(activePickerDishId) === String(dishId)) {
+    renderPickerCategoriesList();
+  }
+  flushAutoSaveDish(dishId);
+}
+
+function openDishCategoryPicker(dishId) {
+  activePickerDishId = dishId;
+  pickerSearchQuery = "";
+  const searchInp = document.getElementById("catPickerSearchInput");
+  if (searchInp) searchInp.value = "";
+  const clearBtn = document.getElementById("catPickerClearSearch");
+  if (clearBtn) clearBtn.style.display = "none";
+
+  renderPickerCategoriesList();
+
+  const modal = document.getElementById("dishCategoryPickerModal");
+  if (modal) modal.classList.add("open");
+}
+
+function closeDishCategoryPicker() {
+  const modal = document.getElementById("dishCategoryPickerModal");
+  if (modal) modal.classList.remove("open");
+  activePickerDishId = null;
+}
+
+function onFilterPickerCategories(val) {
+  pickerSearchQuery = (val || "").trim().toLowerCase();
+  const clearBtn = document.getElementById("catPickerClearSearch");
+  if (clearBtn) clearBtn.style.display = pickerSearchQuery ? "block" : "none";
+  renderPickerCategoriesList();
+}
+
+function clearPickerSearch() {
+  pickerSearchQuery = "";
+  const searchInp = document.getElementById("catPickerSearchInput");
+  if (searchInp) {
+    searchInp.value = "";
+    searchInp.focus();
+  }
+  const clearBtn = document.getElementById("catPickerClearSearch");
+  if (clearBtn) clearBtn.style.display = "none";
+  renderPickerCategoriesList();
+}
+
+function getActivePickerSelectedCategories() {
+  if (String(activePickerDishId) === "new") {
+    return newDishSelectedCategories;
+  }
+  const dishObj = currentMenuDishes.find(x => Number(x.id) === Number(activePickerDishId));
+  if (dishObj && Array.isArray(dishObj.categories)) {
+    return dishObj.categories;
+  }
+  return [];
+}
+
+function renderPickerCategoriesList() {
+  const listHost = document.getElementById("catPickerList");
+  const countBadge = document.getElementById("catPickerCountBadge");
+  if (!listHost) return;
+
+  const selected = getActivePickerSelectedCategories();
+  if (countBadge) {
+    countBadge.textContent = `${selected.length}/3 selected`;
+  }
+
+  const catNames = allAdminCategories.map(c => c.name);
+  selected.forEach(s => {
+    if (!catNames.includes(s)) catNames.push(s);
+  });
+
+  const filtered = catNames.filter(name => {
+    if (!pickerSearchQuery) return true;
+    return name.toLowerCase().includes(pickerSearchQuery);
+  });
+
+  if (!filtered.length) {
+    listHost.innerHTML = `
+      <div style="text-align:center; padding:2.5rem 1rem; color:#64748b; font-size:0.9rem;">
+        ${catNames.length === 0 ? "No categories created yet." : "No categories match your search."}
+      </div>
+    `;
+    return;
+  }
+
+  listHost.innerHTML = filtered.map(name => {
+    const isSel = selected.includes(name);
+    return `
+      <div class="cat-picker-item ${isSel ? "selected" : ""}" onclick="togglePickerCategory('${esc(name)}')">
+        <div class="cat-picker-item-left">
+          <span class="cat-picker-item-name">${esc(name)}</span>
+        </div>
+        <div class="cat-picker-radio ${isSel ? "checked" : ""}">
+          ${isSel ? '<span class="cat-picker-checkmark">✓</span>' : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function togglePickerCategory(catName) {
+  if (!catName || activePickerDishId === null) return;
+
+  if (String(activePickerDishId) === "new") {
+    const idx = newDishSelectedCategories.indexOf(catName);
+    if (idx >= 0) {
+      newDishSelectedCategories.splice(idx, 1);
+    } else {
+      if (newDishSelectedCategories.length >= 3) {
+        showToast("Each menu item can tag up to 3 categories.");
+        return;
+      }
+      newDishSelectedCategories.push(catName);
+    }
+    updateDishCategoryBoxes("new");
+    renderPickerCategoriesList();
+    return;
+  }
+
+  let dishObj = currentMenuDishes.find(x => Number(x.id) === Number(activePickerDishId));
+  if (!dishObj) {
+    dishObj = { id: Number(activePickerDishId), categories: getDishSelectedCategories(activePickerDishId) };
+    currentMenuDishes.push(dishObj);
+  }
+  if (!Array.isArray(dishObj.categories)) dishObj.categories = [];
+
+  const idx = dishObj.categories.indexOf(catName);
+  if (idx >= 0) {
+    dishObj.categories.splice(idx, 1);
+  } else {
+    if (dishObj.categories.length >= 3) {
+      showToast("Each menu item can tag up to 3 categories.");
+      return;
+    }
+    dishObj.categories.push(catName);
+  }
+
+  updateDishCategoryBoxes(activePickerDishId);
+  renderPickerCategoriesList();
+  flushAutoSaveDish(activePickerDishId);
+}
+
+function getDishSelectedCategories(dishId) {
+  if (String(dishId) === "new") {
+    return Array.isArray(newDishSelectedCategories) ? newDishSelectedCategories.slice(0, 3) : [];
+  }
+  const dishObj = currentMenuDishes.find(x => Number(x.id) === Number(dishId));
+  if (dishObj && Array.isArray(dishObj.categories)) {
+    return dishObj.categories.slice(0, 3);
+  }
+  const host = document.querySelector(`[data-dish-cat-chips="${dishId}"]`);
+  if (!host) return [];
+  return [...host.querySelectorAll(".cat-selected-chip")].map(b => b.dataset.cat).filter(Boolean).slice(0, 3);
+}
+
 function showError(message) {
   document.getElementById("error").textContent = message || "";
 }
@@ -4831,13 +5765,17 @@ function onMobileSwitchToggle(dishId, checkbox) {
 }
 
 async function loadMenu() {
-  const res = await fetch("/api/menu");
+  if (!allAdminCategories.length) {
+    await loadCategories();
+  }
+  const res = await fetch("/api/menu?_t=" + Date.now(), { cache: "no-store" });
   const menu = await res.json();
+  currentMenuDishes = Array.isArray(menu) ? menu : [];
   const tbody = document.getElementById("menuBody");
   const mobileList = document.getElementById("menuMobileList");
 
   if (tbody) {
-    tbody.innerHTML = menu.map(d => `
+    tbody.innerHTML = currentMenuDishes.map(d => `
       <tr data-dish-id="${d.id}">
         <td style="font-weight:700;">
           <div>${esc(d.name)}</div>
@@ -4846,6 +5784,7 @@ async function loadMenu() {
         <td style="min-width:160px;">
           <input type="text" class="input-box alias" placeholder="Same as AI name" value="${esc(d.alias || "")}" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})" title="Customer-facing alias name">
         </td>
+        <td style="min-width:180px;">${renderDishCategoryBox(d.id, d.categories)}</td>
         <td><textarea class="input-box desc" maxlength="500" rows="2" placeholder="What one serving looks like" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">${esc(d.description || "")}</textarea></td>
         <td style="width:110px;"><input type="number" min="1" max="100" step="1" class="input-box pieces" required value="${d.pieces_per_portion || 1}" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></td>
         <td style="width:190px;"><div class="price-stepper-wrap"><button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, -1)" aria-label="Decrease price by 1">−</button><div class="input-with-prefix"><span class="currency-prefix">RM</span><input type="number" step="1" min="0" value="${Math.round(d.price) == d.price ? Number(d.price).toFixed(0) : Number(d.price).toFixed(2)}" data-id="${d.id}" class="input-box prefix-input price" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})"></div><button type="button" class="price-step-btn" onclick="stepDishPrice(${d.id}, 1)" aria-label="Increase price by 1">+</button></div></td>
@@ -4856,15 +5795,15 @@ async function loadMenu() {
     const noRow = document.createElement("tr");
     noRow.id = "menuNoMatchRow";
     noRow.style.display = "none";
-    noRow.innerHTML = '<td colspan="7" style="text-align:center; padding:2.5rem 1rem; color:#94a3b8; font-style:italic;">No dishes match your search query.</td>';
+    noRow.innerHTML = '<td colspan="8" style="text-align:center; padding:2.5rem 1rem; color:#94a3b8; font-style:italic;">No dishes match your search query.</td>';
     tbody.appendChild(noRow);
   }
 
   if (mobileList) {
-    if (!menu.length) {
+    if (!currentMenuDishes.length) {
       mobileList.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:2rem;">No menu items added yet.</div>';
     } else {
-      mobileList.innerHTML = menu.map(d => `
+      mobileList.innerHTML = currentMenuDishes.map(d => `
         <div class="menu-mobile-card" data-dish-id="${d.id}">
           <div class="mmc-head">
             <div>
@@ -4883,6 +5822,9 @@ async function loadMenu() {
             <span>Customer Alias (Human Friendly Name)</span>
             <input type="text" class="input-box alias" placeholder="Same as AI name" value="${esc(d.alias || "")}" data-id="${d.id}" oninput="triggerAutoSaveDish(${d.id})" onblur="flushAutoSaveDish(${d.id})">
           </label>
+          <div style="margin-top:0.45rem;">
+            ${renderDishCategoryBox(d.id, d.categories)}
+          </div>
           <div class="mmc-grid">
             <label class="card-input-label">
               <span>Price</span>
@@ -4939,25 +5881,29 @@ function filterMenuItems() {
   let matchCount = 0;
 
   rows.forEach(row => {
+    const dishId = row.dataset.dishId;
     const dishName = (row.querySelector("td:first-child div:first-child")?.textContent || "").toLowerCase();
     const aliasInp = row.querySelector(".alias");
     const descInp = row.querySelector(".desc");
     const aliasVal = (aliasInp ? aliasInp.value : "").toLowerCase();
     const descVal = (descInp ? descInp.value : "").toLowerCase();
+    const catVal = getDishSelectedCategories(dishId).join(" ").toLowerCase();
     
-    const isMatch = !query || dishName.includes(query) || aliasVal.includes(query) || descVal.includes(query);
+    const isMatch = !query || dishName.includes(query) || aliasVal.includes(query) || descVal.includes(query) || catVal.includes(query);
     row.style.display = isMatch ? "" : "none";
     if (isMatch) matchCount++;
   });
 
   cards.forEach(card => {
+    const dishId = card.dataset.dishId;
     const dishName = (card.querySelector(".mmc-name")?.textContent || "").toLowerCase();
     const aliasInp = card.querySelector(".alias");
     const descInp = card.querySelector(".desc");
     const aliasVal = (aliasInp ? aliasInp.value : "").toLowerCase();
     const descVal = (descInp ? descInp.value : "").toLowerCase();
+    const catVal = getDishSelectedCategories(dishId).join(" ").toLowerCase();
     
-    const isMatch = !query || dishName.includes(query) || aliasVal.includes(query) || descVal.includes(query);
+    const isMatch = !query || dishName.includes(query) || aliasVal.includes(query) || descVal.includes(query) || catVal.includes(query);
     card.style.display = isMatch ? "" : "none";
   });
 
@@ -5101,6 +6047,7 @@ async function saveDishById(dishId) {
     price: parseFloat(priceVal.toFixed(2)),
     description: descInput ? descInput.value : "",
     pieces_per_portion: piecesInput ? piecesInput.value : "1",
+    categories: getDishSelectedCategories(dishId),
     available: availInput ? availInput.checked : true
   }];
 
@@ -5150,6 +6097,7 @@ async function addDish(event) {
     price: priceVal.toFixed(2),
     description: document.getElementById("newDescription").value,
     pieces_per_portion: document.getElementById("newPieces").value,
+    categories: newDishSelectedCategories,
     available: true
   };
   const res = await fetch("/api/menu/item", {
@@ -5167,6 +6115,8 @@ async function addDish(event) {
   document.getElementById("newPrice").value = "1";
   document.getElementById("newDescription").value = "";
   document.getElementById("newPieces").value = "1";
+  newDishSelectedCategories = [];
+  renderNewDishCategoriesPicker();
   showToast("Dish added to menu");
   const panel = document.getElementById("addDishPanel");
   if (panel && window.innerWidth <= 767) {
@@ -5223,6 +6173,7 @@ async function saveMenu() {
       price: parseFloat(pVal.toFixed(2)),
       description: r.querySelector(".desc") ? r.querySelector(".desc").value : "",
       pieces_per_portion: r.querySelector(".pieces") ? r.querySelector(".pieces").value : "1",
+      categories: getDishSelectedCategories(id),
       available: r.querySelector(".avail") ? r.querySelector(".avail").checked : true
     };
   });
@@ -5499,6 +6450,7 @@ async function refreshAll() {
   await Promise.all([
     loadAdminUser(),
     loadBills(),
+    loadCategories(),
     loadMenu(),
     loadAuditLogs(),
     loadArchives(),

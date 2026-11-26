@@ -26,7 +26,7 @@ from pathlib import Path
 from urllib.parse import quote
 from dotenv import dotenv_values
 
-from .db import ROOT, ENV_DIR, SessionLocal, init_db, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, FailedScan, BillRefund, Feedback, AdminUser, AdminSession, Voucher, next_bill_number
+from .db import ROOT, ENV_DIR, SessionLocal, init_db, Category, Dish, Cashier, AuditLog, SessionBill, ClientCooldown, ScanAttempt, FailedScan, BillRefund, Feedback, AdminUser, AdminSession, Voucher, next_bill_number
 from .auth import hash_password, verify_password, create_admin_session, get_current_admin, require_admin_api, revoke_session, SESSION_COOKIE_NAME, SESSION_DURATION_DAYS, get_or_create_setup_token, burn_setup_token
 from .schemas import Dish as DishSchema, BillResponse, BillItem, ErrorResponse
 from .ai_service import recognize_food, RecognitionError
@@ -298,6 +298,107 @@ def _bill_quantity(raw_quantity: float, pieces_per_portion):
         return pieces, None
     return math.ceil(pieces / group), pieces
 
+def _guess_category_icon(name: str) -> str:
+    low = (name or "").strip().lower()
+    if any(k in low for k in ("coffee", "espresso", "latte", "tea", "mocha", "cappuccino", "kopi", "teh")):
+        return "local_cafe"
+    if any(k in low for k in ("bakery", "pastry", "pastries", "bread", "croissant", "scone", "bun", "roti")):
+        return "bakery_dining"
+    if any(k in low for k in ("sandwich", "bowl", "lunch", "panini", "toast", "wrap", "salad")):
+        return "lunch_dining"
+    if any(k in low for k in ("cold", "drink", "beverage", "juice", "soda", "smoothie", "water", "air", "minuman", "jus")):
+        return "glass_cup"
+    if any(k in low for k in ("dessert", "sweet", "cake", "cookie", "ice cream", "brownie", "kuih", "pencuci mulut")):
+        return "cake"
+    if any(k in low for k in ("rice", "nasi", "main", "dinner", "meal", "noodle", "mee", "pasta", "ayam", "lauk", "kari")):
+        return "dinner_dining"
+    if any(k in low for k in ("side", "snack", "add", "fries", "tapas", "appetizer", "keropok")):
+        return "tapas"
+    if any(k in low for k in ("breakfast", "sarapan", "pagi")):
+        return "bakery_dining"
+    if any(k in low for k in ("set", "combo")):
+        return "set_meal"
+    return "restaurant"
+
+def _parse_dish_categories(raw_val) -> list[str]:
+    if not raw_val:
+        return []
+    items = []
+    if isinstance(raw_val, list):
+        items = [str(x).strip() for x in raw_val if str(x).strip()]
+    else:
+        s = str(raw_val).strip()
+        if s.startswith("["):
+            try:
+                parsed = json.loads(s)
+                if isinstance(parsed, list):
+                    items = [str(x).strip() for x in parsed if str(x).strip()]
+            except Exception:
+                items = [x.strip() for x in re.split(r"[;|,]", s) if x.strip()]
+        else:
+            items = [x.strip() for x in re.split(r"[;|,]", s) if x.strip()]
+    deduped = []
+    seen = set()
+    for c in items:
+        low = c.casefold()
+        if low not in seen:
+            seen.add(low)
+            deduped.append(c)
+    return deduped[:3]
+
+def _clean_categories(raw_val, db: Session = None, auto_create: bool = False) -> list[str]:
+    if not raw_val:
+        return []
+    if isinstance(raw_val, list):
+        raw_list = [str(x).strip() for x in raw_val if str(x).strip()]
+    else:
+        s = str(raw_val).strip()
+        if s.startswith("["):
+            try:
+                parsed = json.loads(s)
+                raw_list = [str(x).strip() for x in parsed if str(x).strip()] if isinstance(parsed, list) else []
+            except Exception:
+                raw_list = [x.strip() for x in re.split(r"[;|,]", s) if x.strip()]
+        else:
+            raw_list = [x.strip() for x in re.split(r"[;|,]", s) if x.strip()]
+
+    deduped = []
+    seen = set()
+    for c in raw_list:
+        low = c.casefold()
+        if low not in seen:
+            seen.add(low)
+            deduped.append(c)
+
+    if len(deduped) > 3:
+        raise HTTPException(status_code=400, detail="Each menu item can be tagged with at most 3 categories")
+
+    if db is not None and deduped:
+        existing_cats = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc()).all()
+        cat_map = {c.name.casefold(): c.name for c in existing_cats}
+        max_order = max((c.sort_order or 0 for c in existing_cats), default=-1)
+        resolved = []
+        for c_name in deduped:
+            low = c_name.casefold()
+            if low in cat_map:
+                resolved.append(cat_map[low])
+            elif auto_create:
+                max_order += 1
+                new_cat = Category(
+                    name=c_name,
+                    icon=_guess_category_icon(c_name),
+                    sort_order=max_order,
+                )
+                db.add(new_cat)
+                db.flush()
+                cat_map[low] = new_cat.name
+                resolved.append(new_cat.name)
+            else:
+                resolved.append(c_name)
+        return resolved
+
+    return deduped
+
 def _dish_json(dish: Dish) -> dict:
     return {
         "id": dish.id,
@@ -309,6 +410,7 @@ def _dish_json(dish: Dish) -> dict:
         "unit": dish.unit,
         "description": dish.description or "",
         "pieces_per_portion": dish.pieces_per_portion or 1,
+        "categories": _parse_dish_categories(getattr(dish, "categories", "[]")),
     }
 
 def _dish_alias_map(db: Session = None) -> dict[str, str]:
@@ -1345,6 +1447,167 @@ async def payment_success_page(request: Request, session: str = "", db: Session 
             set_unclaimed_points_cookie(resp, request, bill.guest_session_id or gsid, bill.id, pts_net)
     return resp
 
+@app.get("/api/categories")
+def get_categories(db: Session = Depends(get_db)):
+    cats = db.query(Category).order_by(Category.sort_order.asc(), Category.id.asc()).all()
+    dishes = db.query(Dish).all()
+    total_counts: dict[str, int] = {}
+    avail_counts: dict[str, int] = {}
+    for d in dishes:
+        d_cats = _parse_dish_categories(getattr(d, "categories", "[]"))
+        for c_name in d_cats:
+            low = c_name.casefold()
+            total_counts[low] = total_counts.get(low, 0) + 1
+            if d.available:
+                avail_counts[low] = avail_counts.get(low, 0) + 1
+
+    return [
+        {
+            "id": c.id,
+            "name": c.name,
+            "icon": c.icon or _guess_category_icon(c.name),
+            "sort_order": c.sort_order or 0,
+            "dish_count": total_counts.get(c.name.casefold(), 0),
+            "available_count": avail_counts.get(c.name.casefold(), 0),
+        }
+        for c in cats
+    ]
+
+@app.post("/api/admin/categories")
+def add_category(payload: dict, request: Request, db: Session = Depends(get_db)):
+    current_admin = require_admin_api(request, db)
+    name = str(payload.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Category name is required")
+    if len(name) > 60:
+        raise HTTPException(status_code=400, detail="Category name must be 60 characters or less")
+    existing = db.query(Category).filter(func.lower(Category.name) == name.casefold()).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="A category with this name already exists")
+
+    icon = str(payload.get("icon") or "").strip() or _guess_category_icon(name)
+    max_sort = db.query(func.max(Category.sort_order)).scalar()
+    next_sort = (int(max_sort) + 1) if max_sort is not None else 0
+
+    cat = Category(name=name, icon=icon, sort_order=next_sort)
+    db.add(cat)
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="CATEGORY_ADD",
+        details=f"Admin '{current_admin.username}' added category '{cat.name}'"
+    ))
+    db.commit()
+    db.refresh(cat)
+    return {
+        "id": cat.id,
+        "name": cat.name,
+        "icon": cat.icon,
+        "sort_order": cat.sort_order,
+        "dish_count": 0,
+        "available_count": 0,
+    }
+
+@app.put("/api/admin/categories/reorder")
+def reorder_categories(payload: dict, request: Request, db: Session = Depends(get_db)):
+    current_admin = require_admin_api(request, db)
+    cat_ids = payload.get("category_ids") or payload.get("ids") or []
+    if not isinstance(cat_ids, list):
+        raise HTTPException(status_code=400, detail="category_ids must be a list of category IDs")
+
+    cats = db.query(Category).all()
+    cat_map = {c.id: c for c in cats}
+    ordered_names = []
+    idx = 0
+    seen_ids = set()
+    for raw_id in cat_ids:
+        try:
+            cid = int(raw_id)
+        except (TypeError, ValueError):
+            continue
+        if cid in cat_map and cid not in seen_ids:
+            seen_ids.add(cid)
+            cat_map[cid].sort_order = idx
+            ordered_names.append(cat_map[cid].name)
+            idx += 1
+
+    for c in sorted(cats, key=lambda x: (x.sort_order or 0, x.id)):
+        if c.id not in seen_ids:
+            c.sort_order = idx
+            ordered_names.append(c.name)
+            idx += 1
+
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="CATEGORY_REORDER",
+        details=f"Admin '{current_admin.username}' reordered categories: {', '.join(ordered_names)}"
+    ))
+    db.commit()
+    return {"ok": True, "categories": get_categories(db)}
+
+@app.put("/api/admin/categories/{cat_id}")
+def update_category(cat_id: int, payload: dict, request: Request, db: Session = Depends(get_db)):
+    current_admin = require_admin_api(request, db)
+    cat = db.query(Category).filter(Category.id == cat_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    old_name = cat.name
+    new_name = str(payload.get("name") if "name" in payload else cat.name).strip()
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Category name cannot be empty")
+    if new_name.casefold() != old_name.casefold():
+        dup = db.query(Category).filter(func.lower(Category.name) == new_name.casefold(), Category.id != cat_id).first()
+        if dup:
+            raise HTTPException(status_code=409, detail="Another category with this name already exists")
+
+    cat.name = new_name
+    if "icon" in payload and str(payload.get("icon") or "").strip():
+        cat.icon = str(payload.get("icon")).strip()
+
+    if old_name != new_name:
+        for d in db.query(Dish).all():
+            d_cats = _parse_dish_categories(getattr(d, "categories", "[]"))
+            updated_cats = [new_name if c.casefold() == old_name.casefold() else c for c in d_cats]
+            if updated_cats != d_cats:
+                d.categories = json.dumps(updated_cats)
+
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="CATEGORY_UPDATE",
+        details=f"Admin '{current_admin.username}' updated category '{old_name}' -> '{new_name}'"
+    ))
+    db.commit()
+    return {"ok": True, "id": cat.id, "name": cat.name, "icon": cat.icon, "sort_order": cat.sort_order}
+
+@app.delete("/api/admin/categories/{cat_id}")
+def delete_category(cat_id: int, request: Request, db: Session = Depends(get_db)):
+    current_admin = require_admin_api(request, db)
+    cat = db.query(Category).filter(Category.id == cat_id).first()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Category not found")
+
+    cat_name = cat.name
+    removed_from_count = 0
+    for d in db.query(Dish).all():
+        d_cats = _parse_dish_categories(getattr(d, "categories", "[]"))
+        filtered = [c for c in d_cats if c.casefold() != cat_name.casefold()]
+        if len(filtered) != len(d_cats):
+            d.categories = json.dumps(filtered)
+            removed_from_count += 1
+
+    db.delete(cat)
+    db.add(AuditLog(
+        cashier_id=current_admin.id,
+        admin_username=current_admin.username,
+        action="CATEGORY_DELETE",
+        details=f"Admin '{current_admin.username}' deleted category '{cat_name}' (untagged from {removed_from_count} menu item(s))"
+    ))
+    db.commit()
+    return {"status": "deleted", "id": cat_id, "name": cat_name}
+
 @app.get("/api/menu")
 def get_menu(db: Session = Depends(get_db)):
     dishes = db.query(Dish).all()
@@ -1374,6 +1637,9 @@ def update_menu(dishes: List[dict], request: Request, db: Session = Depends(get_
                 dish.description = _clean_description(d.get("description"))
             if "pieces_per_portion" in d:
                 dish.pieces_per_portion = _clean_pieces(d.get("pieces_per_portion"))
+            if "categories" in d:
+                cleaned_cats = _clean_categories(d.get("categories"), db=db, auto_create=True)
+                dish.categories = json.dumps(cleaned_cats)
     db.add(AuditLog(
         cashier_id=current_admin.id,
         admin_username=current_admin.username,
@@ -1403,6 +1669,7 @@ def add_menu_item(payload: dict, request: Request, db: Session = Depends(get_db)
         raise HTTPException(status_code=409, detail="A dish with this name already exists")
     unit = str(payload.get("unit") or "portion").strip() or "portion"
     alias = str(payload.get("alias") or "").strip()
+    cleaned_cats = _clean_categories(payload.get("categories"), db=db, auto_create=True)
     dish = Dish(
         name=name,
         alias=alias,
@@ -1411,13 +1678,15 @@ def add_menu_item(payload: dict, request: Request, db: Session = Depends(get_db)
         unit=unit,
         description=_clean_description(payload.get("description")),
         pieces_per_portion=_clean_pieces(payload.get("pieces_per_portion")),
+        categories=json.dumps(cleaned_cats),
     )
     db.add(dish)
+    cat_info = f" [Categories: {', '.join(cleaned_cats)}]" if cleaned_cats else ""
     db.add(AuditLog(
         cashier_id=current_admin.id,
         admin_username=current_admin.username,
         action="MENU_ADD",
-        details=f"Admin '{current_admin.username}' added dish '{dish.name}' (RM {dish.price:.2f})"
+        details=f"Admin '{current_admin.username}' added dish '{dish.name}' (RM {dish.price:.2f}){cat_info}"
     ))
     db.commit()
     db.refresh(dish)
@@ -1447,15 +1716,17 @@ def export_admin_menu_csv(request: Request, db: Session = Depends(get_db)):
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["Name", "Alias", "Price", "Pieces", "Available", "Description"])
+    writer.writerow(["Name", "Alias", "Price", "Categories", "Pieces", "Available", "Description"])
     for d in dishes:
         p_val = f"{d.price:.2f}" if d.price is not None else "0.00"
         avail_str = "Yes" if d.available else "No"
         pieces_val = d.pieces_per_portion if d.pieces_per_portion is not None else 1
+        cats_str = "; ".join(_parse_dish_categories(getattr(d, "categories", "[]")))
         writer.writerow([
             d.name or "",
             d.alias or "",
             p_val,
+            cats_str,
             pieces_val,
             avail_str,
             d.description or "",
@@ -1520,6 +1791,8 @@ async def import_admin_menu_csv(
             col_map["name"] = idx
         elif h in ("alias", "customer alias", "display name") and "alias" not in col_map:
             col_map["alias"] = idx
+        elif h in ("categories", "category", "tags", "tag") and "categories" not in col_map:
+            col_map["categories"] = idx
         elif h in ("price", "price (rm)", "price rm", "rm", "cost") and "price" not in col_map:
             col_map["price"] = idx
         elif h in ("pieces", "piece", "pieces per portion", "pieces / portion", "portion", "qty", "count") and "pieces" not in col_map:
@@ -1532,7 +1805,7 @@ async def import_admin_menu_csv(
     if "name" not in col_map:
         raise HTTPException(
             status_code=400,
-            detail="CSV is missing the 'Name' column header. Required column: Name (optional: Alias, Price, Pieces, Available, Description)."
+            detail="CSV is missing the 'Name' column header. Required column: Name (optional: Alias, Price, Categories, Pieces, Available, Description)."
         )
 
     new_dishes = []
@@ -1589,6 +1862,9 @@ async def import_admin_menu_csv(
         if len(desc_raw) > 500:
             desc_raw = desc_raw[:500]
 
+        cats_raw = get_val("categories")
+        cleaned_cats = _clean_categories(cats_raw, db=db, auto_create=True)
+
         dish = Dish(
             name=name,
             alias=alias,
@@ -1597,6 +1873,7 @@ async def import_admin_menu_csv(
             unit="portion",
             description=desc_raw,
             pieces_per_portion=pieces_val,
+            categories=json.dumps(cleaned_cats),
         )
         new_dishes.append(dish)
 
