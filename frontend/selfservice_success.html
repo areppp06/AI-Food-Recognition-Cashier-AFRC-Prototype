@@ -144,7 +144,8 @@
               <div class="flex items-center gap-3 text-left bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-900">
                 <span class="material-symbols-outlined text-emerald-600 text-[26px] shrink-0">verified</span>
                 <div class="text-sm sm:text-base font-extrabold leading-snug">
-                  ${Number(data.points || 0)}pts Berjaya dikreditkan ke <span class="text-emerald-700 break-all">${esc(data.email)}</span>
+                  <div>${Number(data.points || 0)}pts Berjaya dikreditkan ke</div>
+                  <div class="text-emerald-700 break-all">${esc(data.email)}</div>
                 </div>
               </div>
             `;
@@ -186,7 +187,8 @@
             <div class="flex items-center gap-3 text-left bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-emerald-900">
               <span class="material-symbols-outlined text-emerald-600 text-[26px] shrink-0">verified</span>
               <div class="text-sm sm:text-base font-extrabold leading-snug">
-                ${pts}pts Berjaya dikreditkan ke <span class="text-emerald-700 break-all">${esc(bill.points_claimed_email)}</span>
+                <div>${pts}pts Berjaya dikreditkan ke</div>
+                <div class="text-emerald-700 break-all">${esc(bill.points_claimed_email)}</div>
               </div>
             </div>
           </div>`;
