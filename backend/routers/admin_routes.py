@@ -146,6 +146,7 @@ def get_admin_analytics(
     period: str = "",
     month: str = "",
     quarter: str = "",
+    channel: str = "all",
     db: Session = Depends(get_db),
 ):
     require_admin_api(request, db)
@@ -156,6 +157,7 @@ def get_admin_analytics(
         period=period,
         month=month,
         quarter=quarter,
+        channel=channel,
     )
     return JSONResponse(content=data, headers=NO_CACHE_HEADERS)
 
@@ -167,6 +169,7 @@ def export_admin_sales_csv(
     period: str = "",
     month: str = "",
     quarter: str = "",
+    channel: str = "all",
     db: Session = Depends(get_db),
 ):
     require_admin_api(request, db)
@@ -178,6 +181,7 @@ def export_admin_sales_csv(
         month=month,
         quarter=quarter,
         include_export_bills=True,
+        channel=channel,
     )
     summary = data["summary"]
     analytics = data["analytics"]

@@ -20,6 +20,8 @@ load_dotenv(ENV_DIR / "rate-limit.env")
 load_dotenv(ROOT / "rate-limit.env")
 load_dotenv(ENV_DIR / "curlec.env")
 load_dotenv(ROOT / "curlec.env")
+load_dotenv(ENV_DIR / "payment.env")
+load_dotenv(ROOT / "payment.env")
 load_dotenv(ENV_DIR / "loyalty.env")
 load_dotenv(ROOT / "loyalty.env")
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./afrc.db")
@@ -131,6 +133,33 @@ class SessionBill(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
     paid_at = Column(DateTime, nullable=True)
+
+class SelfServiceBill(Base):
+    __tablename__ = "selfservice_bills"
+    id = Column(String, primary_key=True)
+    bill_number = Column(String, default="", index=True)
+    items_json = Column(Text, default="[]")
+    food_subtotal = Column(Float, default=0.0)
+    voucher_id = Column(Integer, nullable=True)
+    voucher_code = Column(String, default="")
+    discount_amount = Column(Float, default=0.0)
+    total_amount = Column(Float, default=0.0)
+    status = Column(String, default="pending", index=True)  # pending, paid, failed, cancelled, void
+    void_reason = Column(String, default="")
+    receipt_email = Column(String, default="")
+    chip_purchase_id = Column(String, default="", index=True)
+    chip_checkout_url = Column(String, default="")
+    payment_method = Column(String, default="chip")
+    client_token = Column(String, default="")
+    device_id = Column(String, default="")
+    points_earned = Column(Integer, default=0)
+    points_status = Column(String, default="none")  # none, claimed, pending_email
+    points_claimed_by = Column(Integer, nullable=True)
+    points_claimed_email = Column(String, default="", index=True)
+    points_claimed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    paid_at = Column(DateTime, nullable=True, index=True)
 
 class ClientCooldown(Base):
     __tablename__ = "client_cooldowns"
@@ -296,6 +325,40 @@ def next_bill_number(db) -> str:
     max_seq = max((parse_bill_seq(r[0]) for r in rows if r and r[0]), default=0)
     return format_bill_number(max_seq + 1)
 
+
+def format_selfservice_bill_number(seq: int) -> str:
+    seq = max(1, int(seq))
+    prefix_idx, num = divmod(seq - 1, 999)
+    num += 1
+    c1 = chr(ord("A") + ((prefix_idx // (26 * 26)) % 26))
+    c2 = chr(ord("A") + ((prefix_idx // 26) % 26))
+    c3 = chr(ord("A") + (prefix_idx % 26))
+    return f"SS-{c1}{c2}{c3}-{num:03d}"
+
+
+def parse_selfservice_bill_seq(bill_number: str) -> int:
+    raw = str(bill_number or "").strip().upper()
+    if not raw.startswith("SS-"):
+        return 0
+    rest = raw[3:]
+    if "-" not in rest:
+        return 0
+    prefix, digits = rest.split("-", 1)
+    if len(prefix) != 3 or not prefix.isalpha() or not digits.isdigit():
+        return 0
+    p_idx = (
+        (ord(prefix[0]) - ord("A")) * 26 * 26
+        + (ord(prefix[1]) - ord("A")) * 26
+        + (ord(prefix[2]) - ord("A"))
+    )
+    return p_idx * 999 + int(digits)
+
+
+def next_selfservice_bill_number(db) -> str:
+    rows = db.query(SelfServiceBill.bill_number).all()
+    max_seq = max((parse_selfservice_bill_seq(r[0]) for r in rows if r and r[0]), default=0)
+    return format_selfservice_bill_number(max_seq + 1)
+
 def init_db():
     Base.metadata.create_all(bind=engine)
     with engine.begin() as conn:
@@ -369,6 +432,21 @@ def init_db():
         conn.exec_driver_sql(
             "CREATE INDEX IF NOT EXISTS idx_sessions_customer_user_id ON sessions (customer_user_id)"
         )
+        ss_columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(selfservice_bills)")]
+        if ss_columns:
+            for col_name, col_def in (
+                ("food_subtotal", "REAL DEFAULT 0.0"),
+                ("voucher_id", "INTEGER"),
+                ("voucher_code", "TEXT DEFAULT ''"),
+                ("discount_amount", "REAL DEFAULT 0.0"),
+                ("points_earned", "INTEGER DEFAULT 0"),
+                ("points_status", "TEXT DEFAULT 'none'"),
+                ("points_claimed_by", "INTEGER"),
+                ("points_claimed_email", "TEXT DEFAULT ''"),
+                ("points_claimed_at", "DATETIME"),
+            ):
+                if col_name not in ss_columns:
+                    conn.exec_driver_sql(f"ALTER TABLE selfservice_bills ADD COLUMN {col_name} {col_def}")
         conn.exec_driver_sql(
             "CREATE INDEX IF NOT EXISTS idx_sessions_guest_session_id ON sessions (guest_session_id)"
         )

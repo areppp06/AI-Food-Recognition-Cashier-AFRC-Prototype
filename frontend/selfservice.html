@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=5.0" name="viewport">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+  <meta content="web_dashboard" name="shell-type">
+  <title>Self-Checkout Kiosk</title>
+
+  <!-- Progressive Web App (PWA) Manifest & Meta -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Self-Checkout">
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/static/icons/favicon-64.png">
+  <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@600;700;800&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+  <style>
+    /* Rigid Kiosk Viewport: disable all overscroll / rubber-band bounce */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+      overscroll-behavior-x: none;
+      overscroll-behavior-y: none;
+      -webkit-overscroll-behavior: none;
+      touch-action: manipulation;
+    }
+    main > :first-child { margin-top: 0 !important; }
+    main > :last-child { margin-bottom: 0 !important; }
+
+    /* Strict scroll containment for inner scrollable panels */
+    .overflow-y-auto, .overflow-x-auto, #catalogContainer, #cartItemsContainer, #categoryScroll {
+      overscroll-behavior: contain;
+      overscroll-behavior-x: contain;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    ::-webkit-scrollbar { display: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes sandStream {
+      0%, 80% { stroke-dashoffset: 0; opacity: 0.95; }
+      85%, 100% { stroke-dashoffset: -12; opacity: 0; }
+    }
+    @keyframes sandTopDrain {
+      0% { transform: scaleY(1); opacity: 0.9; }
+      78%, 100% { transform: scaleY(0.15); opacity: 0.25; }
+    }
+    @keyframes sandBottomFill {
+      0% { transform: scaleY(0.2); opacity: 0.4; }
+      78%, 100% { transform: scaleY(1); opacity: 0.95; }
+    }
+    @keyframes hourglassFlip {
+      0%, 78% { transform: rotate(0deg); }
+      92%, 100% { transform: rotate(180deg); }
+    }
+    .pb-sandclock-svg { animation: hourglassFlip 3.2s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+    .pb-sand-top { transform-origin: 12px 11.5px; animation: sandTopDrain 3.2s ease-in-out infinite; }
+    .pb-sand-bottom { transform-origin: 12px 19.5px; animation: sandBottomFill 3.2s ease-in-out infinite; }
+    .pb-sand-stream { stroke-dasharray: 2 2; animation: sandStream 3.2s linear infinite; }
+    @keyframes wigglePulse {
+      0% { transform: translateX(0); box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.75); }
+      15% { transform: translateX(-6px); }
+      30% { transform: translateX(6px); }
+      45% { transform: translateX(-4px); }
+      60% { transform: translateX(4px); box-shadow: 0 0 0 10px rgba(234, 88, 12, 0); }
+      75% { transform: translateX(-2px); }
+      100% { transform: translateX(0); box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
+    }
+    .confirm-wiggle-pulse {
+      animation: wigglePulse 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+      border-color: #ea580c !important;
+      background-color: #fff7ed !important;
+      outline: 2px solid #ea580c !important;
+    }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary": "#ea580c",
+            "primary-hover": "#c2410c",
+            "primary-light": "#ffedd5",
+            "primary-container": "#f97316"
+          },
+          "fontFamily": {
+            "headline-lg": ["Plus Jakarta Sans", "sans-serif"],
+            "display": ["Plus Jakarta Sans", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "label-md": ["Inter", "sans-serif"],
+            "headline-sm": ["Plus Jakarta Sans", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"],
+            "currency-total": ["Plus Jakarta Sans", "sans-serif"],
+            "headline-md": ["Plus Jakarta Sans", "sans-serif"],
+            "label-sm": ["Inter", "sans-serif"],
+            "label-lg": ["Inter", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 font-body-md text-slate-900 antialiased">
+<div>
+  <main class="w-full bg-slate-50 min-h-screen">
+    <div class="flex flex-col w-full h-screen overflow-hidden select-none bg-slate-50 relative">
+
+      <!-- State Lock Overlay (Outside Operating Hours) -->
+      <div id="stateLockOverlay" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div id="stateLockContent" class="w-full max-w-md"></div>
+      </div>
+
+      <!-- Kiosk Inactivity Reset Warning Modal -->
+      <div id="idleWarningModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+          <div class="w-16 h-16 rounded-full bg-orange-50 text-orange-600 border border-orange-200 flex items-center justify-center mx-auto mb-4">
+            <span class="material-symbols-outlined text-[32px]">timer</span>
+          </div>
+          <h3 class="font-headline-md text-xl font-bold text-slate-900 mb-1">Are you still ordering?</h3>
+          <p class="text-xs text-slate-500 mb-5 leading-relaxed">
+            To prepare the kiosk for the next customer, this session will reset in <strong id="idleCountdownSec" class="text-orange-600 text-sm">15</strong> seconds.
+          </p>
+          <div class="flex gap-2">
+            <button type="button" onclick="cancelIdleTimeout()" class="flex-1 py-3 px-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm shadow-md transition-all active:scale-95">
+              Keep Ordering
+            </button>
+            <button type="button" onclick="forceIdleReset()" class="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-all active:scale-95">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PWA Install Prompt Banner (Floating Kiosk Card) -->
+      <div id="pwaInstallBanner" class="hidden fixed bottom-16 lg:bottom-5 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-40 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-orange-500/40 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div class="flex items-start gap-3">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-orange-600/25">
+            <span class="material-symbols-outlined text-[28px]">restaurant</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-1 mb-0.5">
+              <h4 class="font-headline-sm text-sm font-bold text-slate-900 truncate">Install Kiosk App</h4>
+              <button type="button" onclick="dismissPWAInstallPrompt()" class="w-6 h-6 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition-colors" title="Dismiss">
+                <span class="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-3 leading-snug">
+              Install this self-checkout kiosk on your device for instant full-screen ordering and quick offline-ready payments.
+            </p>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="triggerPWAInstall()" class="flex-1 py-2 px-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">download</span>
+                <span>Install App</span>
+              </button>
+              <button type="button" onclick="dismissPWAInstallPrompt()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-all">
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- iOS PWA Install Instruction Modal -->
+      <div id="pwaIOSInstallModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+          <div class="w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 border border-orange-200 flex items-center justify-center mx-auto mb-3">
+            <span class="material-symbols-outlined text-[32px]">touch_app</span>
+          </div>
+          <h3 class="font-headline-md text-lg font-bold text-slate-900 mb-1">Install on iPhone / iPad</h3>
+          <p class="text-xs text-slate-500 mb-4 leading-relaxed">
+            Safari doesn't support automatic prompt. Follow these 2 quick steps:
+          </p>
+          <div class="bg-slate-100 rounded-2xl p-3.5 mb-5 text-left text-xs space-y-2.5 border border-slate-200">
+            <div class="flex items-center gap-2.5 text-slate-800">
+              <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-600 font-bold text-xs flex items-center justify-center shrink-0">1</span>
+              <span>Tap the <strong>Share</strong> button <span class="material-symbols-outlined text-[16px] align-middle text-sky-400">ios_share</span> in Safari's toolbar.</span>
+            </div>
+            <div class="flex items-center gap-2.5 text-slate-800">
+              <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-600 font-bold text-xs flex items-center justify-center shrink-0">2</span>
+              <span>Scroll down and tap <strong>Add to Home Screen</strong> <span class="material-symbols-outlined text-[16px] align-middle text-slate-800">add_box</span>.</span>
+            </div>
+          </div>
+          <button type="button" onclick="closeIOSInstallModal()" class="w-full py-2.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition-all active:scale-95">
+            Got It
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-1 w-full h-full overflow-hidden relative">
+        <!-- LEFT & CENTER: Product Catalog & Menu Actions -->
+        <section class="flex-1 flex flex-col min-w-0 bg-slate-50 h-full overflow-hidden">
+          <!-- Top Functional Bar: Categories & View Filters -->
+          <div class="flex flex-col gap-2.5 p-4 bg-white border-b border-slate-200 shrink-0 shadow-sm z-10">
+            <div class="flex items-center justify-between gap-3">
+              <!-- Horizontal Scrollable Category Pills -->
+              <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="categoryScroll">
+                <button data-cat="__all__" class="cat-pill active flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 text-white font-medium text-xs transition-all whitespace-nowrap shadow-sm shadow-orange-600/25">
+                  <span class="material-symbols-outlined text-[18px]">local_mall</span>
+                  <span>All Items</span>
+                  <span id="allItemsCountBadge" class="ml-1 px-1.5 py-0.5 rounded-full bg-white/20 text-[10px] font-bold">0</span>
+                </button>
+              </div>
+              <!-- Layout & Filter Controls -->
+              <div class="flex items-center gap-1.5 shrink-0 pl-2">
+                <button id="pwaInstallHeaderBtn" onclick="triggerPWAInstall()" class="hidden h-9 px-3 rounded-xl bg-orange-50 hover:bg-orange-500/25 text-orange-600 border border-orange-200 flex items-center gap-1.5 text-xs font-bold transition-all shadow-2xs" title="Install Kiosk App">
+                  <span class="material-symbols-outlined text-[18px]">download_for_offline</span>
+                  <span class="hidden sm:inline">Install App</span>
+                </button>
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <button id="btnGridView" onclick="setCatalogViewMode('grid')" class="w-8 h-8 rounded-lg bg-orange-600 text-white shadow-sm flex items-center justify-center font-semibold transition-all" title="Grid View">
+                    <span class="material-symbols-outlined text-[18px]">grid_view</span>
+                  </button>
+                  <button id="btnListView" onclick="setCatalogViewMode('list')" class="w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors" title="List View">
+                    <span class="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+                  </button>
+                </div>
+                <button id="btnToggleFilter" onclick="toggleFilterBar()" class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-white border border-slate-200 flex items-center gap-1.5 text-xs font-semibold transition-all">
+                  <span class="material-symbols-outlined text-[18px]">filter_list</span>
+                  <span class="hidden xl:inline">Filter</span>
+                </button>
+                <button id="btnHeaderRefresh" onclick="location.reload()" class="h-9 w-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-white border border-slate-200 flex items-center justify-center transition-all shadow-2xs active:scale-95" title="Refresh Page">
+                  <span class="material-symbols-outlined text-[18px]">refresh</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Collapsible Search & Sort Filter Bar -->
+            <div id="filterBarPanel" class="hidden pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+              <div class="relative flex-1 min-w-[200px]">
+                <span class="material-symbols-outlined text-[18px] text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">search</span>
+                <input id="catalogSearchInput" type="text" oninput="renderProductCatalog()" placeholder="Search menu items or description..." class="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-100 focus:bg-white focus:border-orange-500 focus:ring-0 text-slate-900 placeholder-slate-400">
+                <button id="btnClearSearch" onclick="clearCatalogSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
+                  <span class="material-symbols-outlined text-[16px]">close</span>
+                </button>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Sort:</span>
+                <select id="catalogSortSelect" onchange="renderProductCatalog()" class="text-xs font-medium rounded-xl border border-slate-200 bg-slate-100 py-1.5 pl-2.5 pr-7 text-slate-800 focus:border-orange-500 focus:ring-0">
+                  <option value="default">Recommended</option>
+                  <option value="price_asc">Price: Low to High</option>
+                  <option value="price_desc">Price: High to Low</option>
+                  <option value="name_asc">Name: A to Z</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scrollable Product Catalog Grid -->
+          <div class="flex-1 overflow-y-auto p-4 pb-24 lg:pb-4 custom-scroll">
+            <div id="catalogGrid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5">
+              <!-- Populated dynamically -->
+            </div>
+
+            <!-- Discrete Kiosk Footer Links -->
+            <footer class="mt-8 pt-4 border-t border-slate-200 text-center text-[11px] text-slate-500 space-y-1.5">
+              <div class="flex flex-wrap justify-center items-center gap-x-2.5 gap-y-1">
+                <a href="/pricelist" class="hover:text-orange-600 transition-colors font-medium">Menu Prices</a>
+                <span>&bull;</span>
+                <a href="/about" class="hover:text-orange-600 transition-colors font-medium">About Us</a>
+                <span>&bull;</span>
+                <a href="/contact" class="hover:text-orange-600 transition-colors font-medium">Contact Us</a>
+                <span>&bull;</span>
+                <a href="/privacy" class="hover:text-orange-600 transition-colors font-medium">Privacy Policy</a>
+                <span>&bull;</span>
+                <a href="/terms" class="hover:text-orange-600 transition-colors font-medium">Terms &amp; Conditions</a>
+                <span>&bull;</span>
+                <a href="/payment-policy" class="hover:text-orange-600 transition-colors font-medium">Payment Policy</a>
+              </div>
+              <div>
+                &copy; 2026 <span id="footerBrandName">Self-Service e-Cashier</span> &bull; Self-Checkout Kiosk
+              </div>
+            </footer>
+          </div>
+        </section>
+
+        <!-- Mobile Cart Backdrop -->
+        <div id="mobileCartBackdrop" onclick="toggleMobileCart(false)" class="hidden lg:hidden fixed inset-0 bg-black/65 z-30"></div>
+
+        <!-- RIGHT: Sticky Order Cart & Tender Sidebar -->
+        <aside id="cartSidebar" class="fixed lg:static inset-y-0 right-0 translate-x-full lg:translate-x-0 transition-transform duration-200 w-full max-w-[410px] xl:w-[440px] shrink-0 bg-white border-l border-slate-200 flex flex-col h-full shadow-2xl z-40">
+          <!-- Mobile Drawer Close Header -->
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white/95">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-[20px] text-orange-500">shopping_bag</span>
+              <span class="font-headline-sm text-sm font-bold text-slate-900">Current Order</span>
+              <span id="cartHeaderCountBadge" class="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-600 border border-orange-200 font-bold text-[11px]">0</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnClearCart" onclick="clearCart()" class="hidden text-xs font-semibold text-slate-500 hover:text-red-600 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10">
+                Clear All
+              </button>
+              <button onclick="toggleMobileCart(false)" class="lg:hidden w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cart Header & Line Items List -->
+          <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-4 space-y-2.5 custom-scroll">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Financial Calculation Summary Card -->
+          <div class="p-4 bg-white border-t border-slate-200 flex flex-col gap-2.5 shrink-0">
+            <!-- Voucher Code Input -->
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5">
+                <div class="relative flex-1">
+                  <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px]">confirmation_number</span>
+                  <input id="voucherCodeInput" type="text" placeholder="Voucher code (optional)" onkeydown="if(event.key==='Enter'){event.preventDefault();applySelfServiceVoucher();}" class="w-full h-9 pl-8 pr-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold uppercase text-slate-900 placeholder-slate-400 placeholder:normal-case focus:bg-slate-50 focus:border-orange-500 outline-none transition-all">
+                </div>
+                <button id="voucherApplyBtn" type="button" onclick="applySelfServiceVoucher()" class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-orange-600 border border-slate-200 hover:border-orange-500 text-xs font-bold text-slate-800 hover:text-white transition-colors shrink-0">
+                  Apply
+                </button>
+                <button id="voucherRemoveBtn" type="button" onclick="removeSelfServiceVoucher()" class="hidden h-9 px-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-xs font-bold text-red-600 transition-colors shrink-0" title="Remove voucher">
+                  &times;
+                </button>
+              </div>
+              <p id="voucherStatusMsg" class="hidden text-[11px] font-semibold px-1"></p>
+            </div>
+
+            <div class="flex justify-between items-center text-slate-500 text-sm">
+              <span id="cartSubtotalLabel">Subtotal (0 items)</span>
+              <span id="cartSubtotalVal" class="font-semibold text-slate-900 tabular-nums">RM 0.00</span>
+            </div>
+
+            <div id="cartDiscountRow" class="hidden flex justify-between items-center text-emerald-600 text-xs font-bold">
+              <span id="cartDiscountLabel">Voucher Discount</span>
+              <span id="cartDiscountVal" class="tabular-nums">-RM 0.00</span>
+            </div>
+
+            <p id="checkoutErrorMsg" class="hidden text-xs font-semibold text-red-600 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-1.5 text-center"></p>
+
+            <!-- Big Master Checkout CTA -->
+            <div class="flex justify-between items-baseline pt-2 border-t border-slate-200">
+              <span class="font-bold text-slate-800 text-base">Your Total Is:</span>
+              <span id="cartTotalVal" class="font-currency-total text-2xl font-black text-orange-600 tabular-nums">RM 0.00</span>
+            </div>
+
+            <!-- Optional Email Receipt Field -->
+            <div id="emailReceiptContainer" class="space-y-1.5 pt-1">
+              <label for="customerEmailInput" class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <span>Email Receipt</span>
+                <span class="text-[10px] text-slate-500 font-semibold lowercase tracking-normal">optional</span>
+              </label>
+              <div class="flex h-11 rounded-xl bg-slate-100 border border-slate-200 focus-within:bg-white focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 overflow-hidden transition-all">
+                <div class="relative flex-1 min-w-0">
+                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">mail</span>
+                  <input id="customerEmailInput" type="text" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="E-mel" oninput="this.value=this.value.replace(/@.*/g,'')" onkeydown="if(event.key==='@'){event.preventDefault();}" class="w-full h-full pl-9 pr-2 bg-transparent text-xs font-medium text-slate-900 placeholder-slate-400 outline-none">
+                </div>
+                <span class="px-2.5 bg-slate-200/70 border-l border-slate-200 text-slate-600 text-xs font-bold flex items-center shrink-0 select-none">@gmail.com</span>
+              </div>
+            </div>
+
+            <!-- Confirmation Checkbox under Your Total Is -->
+            <label id="confirmCheckboxContainer" for="confirmItemsCheckbox" class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-200 cursor-pointer select-none transition-all duration-200">
+              <input id="confirmItemsCheckbox" type="checkbox" onchange="onConfirmCheckboxChange()" class="mt-0.5 w-4 h-4 rounded border-slate-300 bg-white text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0">
+              <span class="text-sm font-extrabold text-slate-900 leading-snug">
+                Saya pasti tidak tersalah masukkan menu yang diambil
+              </span>
+            </label>
+
+            <button onclick="submitCheckoutOrder()" class="w-full h-14 rounded-2xl bg-orange-600 hover:bg-orange-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed text-white flex items-center justify-between px-5 transition-all shadow-lg shadow-orange-600/25 active:scale-[0.98] group relative overflow-hidden" id="tenderBtn" disabled>
+              <!-- Normal Content -->
+              <div id="tenderBtnNormalContent" class="w-full flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-[24px]">payments</span>
+                  </span>
+                  <span id="tenderBtnLabel" class="font-headline-md text-xl font-black uppercase tracking-wider text-white">PAY NOW</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1.5 opacity-85 group-hover:opacity-100 transition-opacity">
+                    <span class="material-symbols-outlined text-[20px]" title="Tap to Pay / NFC">contactless</span>
+                    <span class="material-symbols-outlined text-[20px]" title="Credit/Debit Card">credit_card</span>
+                    <span class="material-symbols-outlined text-[20px]" title="Online Banking / QR">local_atm</span>
+                  </div>
+                  <span class="material-symbols-outlined text-[26px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </div>
+              </div>
+
+              <!-- Loading State -->
+              <div id="tenderBtnLoadingContent" class="hidden w-full items-center justify-center gap-2.5">
+                <svg class="animate-spin h-5 w-5 text-white shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                  <path class="opacity-95" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span class="font-headline-md text-xl font-black uppercase tracking-wider text-white">Paying...</span>
+              </div>
+            </button>
+          </div>
+        </aside>
+
+        <!-- Mobile Bottom Floating Cart Trigger (< 1024px) -->
+        <div class="lg:hidden fixed bottom-0 inset-x-0 p-3 bg-white/95 backdrop-blur border-t border-slate-200 z-20 flex items-center justify-between gap-3 shadow-lg">
+          <div onclick="toggleMobileCart(true)" class="flex items-center gap-2.5 cursor-pointer">
+            <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 border border-orange-200 flex items-center justify-center font-bold relative">
+              <span class="material-symbols-outlined text-[20px]">shopping_bag</span>
+              <span id="mobileCartCountBubble" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-orange-600 text-white text-[10px] font-bold flex items-center justify-center">0</span>
+            </div>
+            <div>
+              <div class="text-[11px] font-semibold text-slate-500">Your Order Total</div>
+              <div id="mobileCartTotalVal" class="font-headline-md text-base font-black text-orange-600">RM 0.00</div>
+            </div>
+          </div>
+          <button onclick="toggleMobileCart(true)" class="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-600/20">
+            <span>View Order &amp; Pay</span>
+            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <script>
+      // -------------------------------------------------------------
+      // Rigid Kiosk Mode: Prevent window-level rubber-band bounce
+      // -------------------------------------------------------------
+      (function() {
+        let touchStartY = 0;
+        let touchStartX = 0;
+
+        window.addEventListener('touchstart', function(e) {
+          if (e.touches && e.touches.length === 1) {
+            touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+          }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', function(e) {
+          if (!e.touches || e.touches.length !== 1) return;
+
+          let el = e.target;
+          let scrollable = null;
+          while (el && el !== document.body && el !== document.documentElement) {
+            const style = window.getComputedStyle(el);
+            const canScrollY = (style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
+            const canScrollX = (style.overflowX === 'auto' || style.overflowX === 'scroll') && el.scrollWidth > el.clientWidth;
+            if (canScrollY || canScrollX) {
+              scrollable = el;
+              break;
+            }
+            el = el.parentElement;
+          }
+
+          if (!scrollable) {
+            if (e.cancelable) e.preventDefault();
+            return;
+          }
+
+          const currentY = e.touches[0].clientY;
+          const currentX = e.touches[0].clientX;
+          const deltaY = currentY - touchStartY;
+          const deltaX = currentX - touchStartX;
+
+          const style = window.getComputedStyle(scrollable);
+          const canScrollY = (style.overflowY === 'auto' || style.overflowY === 'scroll') && scrollable.scrollHeight > scrollable.clientHeight;
+          const canScrollX = (style.overflowX === 'auto' || style.overflowX === 'scroll') && scrollable.scrollWidth > scrollable.clientWidth;
+
+          // Block vertical overscroll at top/bottom
+          if (canScrollY && deltaY > 0 && scrollable.scrollTop <= 0) {
+            if (e.cancelable) e.preventDefault();
+            return;
+          }
+          if (canScrollY && deltaY < 0 && (scrollable.scrollTop + scrollable.clientHeight >= scrollable.scrollHeight - 1)) {
+            if (e.cancelable) e.preventDefault();
+            return;
+          }
+          // Block horizontal overscroll at left/right
+          if (canScrollX && deltaX > 0 && scrollable.scrollLeft <= 0) {
+            if (e.cancelable) e.preventDefault();
+            return;
+          }
+          if (canScrollX && deltaX < 0 && (scrollable.scrollLeft + scrollable.clientWidth >= scrollable.scrollWidth - 1)) {
+            if (e.cancelable) e.preventDefault();
+            return;
+          }
+        }, { passive: false });
+      })();
+
+      // ==========================================
+      // Progressive Web App (PWA) Engine
+      // ==========================================
+      let deferredPWAInstallPrompt = null;
+      const isStandalonePWA = (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true ||
+        document.referrer.includes('android-app://')
+      );
+
+      // Register Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => {
+              console.log('[PWA] Service Worker active with scope:', reg.scope);
+            })
+            .catch(err => {
+              console.warn('[PWA] Service Worker registration failed:', err);
+            });
+        });
+      }
+
+      function isPWAInstallDismissed() {
+        try {
+          const dismissedAt = localStorage.getItem('takeway_pwa_dismissed_at');
+          if (!dismissedAt) return false;
+          const days = (Date.now() - Number(dismissedAt)) / (1000 * 60 * 60 * 24);
+          return days < 7;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function dismissPWAInstallPrompt() {
+        try {
+          localStorage.setItem('takeway_pwa_dismissed_at', String(Date.now()));
+        } catch (e) {}
+        const banner = document.getElementById('pwaInstallBanner');
+        if (banner) banner.classList.add('hidden');
+      }
+
+      function showPWAInstallBanner() {
+        if (isStandalonePWA || isPWAInstallDismissed()) return;
+        const banner = document.getElementById('pwaInstallBanner');
+        if (banner) banner.classList.remove('hidden');
+      }
+
+      // Android / Chrome / Edge install prompt capture
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPWAInstallPrompt = e;
+        const headerBtn = document.getElementById('pwaInstallHeaderBtn');
+        if (headerBtn && !isStandalonePWA) headerBtn.classList.remove('hidden');
+        showPWAInstallBanner();
+      });
+
+      async function triggerPWAInstall() {
+        if (deferredPWAInstallPrompt) {
+          deferredPWAInstallPrompt.prompt();
+          const { outcome } = await deferredPWAInstallPrompt.userChoice;
+          console.log('[PWA] User choice outcome:', outcome);
+          deferredPWAInstallPrompt = null;
+          dismissPWAInstallPrompt();
+          const headerBtn = document.getElementById('pwaInstallHeaderBtn');
+          if (headerBtn) headerBtn.classList.add('hidden');
+        } else {
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+          if (isIOS && !isStandalonePWA) {
+            const modal = document.getElementById('pwaIOSInstallModal');
+            if (modal) modal.classList.remove('hidden');
+          } else {
+            alert("To install this app, tap your browser's menu (⋮ or Share) and select 'Install app' or 'Add to Home Screen'.");
+          }
+        }
+      }
+
+      function closeIOSInstallModal() {
+        const modal = document.getElementById('pwaIOSInstallModal');
+        if (modal) modal.classList.add('hidden');
+        dismissPWAInstallPrompt();
+      }
+
+      window.addEventListener('appinstalled', () => {
+        console.log('[PWA] Takeway Kiosk installed successfully!');
+        const banner = document.getElementById('pwaInstallBanner');
+        if (banner) banner.classList.add('hidden');
+        const headerBtn = document.getElementById('pwaInstallHeaderBtn');
+        if (headerBtn) headerBtn.classList.add('hidden');
+        deferredPWAInstallPrompt = null;
+      });
+
+      // Show iOS prompt or desktop/mobile prompt on initial load if not installed
+      window.addEventListener('DOMContentLoaded', () => {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        if (isIOS && isSafari && !isStandalonePWA && !isPWAInstallDismissed()) {
+          setTimeout(() => {
+            const headerBtn = document.getElementById('pwaInstallHeaderBtn');
+            if (headerBtn) headerBtn.classList.remove('hidden');
+            showPWAInstallBanner();
+          }, 2000);
+        }
+      });
+
+      let allMenuItems = [];
+      let allCategories = [];
+      let activeCategory = "__all__";
+      let catalogViewMode = "grid";
+      let cart = {}; // { [dishId]: quantity }
+      let editSessionId = "";
+      let editBillNumber = "";
+      let isSubmittingOrder = false;
+      let liveSyncTimer = null;
+
+      const urlParams = new URLSearchParams(location.search);
+      editSessionId = (urlParams.get("session") || urlParams.get("edit") || urlParams.get("retake") || "").trim();
+      const paymentStatusParam = (urlParams.get("payment") || "").trim().toLowerCase();
+
+      function esc(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[ch]));
+      }
+
+      function formatRM(amount) {
+        return "RM " + Number(amount || 0).toFixed(2);
+      }
+
+      function getPlaceholderImage(name = "") {
+        return "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24' fill='%23cbd5e1'><rect width='24' height='24' fill='%23f1f5f9'/><path d='M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z'/></svg>";
+      }
+
+      function getCookie(name) {
+        const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+        return m ? decodeURIComponent(m[1]) : "";
+      }
+      function setCookie(name, value, maxAgeSec) {
+        document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSec}; SameSite=Lax`;
+      }
+      function getOrCreateClientToken() {
+        let token = "";
+        try { token = localStorage.getItem("afrc_client_id") || ""; } catch (e) {}
+        if (!token) token = getCookie("afrc_client_id");
+        if (!token) {
+          token = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ("cid-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+        }
+        try { localStorage.setItem("afrc_client_id", token); } catch (e) {}
+        setCookie("afrc_client_id", token, 86400 * 30);
+        return token;
+      }
+      function getOrCreateDeviceId() {
+        let devId = "";
+        try { devId = localStorage.getItem("afrc_device_id") || ""; } catch (e) {}
+        if (!devId) devId = getCookie("afrc_device_id");
+        if (!devId) {
+          devId = (window.crypto && crypto.randomUUID) ? ("dev-" + crypto.randomUUID()) : ("dev-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+        }
+        try { localStorage.setItem("afrc_device_id", devId); } catch (e) {}
+        setCookie("afrc_device_id", devId, 86400 * 365);
+        return devId;
+      }
+      function getOrCreateBrowserSessionId() {
+        let sid = "";
+        try { sid = sessionStorage.getItem("afrc_browser_session") || ""; } catch (e) {}
+        if (!sid) sid = getCookie("afrc_browser_session");
+        if (!sid) {
+          sid = (window.crypto && crypto.randomUUID) ? ("bs-" + crypto.randomUUID()) : ("bs-" + Date.now() + "-" + Math.random().toString(36).slice(2));
+        }
+        try { sessionStorage.setItem("afrc_browser_session", sid); } catch (e) {}
+        setCookie("afrc_browser_session", sid, 86400);
+        return sid;
+      }
+      function getSavedActiveSession() {
+        let sid = "";
+        try { sid = localStorage.getItem("afrc_active_session") || ""; } catch (e) {}
+        if (!sid) sid = getCookie("afrc_active_session");
+        return sid;
+      }
+      function setSavedActiveSession(sid) {
+        if (!sid) return;
+        try { localStorage.setItem("afrc_active_session", sid); } catch (e) {}
+        setCookie("afrc_active_session", sid, 3600);
+      }
+      function clearSavedActiveSession() {
+        try { localStorage.removeItem("afrc_active_session"); } catch (e) {}
+        setCookie("afrc_active_session", "", 0);
+      }
+
+      function toggleMobileCart(open) {
+        const sb = document.getElementById("cartSidebar");
+        const bd = document.getElementById("mobileCartBackdrop");
+        if (!sb || !bd) return;
+        if (open) {
+          sb.classList.remove("translate-x-full");
+          bd.classList.remove("hidden");
+        } else {
+          sb.classList.add("translate-x-full");
+          bd.classList.add("hidden");
+        }
+      }
+
+      function setCatalogViewMode(mode) {
+        catalogViewMode = mode === "list" ? "list" : "grid";
+        const gBtn = document.getElementById("btnGridView");
+        const lBtn = document.getElementById("btnListView");
+        if (catalogViewMode === "grid") {
+          gBtn.className = "w-8 h-8 rounded-lg bg-orange-600 text-white shadow-sm flex items-center justify-center font-semibold transition-all";
+          lBtn.className = "w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors";
+        } else {
+          lBtn.className = "w-8 h-8 rounded-lg bg-orange-600 text-white shadow-sm flex items-center justify-center font-semibold transition-all";
+          gBtn.className = "w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors";
+        }
+        renderProductCatalog();
+      }
+
+      function toggleFilterBar() {
+        const panel = document.getElementById("filterBarPanel");
+        const btn = document.getElementById("btnToggleFilter");
+        if (!panel) return;
+        const isHidden = panel.classList.contains("hidden");
+        if (isHidden) {
+          panel.classList.remove("hidden");
+          btn.classList.add("bg-orange-500/20", "text-orange-600", "border-orange-500/40");
+          const inp = document.getElementById("catalogSearchInput");
+          if (inp) inp.focus();
+        } else {
+          panel.classList.add("hidden");
+          btn.classList.remove("bg-orange-500/20", "text-orange-600", "border-orange-500/40");
+        }
+      }
+
+      function clearCatalogSearch() {
+        const inp = document.getElementById("catalogSearchInput");
+        if (inp) inp.value = "";
+        renderProductCatalog();
+      }
+
+      function selectCategory(catName) {
+        activeCategory = catName;
+        renderCategoryPills();
+        renderProductCatalog();
+      }
+
+      function categoryIconColor(icon) {
+        const map = {
+          coffee: "text-amber-400",
+          bakery_dining: "text-amber-400",
+          lunch_dining: "text-orange-600",
+          glass_cup: "text-sky-400",
+          cake: "text-pink-400",
+          dinner_dining: "text-emerald-600",
+          tapas: "text-purple-400",
+          restaurant: "text-orange-600",
+        };
+        return map[icon] || "text-orange-600";
+      }
+
+      function renderCategoryPills() {
+        const container = document.getElementById("categoryScroll");
+        if (!container) return;
+        const availableItems = allMenuItems.filter(d => d.available);
+
+        let html = `
+          <button type="button" onclick="selectCategory('__all__')" class="cat-pill ${activeCategory === '__all__' ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
+            <span class="material-symbols-outlined text-[18px]">local_mall</span>
+            <span>All Items</span>
+            <span class="ml-1 px-1.5 py-0.5 rounded-full ${activeCategory === '__all__' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 text-slate-600 font-semibold'} text-[10px]">${availableItems.length}</span>
+          </button>
+        `;
+
+        allCategories.forEach(cat => {
+          const isAct = activeCategory.toLowerCase() === cat.name.toLowerCase();
+          const count = availableItems.filter(d =>
+            Array.isArray(d.categories) && d.categories.some(c => c.toLowerCase() === cat.name.toLowerCase())
+          ).length;
+          const iconName = cat.icon || "restaurant";
+          const iconColor = isAct ? "text-white" : categoryIconColor(iconName);
+          html += `
+            <button type="button" data-cat="${esc(cat.name)}" onclick="selectCategory(this.dataset.cat)" class="cat-pill ${isAct ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
+              <span class="material-symbols-outlined text-[18px] ${iconColor}">${esc(iconName)}</span>
+              <span>${esc(cat.name)}</span>
+              <span class="ml-1 px-1.5 py-0.5 rounded-full ${isAct ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 text-slate-600 font-semibold'} text-[10px]">${count}</span>
+            </button>
+          `;
+        });
+
+        container.innerHTML = html;
+      }
+
+      function getDishCategoryOrderIndex(dish, catOrderMap) {
+        if (!Array.isArray(dish.categories) || !dish.categories.length) return Number.MAX_SAFE_INTEGER;
+        let minIdx = Number.MAX_SAFE_INTEGER;
+        for (const c of dish.categories) {
+          const idx = catOrderMap[String(c || "").toLowerCase()];
+          if (idx !== undefined && idx < minIdx) {
+            minIdx = idx;
+          }
+        }
+        return minIdx;
+      }
+
+      function getFilteredMenuItems() {
+        const searchInp = document.getElementById("catalogSearchInput");
+        const clearBtn = document.getElementById("btnClearSearch");
+        const q = (searchInp ? searchInp.value : "").trim().toLowerCase();
+        if (clearBtn) {
+          clearBtn.classList.toggle("hidden", !q);
+        }
+        const sortMode = document.getElementById("catalogSortSelect")?.value || "default";
+
+        let list = allMenuItems.filter(d => d.available);
+        if (activeCategory !== "__all__") {
+          const targetCat = activeCategory.toLowerCase();
+          list = list.filter(d =>
+            Array.isArray(d.categories) && d.categories.some(c => c.toLowerCase() === targetCat)
+          );
+        }
+        if (q) {
+          list = list.filter(d =>
+            (d.name || "").toLowerCase().includes(q) ||
+            (d.description || "").toLowerCase().includes(q) ||
+            (Array.isArray(d.categories) && d.categories.some(c => c.toLowerCase().includes(q)))
+          );
+        }
+        if (sortMode === "price_asc") {
+          list = [...list].sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+        } else if (sortMode === "price_desc") {
+          list = [...list].sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+        } else if (sortMode === "name_asc") {
+          list = [...list].sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+        } else if (activeCategory === "__all__" && allCategories.length) {
+          const catOrderMap = {};
+          allCategories.forEach((cat, idx) => {
+            catOrderMap[String(cat.name || "").toLowerCase()] = idx;
+          });
+          list = [...list].sort((a, b) => {
+            const oa = getDishCategoryOrderIndex(a, catOrderMap);
+            const ob = getDishCategoryOrderIndex(b, catOrderMap);
+            if (oa !== ob) return oa - ob;
+            return (Number(a.sort_order || 0) - Number(b.sort_order || 0)) || (Number(a.id || 0) - Number(b.id || 0));
+          });
+        }
+        return list;
+      }
+
+      function renderListCardHtml(item) {
+        const inCartQty = cart[item.id] || 0;
+        const ppp = item.pieces_per_portion || 1;
+        const imgHtml = item.image_url
+          ? `<img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" alt="${esc(item.name)}" src="${esc(item.image_url)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+             <div style="display:none;" class="w-full h-full items-center justify-center bg-slate-100 text-slate-400"><span class="material-symbols-outlined text-[24px]">restaurant</span></div>`
+          : `<div class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400"><span class="material-symbols-outlined text-[24px]">restaurant</span></div>`;
+        const catsHtml = (item.categories || []).map(c =>
+          `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-semibold">${esc(c)}</span>`
+        ).join("");
+        const piecesBadge = ppp > 1
+          ? `<span class="px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 border border-orange-200 text-[10px] font-bold">${ppp} pcs / portion</span>`
+          : '';
+        const priceHtml = ppp > 1
+          ? `<div class="flex flex-col items-end">
+               <span class="font-headline-md text-lg font-extrabold text-orange-600">${formatRM(item.price)}</span>
+               <span class="text-[11px] text-slate-500 font-medium">RM ${(Number(item.price) / ppp).toFixed(2)}/pc</span>
+             </div>`
+          : `<span class="font-headline-md text-lg font-extrabold text-orange-600">${formatRM(item.price)}</span>`;
+
+        return `
+          <div onclick="addToCart(${item.id}, this)" class="product-item group relative bg-white hover:border-orange-500/70 ${inCartQty > 0 ? 'border-orange-500 ring-1 ring-orange-500/30' : 'border-slate-200'} border rounded-2xl p-2.5 flex items-center justify-between gap-3.5 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-lg hover:shadow-slate-200/70 active:scale-[0.99]">
+            <div class="relative w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+              ${imgHtml}
+              ${inCartQty > 0 ? `<div class="absolute top-1 right-1 px-1.5 py-0.5 rounded-full bg-orange-600 text-white text-[10px] font-extrabold shadow">${inCartQty}</div>` : ''}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                <h3 class="font-headline-sm text-base text-slate-900 font-extrabold group-hover:text-orange-600 transition-colors truncate">${esc((item.alias || "").trim() || item.name)}</h3>
+                ${piecesBadge}
+                ${catsHtml}
+              </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0 pl-2">
+              ${priceHtml}
+              <button type="button" onclick="event.stopPropagation(); addToCart(${item.id}, this.closest('.product-item'))" class="w-9 h-9 rounded-xl ${inCartQty > 0 ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-600/25' : 'bg-slate-100 hover:bg-orange-600 text-slate-700 hover:text-white border border-slate-200 hover:border-orange-500'} flex items-center justify-center transition-all shadow-sm active:scale-90" title="Quick Add">
+                <span class="material-symbols-outlined text-[19px]">add</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderGridCardHtml(item) {
+        const inCartQty = cart[item.id] || 0;
+        const ppp = item.pieces_per_portion || 1;
+        const imgHtml = item.image_url
+          ? `<img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" alt="${esc(item.name)}" src="${esc(item.image_url)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+             <div style="display:none;" class="w-full h-full items-center justify-center bg-slate-100 text-slate-400"><span class="material-symbols-outlined text-[28px]">restaurant</span></div>`
+          : `<div class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400"><span class="material-symbols-outlined text-[28px]">restaurant</span></div>`;
+
+        const piecesBadge = ppp > 1
+          ? `<div class="mb-1"><span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-700 border border-orange-200 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px] text-orange-600">pie_chart</span>${ppp} pcs / portion</span></div>`
+          : '';
+
+        const priceHtml = ppp > 1
+          ? `<div class="flex flex-col">
+               <span class="font-headline-md text-lg sm:text-xl font-extrabold text-orange-600 leading-tight">${formatRM(item.price)}</span>
+               <span class="text-[11px] text-slate-500 font-medium">RM ${(Number(item.price) / ppp).toFixed(2)}/pc</span>
+             </div>`
+          : `<span class="font-headline-md text-lg sm:text-xl font-extrabold text-orange-600">${formatRM(item.price)}</span>`;
+
+        return `
+          <div onclick="addToCart(${item.id}, this)" class="product-item group relative bg-white hover:border-orange-500/70 ${inCartQty > 0 ? 'border-orange-500 ring-1 ring-orange-500/30' : 'border-slate-200'} border rounded-2xl p-2.5 flex flex-col justify-between transition-all duration-200 cursor-pointer shadow-sm hover:shadow-lg hover:shadow-slate-200/70 active:scale-[0.98] overflow-hidden" data-id="${item.id}" data-name="${esc(item.name)}" data-price="${Number(item.price).toFixed(2)}">
+            <div class="relative w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-100">
+              ${imgHtml}
+              ${inCartQty > 0 ? `
+                <div class="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-full bg-orange-600 text-white text-[11px] font-extrabold shadow-md flex items-center gap-0.5">
+                  <span>&times;${inCartQty}</span>
+                </div>
+              ` : ''}
+            </div>
+            <div class="flex flex-col flex-1 justify-between">
+              <div>
+                <div class="flex items-start justify-between gap-1 mb-0.5">
+                  <h3 class="font-headline-sm text-base text-slate-900 line-clamp-2 font-extrabold leading-snug group-hover:text-orange-600 transition-colors" title="${esc((item.alias || '').trim() || item.name)}">${esc((item.alias || "").trim() || item.name)}</h3>
+                </div>
+                ${piecesBadge}
+              </div>
+              <div class="flex items-center justify-between pt-1.5 border-t border-slate-200">
+                ${priceHtml}
+                <button type="button" onclick="event.stopPropagation(); addToCart(${item.id}, this.closest('.product-item'))" class="w-9 h-9 rounded-xl ${inCartQty > 0 ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-600/25' : 'bg-slate-100 hover:bg-orange-600 text-slate-700 hover:text-white border border-slate-200 hover:border-orange-500'} flex items-center justify-center transition-all shadow-sm active:scale-90" title="Quick Add">
+                  <span class="material-symbols-outlined text-[19px]">add</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderProductCatalog() {
+        const grid = document.getElementById("catalogGrid");
+        if (!grid) return;
+        const items = getFilteredMenuItems();
+
+        if (!items.length) {
+          grid.className = "w-full";
+          grid.innerHTML = `
+            <div class="bg-white border border-slate-200 rounded-2xl p-12 text-center my-4">
+              <span class="material-symbols-outlined text-[42px] text-slate-400 mb-2">restaurant_menu</span>
+              <h3 class="font-headline-sm text-base font-bold text-slate-800 mb-1">No menu items found</h3>
+              <p class="text-xs text-slate-500">Try selecting another category or clearing your search filter.</p>
+            </div>
+          `;
+          return;
+        }
+
+        const sortMode = document.getElementById("catalogSortSelect")?.value || "default";
+        const isGroupedAll = activeCategory === "__all__" && sortMode === "default" && allCategories.length > 0;
+        const sectionContainerClass = catalogViewMode === "list"
+          ? "flex flex-col gap-2.5"
+          : "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3.5";
+        const cardFn = catalogViewMode === "list" ? renderListCardHtml : renderGridCardHtml;
+
+        if (isGroupedAll) {
+          grid.className = "w-full space-y-5";
+          const knownCatNames = new Set(allCategories.map(c => String(c.name || "").toLowerCase()));
+          let sectionsHtml = "";
+
+          allCategories.forEach(cat => {
+            const cLower = String(cat.name || "").toLowerCase();
+            const catItems = items.filter(d =>
+              Array.isArray(d.categories) && d.categories.some(c => String(c || "").toLowerCase() === cLower)
+            );
+            if (!catItems.length) return;
+            const iconName = cat.icon || "restaurant";
+            sectionsHtml += `
+              <div>
+                <div class="flex items-center gap-2 mb-2.5 px-0.5">
+                  <span class="material-symbols-outlined text-[18px] ${categoryIconColor(iconName)}">${esc(iconName)}</span>
+                  <h2 class="font-headline-sm text-sm font-bold text-slate-900">${esc(cat.name)}</h2>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-orange-600 border border-slate-200 text-[11px] font-bold">${catItems.length}</span>
+                </div>
+                <div class="${sectionContainerClass}">
+                  ${catItems.map(cardFn).join("")}
+                </div>
+              </div>
+            `;
+          });
+
+          const uncategorized = items.filter(d =>
+            !Array.isArray(d.categories) || !d.categories.some(c => knownCatNames.has(String(c || "").toLowerCase()))
+          );
+          if (uncategorized.length) {
+            sectionsHtml += `
+              <div>
+                <div class="flex items-center gap-2 mb-2.5 px-0.5">
+                  <span class="material-symbols-outlined text-[18px] text-slate-500">restaurant</span>
+                  <h2 class="font-headline-sm text-sm font-bold text-slate-900">Other Items</h2>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-orange-600 border border-slate-200 text-[11px] font-bold">${uncategorized.length}</span>
+                </div>
+                <div class="${sectionContainerClass}">
+                  ${uncategorized.map(cardFn).join("")}
+                </div>
+              </div>
+            `;
+          }
+
+          grid.innerHTML = sectionsHtml;
+          return;
+        }
+
+        grid.className = sectionContainerClass;
+        grid.innerHTML = items.map(cardFn).join("");
+      }
+
+      function saveCartToLocal() {
+        try {
+          localStorage.setItem("takeway_kiosk_cart", JSON.stringify(cart));
+        } catch (e) {}
+      }
+
+      function loadCartFromLocal() {
+        try {
+          const raw = localStorage.getItem("takeway_kiosk_cart");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === "object") {
+              cart = parsed;
+            }
+          }
+        } catch (e) {}
+      }
+
+      function clearCartLocal() {
+        try {
+          localStorage.removeItem("takeway_kiosk_cart");
+        } catch (e) {}
+      }
+
+      function getActiveCartItemsPayload() {
+        const dishMap = {};
+        allMenuItems.forEach(d => { dishMap[d.id] = d; });
+        return Object.entries(cart)
+          .map(([idStr, qty]) => ({ id: Number(idStr), name: dishMap[Number(idStr)]?.name || "", quantity: Number(qty) }))
+          .filter(it => it.id && it.quantity > 0);
+      }
+
+      // Kiosk Inactivity Reset (60s idle -> 15s prompt -> auto reset)
+      let idleTimer = null;
+      let idleCountdownTimer = null;
+      let idleRemainingSec = 15;
+      const IDLE_LIMIT_MS = 60000;
+
+      function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        const activeCount = Object.keys(cart).filter(k => Number(cart[k]) > 0).length;
+        if (activeCount === 0 || isSubmittingOrder) {
+          hideIdleWarning();
+          return;
+        }
+        idleTimer = setTimeout(triggerIdleWarning, IDLE_LIMIT_MS);
+      }
+
+      function triggerIdleWarning() {
+        const activeCount = Object.keys(cart).filter(k => Number(cart[k]) > 0).length;
+        if (activeCount === 0 || isSubmittingOrder) return;
+        idleRemainingSec = 15;
+        const modal = document.getElementById("idleWarningModal");
+        const countEl = document.getElementById("idleCountdownSec");
+        if (modal) modal.classList.remove("hidden");
+        if (countEl) countEl.textContent = String(idleRemainingSec);
+
+        clearInterval(idleCountdownTimer);
+        idleCountdownTimer = setInterval(() => {
+          idleRemainingSec--;
+          if (countEl) countEl.textContent = String(idleRemainingSec);
+          if (idleRemainingSec <= 0) {
+            clearInterval(idleCountdownTimer);
+            forceIdleReset();
+          }
+        }, 1000);
+      }
+
+      function cancelIdleTimeout() {
+        hideIdleWarning();
+        resetIdleTimer();
+      }
+
+      function hideIdleWarning() {
+        clearInterval(idleCountdownTimer);
+        const modal = document.getElementById("idleWarningModal");
+        if (modal) modal.classList.add("hidden");
+      }
+
+      function forceIdleReset() {
+        hideIdleWarning();
+        clearCart();
+      }
+
+      ["click", "touchstart", "keydown", "mousemove"].forEach(evt => {
+        window.addEventListener(evt, () => {
+          const modal = document.getElementById("idleWarningModal");
+          if (!modal || modal.classList.contains("hidden")) {
+            resetIdleTimer();
+          }
+        }, { passive: true });
+      });
+
+      function addToCart(dishId, cardEl) {
+        const dish = allMenuItems.find(d => d.id === dishId && d.available);
+        if (!dish) return;
+        cart[dishId] = (cart[dishId] || 0) + 1;
+        saveCartToLocal();
+        if (cardEl) {
+          cardEl.classList.add("ring-2", "ring-orange-500");
+          setTimeout(() => {
+            cardEl.classList.remove("ring-2", "ring-orange-500");
+          }, 180);
+        }
+        hideCheckoutError();
+        renderProductCatalog();
+        renderCart();
+        resetIdleTimer();
+      }
+
+      function updateCartQty(dishId, delta) {
+        if (!cart[dishId]) return;
+        const next = cart[dishId] + delta;
+        if (next <= 0) {
+          delete cart[dishId];
+        } else {
+          cart[dishId] = next;
+        }
+        saveCartToLocal();
+        hideCheckoutError();
+        renderProductCatalog();
+        renderCart();
+        resetIdleTimer();
+      }
+
+      function removeFromCart(dishId) {
+        delete cart[dishId];
+        saveCartToLocal();
+        hideCheckoutError();
+        renderProductCatalog();
+        renderCart();
+        resetIdleTimer();
+      }
+
+      function clearCart() {
+        cart = {};
+        clearCartLocal();
+        const chk = document.getElementById("confirmItemsCheckbox");
+        if (chk) chk.checked = false;
+        const em = document.getElementById("customerEmailInput");
+        if (em) em.value = "";
+        hideCheckoutError();
+        renderProductCatalog();
+        renderCart();
+        resetIdleTimer();
+      }
+
+      function renderCart() {
+        const container = document.getElementById("cartItemsContainer");
+        const subtotalLbl = document.getElementById("cartSubtotalLabel");
+        const subtotalVal = document.getElementById("cartSubtotalVal");
+        const totalVal = document.getElementById("cartTotalVal");
+        const tenderBtn = document.getElementById("tenderBtn");
+        const tenderBtnLabel = document.getElementById("tenderBtnLabel");
+        const headerBadge = document.getElementById("cartHeaderCountBadge");
+        const clearBtn = document.getElementById("btnClearCart");
+        const mobileBubble = document.getElementById("mobileCartCountBubble");
+        const mobileTotal = document.getElementById("mobileCartTotalVal");
+        const confirmChk = document.getElementById("confirmItemsCheckbox");
+
+        const dishMap = {};
+        allMenuItems.forEach(d => { dishMap[d.id] = d; });
+
+        const entries = Object.entries(cart)
+          .map(([idStr, qty]) => ({ dish: dishMap[Number(idStr)], qty: Number(qty) }))
+          .filter(e => e.dish && e.dish.available && e.qty > 0);
+
+        let totalQty = 0;
+        let totalAmount = 0;
+        entries.forEach(e => {
+          totalQty += e.qty;
+          totalAmount += Number(e.dish.price || 0) * e.qty;
+        });
+        totalAmount = Math.round(totalAmount * 100) / 100;
+
+        if (entries.length === 0) {
+          appliedVoucher = null;
+          if (confirmChk) confirmChk.checked = false;
+          const vInp = document.getElementById("voucherCodeInput");
+          if (vInp) vInp.value = "";
+          const vMsg = document.getElementById("voucherStatusMsg");
+          if (vMsg) vMsg.classList.add("hidden");
+        }
+
+        let discountAmt = 0;
+        if (appliedVoucher && entries.length > 0) {
+          discountAmt = Math.min(Math.max(0, totalAmount - 0.10), Number(appliedVoucher.discount_amount || 0));
+          discountAmt = Math.round(discountAmt * 100) / 100;
+        }
+        const finalTotal = Math.round(Math.max(0, totalAmount - discountAmt) * 100) / 100;
+
+        const discRow = document.getElementById("cartDiscountRow");
+        const discLbl = document.getElementById("cartDiscountLabel");
+        const discVal = document.getElementById("cartDiscountVal");
+        const vRemBtn = document.getElementById("voucherRemoveBtn");
+        if (discRow && discLbl && discVal) {
+          if (appliedVoucher && discountAmt > 0) {
+            discRow.classList.remove("hidden");
+            discLbl.textContent = `Voucher (${appliedVoucher.code})`;
+            discVal.textContent = "-" + formatRM(discountAmt);
+            if (vRemBtn) vRemBtn.classList.remove("hidden");
+          } else {
+            discRow.classList.add("hidden");
+            if (vRemBtn) vRemBtn.classList.add("hidden");
+          }
+        }
+
+        if (headerBadge) headerBadge.textContent = String(totalQty);
+        if (clearBtn) clearBtn.classList.toggle("hidden", entries.length === 0);
+        if (subtotalLbl) subtotalLbl.textContent = `Subtotal (${totalQty} ${totalQty === 1 ? "item" : "items"})`;
+        if (subtotalVal) subtotalVal.textContent = formatRM(totalAmount);
+        if (totalVal) totalVal.textContent = formatRM(finalTotal);
+
+        const tenderBtnNormal = document.getElementById("tenderBtnNormalContent");
+        const tenderBtnLoading = document.getElementById("tenderBtnLoadingContent");
+        if (isSubmittingOrder) {
+          if (tenderBtnNormal) tenderBtnNormal.classList.add("hidden");
+          if (tenderBtnLoading) {
+            tenderBtnLoading.classList.remove("hidden");
+            tenderBtnLoading.classList.add("flex");
+          }
+          if (tenderBtn) {
+            tenderBtn.classList.add("pointer-events-none", "cursor-wait");
+            tenderBtn.disabled = false;
+          }
+        } else {
+          if (tenderBtnNormal) tenderBtnNormal.classList.remove("hidden");
+          if (tenderBtnLoading) {
+            tenderBtnLoading.classList.add("hidden");
+            tenderBtnLoading.classList.remove("flex");
+          }
+          if (tenderBtn) {
+            tenderBtn.classList.remove("pointer-events-none", "cursor-wait");
+            tenderBtn.disabled = (entries.length === 0);
+          }
+        }
+
+        if (mobileBubble) mobileBubble.textContent = String(totalQty);
+        if (mobileTotal) mobileTotal.textContent = formatRM(finalTotal);
+
+        if (!container) return;
+
+        if (entries.length === 0) {
+          container.innerHTML = `
+            <div class="h-full min-h-[220px] flex flex-col items-center justify-center text-center p-6 text-slate-500">
+              <div class="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 mb-3">
+                <span class="material-symbols-outlined text-[32px]">shopping_basket</span>
+              </div>
+              <p class="font-bold text-slate-800 text-sm mb-1">Your cart is empty</p>
+              <p class="text-xs text-slate-500 max-w-[200px]">Tap on dishes from the menu to build your order.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = entries.map(({ dish, qty }) => {
+          const itemSubtotal = Math.round(Number(dish.price || 0) * qty * 100) / 100;
+          const ppp = dish.pieces_per_portion || 1;
+          const pieceInfo = ppp > 1
+            ? `<div class="text-[10px] text-orange-700 font-semibold mt-0.5"><span class="inline-block bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded">${qty} ${qty > 1 ? 'portions' : 'portion'} (${qty * ppp} pcs)</span></div>`
+            : '';
+          const cartImgHtml = dish.image_url
+            ? `<img src="${esc(dish.image_url)}" alt="${esc(dish.name)}" class="w-full h-full object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+               <div style="display:none;" class="w-full h-full items-center justify-center bg-slate-100 text-slate-500"><span class="material-symbols-outlined text-[18px]">restaurant</span></div>`
+            : `<div class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-500"><span class="material-symbols-outlined text-[18px]">restaurant</span></div>`;
+          return `
+            <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-100 border border-slate-200 hover:border-orange-500/40 transition-colors">
+              <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                <div class="w-11 h-11 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200 flex items-center justify-center">
+                  ${cartImgHtml}
+                </div>
+                <div class="min-w-0">
+                  <h4 class="font-semibold text-xs text-slate-900 truncate" title="${esc(dish.name)}">${esc(dish.name)}</h4>
+                  <div class="text-[11px] text-slate-500 tabular-nums">
+                    ${formatRM(dish.price)} &times; ${qty} = <strong class="text-orange-600">${formatRM(itemSubtotal)}</strong>
+                  </div>
+                  ${pieceInfo}
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
+                  <button type="button" onclick="updateCartQty(${dish.id}, -1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-90 transition-all font-bold text-xs" title="Decrease">
+                    &minus;
+                  </button>
+                  <span class="w-6 text-center text-xs font-bold text-slate-900 tabular-nums">${qty}</span>
+                  <button type="button" onclick="updateCartQty(${dish.id}, 1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-90 transition-all font-bold text-xs" title="Increase">
+                    +
+                  </button>
+                </div>
+                <button type="button" onclick="removeFromCart(${dish.id})" class="w-7 h-7 rounded-md hover:bg-orange-50 text-slate-500 hover:text-orange-600 flex items-center justify-center transition-colors" title="Remove Item">
+                  <span class="material-symbols-outlined text-[16px]">delete</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function showCheckoutError(msg) {
+        const el = document.getElementById("checkoutErrorMsg");
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.remove("hidden");
+      }
+
+      function hideCheckoutError() {
+        const el = document.getElementById("checkoutErrorMsg");
+        if (!el) return;
+        el.textContent = "";
+        el.classList.add("hidden");
+      }
+
+      function triggerConfirmWigglePulse() {
+        const container = document.getElementById("confirmCheckboxContainer");
+        const chk = document.getElementById("confirmItemsCheckbox");
+        if (!container) return;
+        container.classList.remove("confirm-wiggle-pulse");
+        void container.offsetWidth; // trigger reflow
+        container.classList.add("confirm-wiggle-pulse");
+        if (chk) chk.focus();
+      }
+
+      function onConfirmCheckboxChange() {
+        const container = document.getElementById("confirmCheckboxContainer");
+        const chk = document.getElementById("confirmItemsCheckbox");
+        if (chk && chk.checked) {
+          if (container) container.classList.remove("confirm-wiggle-pulse");
+          hideCheckoutError();
+        }
+      }
+
+      let appliedVoucher = null;
+
+      async function applySelfServiceVoucher() {
+        const inp = document.getElementById("voucherCodeInput");
+        const msgEl = document.getElementById("voucherStatusMsg");
+        const btn = document.getElementById("voucherApplyBtn");
+        const code = (inp ? inp.value : "").trim().toUpperCase();
+        const itemsPayload = getActiveCartItemsPayload();
+        if (!itemsPayload.length) {
+          if (msgEl) {
+            msgEl.textContent = "Add items to your cart first.";
+            msgEl.className = "text-[11px] font-semibold px-1 text-red-600";
+          }
+          return;
+        }
+        if (!code) {
+          if (msgEl) {
+            msgEl.textContent = "Please enter a voucher code.";
+            msgEl.className = "text-[11px] font-semibold px-1 text-red-600";
+          }
+          return;
+        }
+        if (btn) btn.disabled = true;
+        try {
+          const res = await fetch("/api/selfservice/voucher/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, items: itemsPayload }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            appliedVoucher = null;
+            if (msgEl) {
+              msgEl.textContent = (typeof data.detail === "string" ? data.detail : data.detail?.message) || "Invalid voucher code.";
+              msgEl.className = "text-[11px] font-semibold px-1 text-red-600";
+            }
+            renderCart();
+            return;
+          }
+          appliedVoucher = data;
+          if (inp) inp.value = data.code;
+          if (msgEl) {
+            msgEl.textContent = `Voucher ${data.code} applied (-RM ${Number(data.discount_amount || 0).toFixed(2)})`;
+            msgEl.className = "text-[11px] font-semibold px-1 text-emerald-600";
+          }
+          renderCart();
+        } catch (e) {
+          if (msgEl) {
+            msgEl.textContent = "Could not validate voucher. Try again.";
+            msgEl.className = "text-[11px] font-semibold px-1 text-red-600";
+          }
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      function removeSelfServiceVoucher() {
+        appliedVoucher = null;
+        const inp = document.getElementById("voucherCodeInput");
+        const msgEl = document.getElementById("voucherStatusMsg");
+        if (inp) inp.value = "";
+        if (msgEl) msgEl.classList.add("hidden");
+        renderCart();
+      }
+
+      async function submitCheckoutOrder() {
+        if (isSubmittingOrder) return;
+        const itemsPayload = getActiveCartItemsPayload();
+        if (!itemsPayload.length) {
+          showCheckoutError("Please add at least one item to your order.");
+          return;
+        }
+
+        const confirmChk = document.getElementById("confirmItemsCheckbox");
+        if (!confirmChk || !confirmChk.checked) {
+          triggerConfirmWigglePulse();
+          showCheckoutError("Please check the confirmation box above to proceed to payment.");
+          return;
+        }
+
+        hideCheckoutError();
+        isSubmittingOrder = true;
+        renderCart();
+
+        try {
+          const cToken = getOrCreateClientToken();
+          const dId = getOrCreateDeviceId();
+          const emailInput = document.getElementById("customerEmailInput");
+          let rawEmail = emailInput ? String(emailInput.value || "").trim().toLowerCase().replace(/@.*/g, "") : "";
+          const emailVal = rawEmail ? (rawEmail + "@gmail.com") : "";
+          const payRes = await fetch("/api/selfservice/pay", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              items: itemsPayload,
+              email: emailVal,
+              voucher_code: appliedVoucher ? appliedVoucher.code : "",
+              client_token: cToken,
+              device_id: dId,
+            }),
+          });
+          let payData = {};
+          try {
+            payData = await payRes.json();
+          } catch (e) {
+            payData = {};
+          }
+          if (!payRes.ok) {
+            let pErr = (typeof payData.detail === "string" ? payData.detail : payData.detail?.message) || "";
+            if (!pErr) {
+              if (payRes.status === 503) pErr = "CHIP payment gateway is not configured in payment.env.";
+              else if (payRes.status === 403) pErr = "We are currently outside operating hours.";
+              else pErr = `Payment could not be started (HTTP ${payRes.status}). Please try again.`;
+            }
+            showCheckoutError(pErr);
+            isSubmittingOrder = false;
+            renderCart();
+            return;
+          }
+
+          if (payData.checkout_url) {
+            cart = {};
+            clearCartLocal();
+            // Forward customer directly to CHIP Hosted Checkout with DuitNow QR automatically picked
+            let destUrl = payData.checkout_url;
+            if (!destUrl.includes("active=dnqr")) {
+              destUrl += (destUrl.includes("?") ? "&" : "?") + "active=dnqr&preferred=dnqr";
+            }
+            window.location.href = destUrl;
+            return;
+          }
+          showCheckoutError("Payment checkout URL was not returned. Please try again.");
+          isSubmittingOrder = false;
+          renderCart();
+        } catch (err) {
+          console.error("Payment initiation error:", err);
+          const msg = (err && err.message) ? err.message : "Payment connection could not be established. Please try again.";
+          showCheckoutError(msg);
+          isSubmittingOrder = false;
+          renderCart();
+        }
+      }
+
+      function showOperationHoursLock(opHourText) {
+        const overlay = document.getElementById("stateLockOverlay");
+        const content = document.getElementById("stateLockContent");
+        const hourDisplay = opHourText || "08:00 - 17:00";
+        overlay.classList.remove("hidden");
+        content.innerHTML = `
+          <div class="bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-2xl">
+            <div class="w-16 h-16 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mx-auto mb-4 ring-8 ring-orange-100/70">
+              <span class="material-symbols-outlined text-[34px]">schedule</span>
+            </div>
+            <div class="text-xs font-bold uppercase tracking-wider text-orange-600 mb-1">Restaurant Closed</div>
+            <h2 class="font-headline-md text-2xl font-extrabold text-slate-900 mb-2">Outside Operation Hours</h2>
+            <p class="text-sm text-slate-500 leading-relaxed mb-5">
+              You are outside our operation hours. Our operating hours are <strong class="text-slate-900">${esc(hourDisplay)}</strong>. Please come back later.
+            </p>
+            <div class="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-700">
+              <span class="w-2 h-2 rounded-full bg-red-500"></span>
+              <span>Operating hours: <strong>${esc(hourDisplay)}</strong></span>
+            </div>
+          </div>
+        `;
+      }
+
+      async function loadMenuAndCategories() {
+        try {
+          const [catRes, menuRes] = await Promise.all([
+            fetch("/api/categories", { cache: "no-store" }),
+            fetch("/api/menu", { cache: "no-store" }),
+          ]);
+          if (catRes.ok) {
+            allCategories = await catRes.json();
+          }
+          if (menuRes.ok) {
+            allMenuItems = await menuRes.json();
+          }
+          renderCategoryPills();
+          renderProductCatalog();
+          renderCart();
+        } catch (e) {
+          console.error("Failed to load menu and categories:", e);
+        }
+      }
+
+      async function checkClientState() {
+        getOrCreateClientToken();
+        getOrCreateDeviceId();
+        getOrCreateBrowserSessionId();
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const payFlag = urlParams.get("payment");
+          if (payFlag === "cancelled" || payFlag === "failed") {
+            showCheckoutError(
+              payFlag === "cancelled"
+                ? "Payment was cancelled. Please select your items and try again."
+                : "Payment could not be completed. Please try again."
+            );
+          }
+          const res = await fetch("/api/selfservice/status", { cache: "no-store" });
+          if (!res.ok) return true;
+          const state = await res.json();
+          if (state.maintenance_mode) {
+            window.location.replace("/maintenance");
+            return false;
+          }
+          if (state.coming_soon) {
+            window.location.replace("/coming-soon");
+            return false;
+          }
+          if (state.restaurant_name) {
+            document.title = state.restaurant_name + " - Self-Service Kiosk";
+            const fb = document.getElementById("footerBrandName");
+            if (fb) fb.textContent = state.restaurant_name;
+          }
+          if (state.is_open === false) {
+            showOperationHoursLock(state.operation_hour || "08:00 - 17:00");
+            return false;
+          }
+          document.getElementById("stateLockOverlay").classList.add("hidden");
+          return true;
+        } catch (e) {
+          return true;
+        }
+      }
+
+      async function initKiosk() {
+        loadCartFromLocal();
+        await loadMenuAndCategories();
+        await checkClientState();
+        resetIdleTimer();
+      }
+
+      window.addEventListener("pageshow", () => {
+        initKiosk();
+      });
+      initKiosk();
+    </script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  </main>
+</div>
+</body>
+</html>

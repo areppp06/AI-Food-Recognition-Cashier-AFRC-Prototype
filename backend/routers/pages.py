@@ -19,6 +19,7 @@ router = APIRouter()
 ADMIN_PAGES = {
     "dashboard",
     "bills",
+    "selfservice-bills",
     "menu",
     "categories",
     "restaurant",

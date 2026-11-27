@@ -15,6 +15,10 @@ const ADMIN_NAV_GROUPS = [
         label: "Bills &amp; Receipts",
         href: "/admin/bills",
         icon: `<path d="M5 3h14v18l-3-2-2.5 2-1.5-2-1.5 2L8 19l-3 2V3z" stroke-linecap="round" stroke-linejoin="round"></path><path d="M9 8h6M9 12h6M9 16h4" stroke-linecap="round"></path>`,
+        children: [
+          { id: "bills", label: "AFRC Bills", href: "/admin/bills" },
+          { id: "selfservice-bills", label: "Self-Checkout Bills", href: "/admin/selfservice-bills" },
+        ],
       },
       {
         id: "menu",
@@ -249,20 +253,54 @@ async function refreshAll() {
   }
 }
 
+function toggleNavSubmenu(id) {
+  const wrap = document.getElementById("nav-sub-" + id);
+  const btn = document.getElementById("nav-parent-" + id);
+  if (!wrap) return;
+  const open = wrap.style.display !== "none";
+  wrap.style.display = open ? "none" : "flex";
+  if (btn) btn.setAttribute("aria-expanded", open ? "false" : "true");
+}
+
 function renderAdminSidebar(activeTab) {
   const sidebar = document.getElementById("sidebar");
   if (!sidebar) return;
 
   const groupsHtml = ADMIN_NAV_GROUPS.map(g => {
     const labelStyle = g.marginTop ? ` style="margin-top:${g.marginTop};"` : "";
-    const linksHtml = g.items.map(item => `
-      <a class="nav-btn${item.id === activeTab ? " active" : ""}" data-tab="${item.id}" href="${item.href}">
-        <span class="nav-btn-left">
-          <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">${item.icon}</svg>
-          <span>${item.label}</span>
-        </span>
-      </a>
-    `).join("");
+    const linksHtml = g.items.map(item => {
+      if (Array.isArray(item.children) && item.children.length) {
+        const hasActiveChild = item.children.some(c => c.id === activeTab);
+        const subHtml = item.children.map(c => `
+          <a class="nav-btn${c.id === activeTab ? " active" : ""}" data-tab="${c.id}" href="${c.href}" style="padding-left:2.35rem; font-size:0.84rem;">
+            <span class="nav-btn-left">
+              <span style="width:6px;height:6px;border-radius:999px;background:${c.id === activeTab ? "#ff5e36" : "#cbd5e1"};display:inline-block;"></span>
+              <span>${c.label}</span>
+            </span>
+          </a>
+        `).join("");
+        return `
+          <button type="button" id="nav-parent-${item.id}" class="nav-btn${hasActiveChild ? " active" : ""}" aria-expanded="${hasActiveChild ? "true" : "false"}" onclick="toggleNavSubmenu('${item.id}')" style="width:100%; justify-content:space-between;">
+            <span class="nav-btn-left">
+              <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">${item.icon}</svg>
+              <span>${item.label}</span>
+            </span>
+            <svg style="width:14px;height:14px;opacity:0.7;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+          <div id="nav-sub-${item.id}" style="display:${hasActiveChild ? "flex" : "none"}; flex-direction:column; gap:2px; margin:2px 0 4px;">
+            ${subHtml}
+          </div>
+        `;
+      }
+      return `
+        <a class="nav-btn${item.id === activeTab ? " active" : ""}" data-tab="${item.id}" href="${item.href}">
+          <span class="nav-btn-left">
+            <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">${item.icon}</svg>
+            <span>${item.label}</span>
+          </span>
+        </a>
+      `;
+    }).join("");
     return `<div class="nav-label"${labelStyle}>${g.label}</div>${linksHtml}`;
   }).join("");
 
@@ -276,6 +314,12 @@ function renderAdminSidebar(activeTab) {
           <circle cx="12" cy="12.5" r="3.2"></circle>
         </svg>
         <span>Customer Camera View</span>
+      </a>
+      <a class="ext-link" href="/self" target="_blank">
+        <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.9" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 5h18M5 5v14a2 2 0 002 2h10a2 2 0 002-2V5M9 11h6M9 15h4" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Self-Service Kiosk</span>
       </a>
     </div>
     <div style="margin-top:auto; padding:1.25rem 1rem 1rem; border-top:1px solid #e2e8f0;">

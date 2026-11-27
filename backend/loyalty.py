@@ -10,13 +10,14 @@ import hmac
 import json
 import math
 import os
+import re
 import secrets
 import threading
 from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import HTTPException, Request, Response
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -28,6 +29,7 @@ from backend.db import (
     LoyaltySettings,
     PointRedemptionTier,
     PointsTransaction,
+    SelfServiceBill,
     SessionBill,
     Voucher,
 )
@@ -1319,3 +1321,190 @@ def apply_bill_refund_loyalty_effects(
         except Exception:
             db.rollback()
             raise
+
+
+# ==============================================================================
+# Self-Service (/selfservice) Voucher & Gmail Point-Claim Helpers
+# ==============================================================================
+
+def validate_voucher_for_selfservice(
+    db: Session,
+    code: str,
+    food_subtotal: float,
+) -> tuple[Voucher, float]:
+    """Validate any voucher code for /selfservice without requiring login."""
+    norm_code = (code or "").strip().upper()
+    if not norm_code:
+        raise HTTPException(status_code=400, detail="Please enter a voucher code.")
+
+    voucher = (
+        db.query(Voucher)
+        .filter(Voucher.code == norm_code, Voucher.is_archived == False)
+        .first()
+    )
+    if not voucher:
+        raise HTTPException(status_code=404, detail="Invalid voucher code.")
+    if not voucher.is_active or int(voucher.times_used or 0) >= int(voucher.max_uses or 1):
+        raise HTTPException(
+            status_code=400,
+            detail="Voucher is no longer valid or has reached its usage limit.",
+        )
+    now = datetime.utcnow()
+    if voucher.expires_at and voucher.expires_at < now:
+        raise HTTPException(status_code=400, detail="Voucher has expired.")
+
+    min_spend = round(float(voucher.min_spend or 0.0), 2)
+    if round(float(food_subtotal or 0.0), 2) + 1e-6 < min_spend:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Minimum spend of RM {min_spend:.2f} required for this voucher.",
+        )
+    if round(float(food_subtotal or 0.0), 2) <= MIN_PAYABLE_RM:
+        raise HTTPException(status_code=400, detail="Order total is too low to apply a voucher.")
+
+    discount = compute_voucher_discount(voucher, food_subtotal)
+    if discount <= 0:
+        raise HTTPException(status_code=400, detail="Voucher yields RM 0.00 discount on this order.")
+
+    return voucher, discount
+
+
+def mark_selfservice_voucher_used(db: Session, bill: SelfServiceBill) -> None:
+    """Increment voucher usage once when a SelfServiceBill is confirmed paid."""
+    if not bill.voucher_id:
+        return
+    with _LOYALTY_LOCK:
+        voucher = db.query(Voucher).filter(Voucher.id == bill.voucher_id).first()
+        if not voucher:
+            return
+        next_used = int(voucher.times_used or 0) + 1
+        max_u = max(1, int(voucher.max_uses or 1))
+        voucher.times_used = next_used
+        voucher.is_redeemed = next_used >= max_u
+        db.commit()
+
+
+def claim_selfservice_points_by_gmail(db: Session, bill_id: str, email: str) -> dict:
+    """Claim points from a paid SelfServiceBill using a @gmail.com address (no login required)."""
+    norm_email = (email or "").strip().lower()
+    if not re.match(r"^[a-zA-Z0-9_.+-]+@gmail\.com$", norm_email) or len(norm_email) > 100:
+        raise HTTPException(status_code=400, detail="Please enter a valid @gmail.com email address.")
+
+    with _LOYALTY_LOCK:
+        _begin_immediate_if_sqlite(db)
+        try:
+            bill = db.query(SelfServiceBill).filter(SelfServiceBill.id == bill_id.strip()).first()
+            if not bill:
+                db.rollback()
+                raise HTTPException(status_code=404, detail="Order not found.")
+            if (bill.status or "").lower() != "paid":
+                db.rollback()
+                raise HTTPException(status_code=400, detail="Payment must be completed before claiming points.")
+            if (bill.points_status or "none") == "claimed":
+                db.rollback()
+                raise HTTPException(status_code=400, detail="Points for this order have already been claimed.")
+
+            pts = compute_points_from_food_subtotal(float(bill.total_amount or 0.0))
+            if pts <= 0:
+                db.rollback()
+                raise HTTPException(status_code=400, detail="This order is not eligible for loyalty points.")
+
+            now = datetime.utcnow()
+            user = (
+                db.query(CustomerUser)
+                .filter(func.lower(CustomerUser.email) == norm_email)
+                .first()
+            )
+            if user and not user.is_suspended:
+                user.points_balance = int(user.points_balance or 0) + pts
+                user.updated_at = now
+                db.add(
+                    PointsTransaction(
+                        user_id=user.id,
+                        points=pts,
+                        transaction_type="earned",
+                        reference_id=bill.id,
+                        bill_number=bill.bill_number or "",
+                        source="selfservice",
+                        description=f"Self-Service Order {bill.bill_number}",
+                        created_at=now,
+                    )
+                )
+                bill.points_earned = pts
+                bill.points_status = "claimed"
+                bill.points_claimed_by = user.id
+                bill.points_claimed_email = norm_email
+                bill.points_claimed_at = now
+                db.commit()
+                return {"account_exists": True, "points": pts, "email": norm_email}
+
+            if user and user.is_suspended:
+                db.rollback()
+                raise HTTPException(status_code=403, detail="This loyalty account is currently suspended.")
+
+            # Account does not exist yet: save pending_email so it auto-credits when they sign in
+            bill.points_earned = pts
+            bill.points_status = "pending_email"
+            bill.points_claimed_email = norm_email
+            bill.points_claimed_at = now
+            db.commit()
+            return {"account_exists": False, "points": pts, "email": norm_email}
+        except HTTPException:
+            raise
+        except Exception:
+            db.rollback()
+            raise
+
+
+def claim_pending_selfservice_points_for_user(db: Session, user_id: int) -> int:
+    """Credit any pending_email SelfServiceBill points when the user signs in with that Gmail."""
+    with _LOYALTY_LOCK:
+        _begin_immediate_if_sqlite(db)
+        try:
+            user = db.query(CustomerUser).filter(CustomerUser.id == user_id).first()
+            if not user or user.is_suspended or not user.email:
+                db.rollback()
+                return 0
+            norm_email = user.email.strip().lower()
+            pending_bills = (
+                db.query(SelfServiceBill)
+                .filter(
+                    SelfServiceBill.status == "paid",
+                    SelfServiceBill.points_status == "pending_email",
+                    func.lower(SelfServiceBill.points_claimed_email) == norm_email,
+                )
+                .all()
+            )
+            if not pending_bills:
+                db.rollback()
+                return 0
+            now = datetime.utcnow()
+            total_pts = 0
+            for b in pending_bills:
+                pts = int(b.points_earned or compute_points_from_food_subtotal(float(b.total_amount or 0.0)))
+                if pts <= 0:
+                    b.points_status = "claimed"
+                    continue
+                user.points_balance = int(user.points_balance or 0) + pts
+                db.add(
+                    PointsTransaction(
+                        user_id=user.id,
+                        points=pts,
+                        transaction_type="earned",
+                        reference_id=b.id,
+                        bill_number=b.bill_number or "",
+                        source="selfservice",
+                        description=f"Self-Service Order {b.bill_number}",
+                        created_at=now,
+                    )
+                )
+                b.points_status = "claimed"
+                b.points_claimed_by = user.id
+                b.points_claimed_at = now
+                total_pts += pts
+            user.updated_at = now
+            db.commit()
+            return total_pts
+        except Exception:
+            db.rollback()
+            return 0
