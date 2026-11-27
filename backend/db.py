@@ -139,6 +139,10 @@ class SelfServiceBill(Base):
     id = Column(String, primary_key=True)
     bill_number = Column(String, default="", index=True)
     items_json = Column(Text, default="[]")
+    food_subtotal = Column(Float, default=0.0)
+    voucher_id = Column(Integer, nullable=True)
+    voucher_code = Column(String, default="")
+    discount_amount = Column(Float, default=0.0)
     total_amount = Column(Float, default=0.0)
     status = Column(String, default="pending", index=True)  # pending, paid, failed, cancelled, void
     void_reason = Column(String, default="")
@@ -148,6 +152,11 @@ class SelfServiceBill(Base):
     payment_method = Column(String, default="chip")
     client_token = Column(String, default="")
     device_id = Column(String, default="")
+    points_earned = Column(Integer, default=0)
+    points_status = Column(String, default="none")  # none, claimed, pending_email
+    points_claimed_by = Column(Integer, nullable=True)
+    points_claimed_email = Column(String, default="", index=True)
+    points_claimed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
     paid_at = Column(DateTime, nullable=True, index=True)
@@ -423,6 +432,21 @@ def init_db():
         conn.exec_driver_sql(
             "CREATE INDEX IF NOT EXISTS idx_sessions_customer_user_id ON sessions (customer_user_id)"
         )
+        ss_columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(selfservice_bills)")]
+        if ss_columns:
+            for col_name, col_def in (
+                ("food_subtotal", "REAL DEFAULT 0.0"),
+                ("voucher_id", "INTEGER"),
+                ("voucher_code", "TEXT DEFAULT ''"),
+                ("discount_amount", "REAL DEFAULT 0.0"),
+                ("points_earned", "INTEGER DEFAULT 0"),
+                ("points_status", "TEXT DEFAULT 'none'"),
+                ("points_claimed_by", "INTEGER"),
+                ("points_claimed_email", "TEXT DEFAULT ''"),
+                ("points_claimed_at", "DATETIME"),
+            ):
+                if col_name not in ss_columns:
+                    conn.exec_driver_sql(f"ALTER TABLE selfservice_bills ADD COLUMN {col_name} {col_def}")
         conn.exec_driver_sql(
             "CREATE INDEX IF NOT EXISTS idx_sessions_guest_session_id ON sessions (guest_session_id)"
         )

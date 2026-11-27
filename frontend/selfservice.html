@@ -323,9 +323,31 @@
 
           <!-- Financial Calculation Summary Card -->
           <div class="p-4 bg-slate-900 border-t border-slate-800 flex flex-col gap-2.5 shrink-0">
+            <!-- Voucher Code Input -->
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5">
+                <div class="relative flex-1">
+                  <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px]">confirmation_number</span>
+                  <input id="voucherCodeInput" type="text" placeholder="Voucher code (optional)" onkeydown="if(event.key==='Enter'){event.preventDefault();applySelfServiceVoucher();}" class="w-full h-9 pl-8 pr-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold uppercase text-slate-100 placeholder-slate-500 placeholder:normal-case focus:bg-slate-950 focus:border-orange-500 outline-none transition-all">
+                </div>
+                <button id="voucherApplyBtn" type="button" onclick="applySelfServiceVoucher()" class="h-9 px-3 rounded-xl bg-slate-800 hover:bg-orange-600 border border-slate-700 hover:border-orange-500 text-xs font-bold text-slate-200 hover:text-white transition-colors shrink-0">
+                  Apply
+                </button>
+                <button id="voucherRemoveBtn" type="button" onclick="removeSelfServiceVoucher()" class="hidden h-9 px-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-xs font-bold text-red-400 transition-colors shrink-0" title="Remove voucher">
+                  &times;
+                </button>
+              </div>
+              <p id="voucherStatusMsg" class="hidden text-[11px] font-semibold px-1"></p>
+            </div>
+
             <div class="flex justify-between items-center text-slate-400 text-sm">
               <span id="cartSubtotalLabel">Subtotal (0 items)</span>
               <span id="cartSubtotalVal" class="font-semibold text-slate-100 tabular-nums">RM 0.00</span>
+            </div>
+
+            <div id="cartDiscountRow" class="hidden flex justify-between items-center text-emerald-400 text-xs font-bold">
+              <span id="cartDiscountLabel">Voucher Discount</span>
+              <span id="cartDiscountVal" class="tabular-nums">-RM 0.00</span>
             </div>
 
             <p id="checkoutErrorMsg" class="hidden text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-1.5 text-center"></p>
@@ -1163,15 +1185,43 @@
         });
         totalAmount = Math.round(totalAmount * 100) / 100;
 
-        if (entries.length === 0 && confirmChk) {
-          confirmChk.checked = false;
+        if (entries.length === 0) {
+          appliedVoucher = null;
+          if (confirmChk) confirmChk.checked = false;
+          const vInp = document.getElementById("voucherCodeInput");
+          if (vInp) vInp.value = "";
+          const vMsg = document.getElementById("voucherStatusMsg");
+          if (vMsg) vMsg.classList.add("hidden");
+        }
+
+        let discountAmt = 0;
+        if (appliedVoucher && entries.length > 0) {
+          discountAmt = Math.min(Math.max(0, totalAmount - 0.10), Number(appliedVoucher.discount_amount || 0));
+          discountAmt = Math.round(discountAmt * 100) / 100;
+        }
+        const finalTotal = Math.round(Math.max(0, totalAmount - discountAmt) * 100) / 100;
+
+        const discRow = document.getElementById("cartDiscountRow");
+        const discLbl = document.getElementById("cartDiscountLabel");
+        const discVal = document.getElementById("cartDiscountVal");
+        const vRemBtn = document.getElementById("voucherRemoveBtn");
+        if (discRow && discLbl && discVal) {
+          if (appliedVoucher && discountAmt > 0) {
+            discRow.classList.remove("hidden");
+            discLbl.textContent = `Voucher (${appliedVoucher.code})`;
+            discVal.textContent = "-" + formatRM(discountAmt);
+            if (vRemBtn) vRemBtn.classList.remove("hidden");
+          } else {
+            discRow.classList.add("hidden");
+            if (vRemBtn) vRemBtn.classList.add("hidden");
+          }
         }
 
         if (headerBadge) headerBadge.textContent = String(totalQty);
         if (clearBtn) clearBtn.classList.toggle("hidden", entries.length === 0);
         if (subtotalLbl) subtotalLbl.textContent = `Subtotal (${totalQty} ${totalQty === 1 ? "item" : "items"})`;
         if (subtotalVal) subtotalVal.textContent = formatRM(totalAmount);
-        if (totalVal) totalVal.textContent = formatRM(totalAmount);
+        if (totalVal) totalVal.textContent = formatRM(finalTotal);
 
         const tenderBtnNormal = document.getElementById("tenderBtnNormalContent");
         const tenderBtnLoading = document.getElementById("tenderBtnLoadingContent");
@@ -1198,7 +1248,7 @@
         }
 
         if (mobileBubble) mobileBubble.textContent = String(totalQty);
-        if (mobileTotal) mobileTotal.textContent = formatRM(totalAmount);
+        if (mobileTotal) mobileTotal.textContent = formatRM(finalTotal);
 
         if (!container) return;
 
@@ -1291,6 +1341,71 @@
         }
       }
 
+      let appliedVoucher = null;
+
+      async function applySelfServiceVoucher() {
+        const inp = document.getElementById("voucherCodeInput");
+        const msgEl = document.getElementById("voucherStatusMsg");
+        const btn = document.getElementById("voucherApplyBtn");
+        const code = (inp ? inp.value : "").trim().toUpperCase();
+        const itemsPayload = getActiveCartItemsPayload();
+        if (!itemsPayload.length) {
+          if (msgEl) {
+            msgEl.textContent = "Add items to your cart first.";
+            msgEl.className = "text-[11px] font-semibold px-1 text-red-400";
+          }
+          return;
+        }
+        if (!code) {
+          if (msgEl) {
+            msgEl.textContent = "Please enter a voucher code.";
+            msgEl.className = "text-[11px] font-semibold px-1 text-red-400";
+          }
+          return;
+        }
+        if (btn) btn.disabled = true;
+        try {
+          const res = await fetch("/api/selfservice/voucher/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, items: itemsPayload }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            appliedVoucher = null;
+            if (msgEl) {
+              msgEl.textContent = (typeof data.detail === "string" ? data.detail : data.detail?.message) || "Invalid voucher code.";
+              msgEl.className = "text-[11px] font-semibold px-1 text-red-400";
+            }
+            renderCart();
+            return;
+          }
+          appliedVoucher = data;
+          if (inp) inp.value = data.code;
+          if (msgEl) {
+            msgEl.textContent = `Voucher ${data.code} applied (-RM ${Number(data.discount_amount || 0).toFixed(2)})`;
+            msgEl.className = "text-[11px] font-semibold px-1 text-emerald-400";
+          }
+          renderCart();
+        } catch (e) {
+          if (msgEl) {
+            msgEl.textContent = "Could not validate voucher. Try again.";
+            msgEl.className = "text-[11px] font-semibold px-1 text-red-400";
+          }
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      function removeSelfServiceVoucher() {
+        appliedVoucher = null;
+        const inp = document.getElementById("voucherCodeInput");
+        const msgEl = document.getElementById("voucherStatusMsg");
+        if (inp) inp.value = "";
+        if (msgEl) msgEl.classList.add("hidden");
+        renderCart();
+      }
+
       async function submitCheckoutOrder() {
         if (isSubmittingOrder) return;
         const itemsPayload = getActiveCartItemsPayload();
@@ -1321,6 +1436,7 @@
             body: JSON.stringify({
               items: itemsPayload,
               email: emailVal,
+              voucher_code: appliedVoucher ? appliedVoucher.code : "",
               client_token: cToken,
               device_id: dId,
             }),

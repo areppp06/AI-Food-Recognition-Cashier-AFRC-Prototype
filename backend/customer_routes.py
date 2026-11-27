@@ -42,6 +42,7 @@ from backend.loyalty import (
     _LOYALTY_LOCK,
     _begin_immediate_if_sqlite,
     claim_guest_unclaimed_points_for_user,
+    claim_pending_selfservice_points_for_user,
     clear_customer_session_cookie,
     clear_guest_unclaimed_session,
     clear_unclaimed_points_cookie,
@@ -237,6 +238,8 @@ def get_loyalty_status(
         if auto_claim.get("claimed"):
             db.refresh(user)
             claimed_now = auto_claim
+        if claim_pending_selfservice_points_for_user(db, user.id) > 0:
+            db.refresh(user)
 
         payload = {
             "authenticated": True,
@@ -438,6 +441,7 @@ def customer_google_sign_in(
         client_token=ctok,
         explicit_session_id=explicit_session_id,
     )
+    claim_pending_selfservice_points_for_user(db, user.id)
     db.refresh(user)
 
     resp = JSONResponse(

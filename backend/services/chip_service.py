@@ -11,6 +11,7 @@ from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
 
 from ..db import ENV_DIR, ROOT, SelfServiceBill
+from ..loyalty import compute_points_from_food_subtotal, mark_selfservice_voucher_used
 from .config_service import _read_env_file_cached, _restaurant_profile
 
 logger = logging.getLogger("afrc")
@@ -177,9 +178,16 @@ def verify_and_mark_selfservice_paid(bill: SelfServiceBill, db: Session) -> bool
 
     p_status = str(pdata.get("status") or "").lower()
     if p_status in ("paid", "cleared", "settled"):
+        was_paid = bill.status == "paid"
         bill.status = "paid"
         bill.paid_at = bill.paid_at or datetime.utcnow()
+        bill.points_earned = int(bill.points_earned or compute_points_from_food_subtotal(float(bill.total_amount or 0.0)))
         bill.updated_at = datetime.utcnow()
         db.commit()
+        if not was_paid:
+            try:
+                mark_selfservice_voucher_used(db, bill)
+            except Exception as e:
+                logger.exception(f"[CHIP] Voucher usage update failed for {bill.bill_number}: {e}")
         return True
     return False

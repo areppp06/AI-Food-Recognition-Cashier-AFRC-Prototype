@@ -16,6 +16,12 @@ from sqlalchemy.orm import Session
 
 from ..auth import require_admin_api
 from ..db import AuditLog, Dish, SelfServiceBill, next_selfservice_bill_number
+from ..loyalty import (
+    MIN_PAYABLE_RM,
+    claim_selfservice_points_by_gmail,
+    compute_points_from_food_subtotal,
+    validate_voucher_for_selfservice,
+)
 from ..services.chip_service import create_chip_purchase_for_selfservice, verify_and_mark_selfservice_paid
 from ..services.config_service import NO_CACHE_HEADERS, _local_tz_offset, _restaurant_profile, _restaurant_settings
 from ..services.security_service import _get_client_token, _get_device_id
@@ -29,16 +35,25 @@ def _serialize_ss_bill(b: SelfServiceBill) -> dict:
         items = json.loads(b.items_json or "[]")
     except Exception:
         items = []
+    total_amt = round(float(b.total_amount or 0.0), 2)
+    food_sub = round(float(b.food_subtotal or total_amt), 2)
+    pts = int(b.points_earned or compute_points_from_food_subtotal(total_amt))
     return {
         "id": b.id,
         "bill_number": b.bill_number or "",
         "status": b.status or "pending",
         "void_reason": b.void_reason or "",
         "items": items,
-        "total": round(float(b.total_amount or 0.0), 2),
+        "food_subtotal": food_sub,
+        "voucher_code": b.voucher_code or "",
+        "discount_amount": round(float(b.discount_amount or 0.0), 2),
+        "total": total_amt,
         "receipt_email": b.receipt_email or "",
         "chip_purchase_id": b.chip_purchase_id or "",
         "payment_method": b.payment_method or "chip",
+        "points_earned": pts,
+        "points_status": b.points_status or "none",
+        "points_claimed_email": b.points_claimed_email or "",
         "created_at": (b.created_at.isoformat() + "Z") if b.created_at else "",
         "updated_at": (b.updated_at.isoformat() + "Z") if b.updated_at else "",
         "paid_at": (b.paid_at.isoformat() + "Z") if b.paid_at else "",
@@ -76,6 +91,70 @@ def selfservice_status():
     )
 
 
+def _resolve_selfservice_items(raw_items: list, db: Session) -> tuple[list[dict], float]:
+    if not isinstance(raw_items, list) or not raw_items:
+        raise HTTPException(status_code=400, detail="Please add at least one item to your order.")
+    dish_ids = []
+    for entry in raw_items:
+        try:
+            did = int(entry.get("dish_id") or entry.get("id"))
+            qty = int(entry.get("quantity") or 0)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Invalid item selection.")
+        if qty <= 0 or qty > 99:
+            raise HTTPException(status_code=400, detail="Item quantity must be between 1 and 99.")
+        dish_ids.append((did, qty))
+
+    dishes_by_id = {
+        d.id: d for d in db.query(Dish).filter(Dish.id.in_([x[0] for x in dish_ids])).all()
+    }
+    bill_items = []
+    food_subtotal = 0.0
+    for did, qty in dish_ids:
+        dish = dishes_by_id.get(did)
+        if not dish or not dish.available:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{dish.name if dish else 'Selected item'} is currently unavailable.",
+            )
+        unit_price = round(float(dish.price or 0.0), 2)
+        sub = round(unit_price * qty, 2)
+        food_subtotal += sub
+        bill_items.append({
+            "dish_id": dish.id,
+            "name": dish.name,
+            "quantity": qty,
+            "unit_price": unit_price,
+            "subtotal": sub,
+            "pieces_per_portion": int(dish.pieces_per_portion or 1),
+        })
+    return bill_items, round(food_subtotal, 2)
+
+
+@router.post("/api/selfservice/voucher/validate")
+async def selfservice_validate_voucher(request: Request, db: Session = Depends(get_db)):
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    code = str((payload or {}).get("code") or "").strip().upper()
+    raw_items = (payload or {}).get("items") or []
+    _items, food_subtotal = _resolve_selfservice_items(raw_items, db)
+    voucher, discount = validate_voucher_for_selfservice(db, code, food_subtotal)
+    final_total = round(max(MIN_PAYABLE_RM, food_subtotal - discount), 2)
+    return JSONResponse(
+        content={
+            "valid": True,
+            "code": voucher.code,
+            "type": voucher.type,
+            "discount_amount": round(discount, 2),
+            "food_subtotal": food_subtotal,
+            "total": final_total,
+        },
+        headers=NO_CACHE_HEADERS,
+    )
+
+
 @router.post("/api/selfservice/pay")
 async def selfservice_pay(request: Request, db: Session = Depends(get_db)):
     settings = _restaurant_settings()
@@ -93,9 +172,6 @@ async def selfservice_pay(request: Request, db: Session = Depends(get_db)):
         payload = {}
 
     raw_items = (payload or {}).get("items") or []
-    if not isinstance(raw_items, list) or not raw_items:
-        raise HTTPException(status_code=400, detail="Please add at least one item to your order.")
-
     email = str((payload or {}).get("email") or "").strip()
     if email:
         if email[0] in ("=", "+", "-", "@"):
@@ -103,45 +179,29 @@ async def selfservice_pay(request: Request, db: Session = Depends(get_db)):
         if not re.match(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$", email) or len(email) > 100:
             raise HTTPException(status_code=400, detail="Enter a valid email address or leave it blank.")
 
-    dish_ids = []
-    for entry in raw_items:
-        try:
-            did = int(entry.get("dish_id") or entry.get("id"))
-            qty = int(entry.get("quantity") or 0)
-        except (TypeError, ValueError):
-            raise HTTPException(status_code=400, detail="Invalid item selection.")
-        if qty <= 0 or qty > 99:
-            raise HTTPException(status_code=400, detail="Item quantity must be between 1 and 99.")
-        dish_ids.append((did, qty))
+    bill_items, food_subtotal = _resolve_selfservice_items(raw_items, db)
 
-    dishes_by_id = {
-        d.id: d for d in db.query(Dish).filter(Dish.id.in_([x[0] for x in dish_ids])).all()
-    }
+    voucher_code = str((payload or {}).get("voucher_code") or "").strip().upper()
+    voucher_id = None
+    discount_amount = 0.0
+    if voucher_code:
+        voucher, discount = validate_voucher_for_selfservice(db, voucher_code, food_subtotal)
+        voucher_id = voucher.id
+        voucher_code = voucher.code
+        discount_amount = round(discount, 2)
 
-    bill_items = []
-    total = 0.0
-    for did, qty in dish_ids:
-        dish = dishes_by_id.get(did)
-        if not dish or not dish.available:
-            raise HTTPException(
-                status_code=400,
-                detail=f"{dish.name if dish else 'Selected item'} is currently unavailable.",
-            )
-        unit_price = round(float(dish.price or 0.0), 2)
-        sub = round(unit_price * qty, 2)
-        total += sub
-        bill_items.append({
-            "dish_id": dish.id,
-            "name": dish.name,
-            "quantity": qty,
-            "unit_price": unit_price,
-            "subtotal": sub,
-            "pieces_per_portion": int(dish.pieces_per_portion or 1),
-        })
-
-    total = round(total, 2)
+    total = round(max(MIN_PAYABLE_RM, food_subtotal - discount_amount), 2)
     if total < 0.10:
         raise HTTPException(status_code=400, detail="Minimum order total is RM 0.10.")
+
+    # Scale item prices sent to CHIP if voucher discount is applied so CHIP product sum matches total
+    chip_items = [dict(it) for it in bill_items]
+    if discount_amount > 0 and food_subtotal > 0:
+        chip_items = [{
+            "name": f"Order ({len(bill_items)} items, Voucher {voucher_code})"[:64],
+            "quantity": 1,
+            "unit_price": total,
+        }]
 
     bill_id = str(uuid.uuid4())
     bill_number = next_selfservice_bill_number(db)
@@ -152,12 +212,18 @@ async def selfservice_pay(request: Request, db: Session = Depends(get_db)):
         id=bill_id,
         bill_number=bill_number,
         items_json=json.dumps(bill_items),
+        food_subtotal=food_subtotal,
+        voucher_id=voucher_id,
+        voucher_code=voucher_code,
+        discount_amount=discount_amount,
         total_amount=total,
         status="pending",
         receipt_email=email,
         payment_method="chip",
         client_token=c_token,
         device_id=d_id,
+        points_earned=compute_points_from_food_subtotal(total),
+        points_status="none",
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
@@ -165,7 +231,7 @@ async def selfservice_pay(request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     try:
-        chip_res = create_chip_purchase_for_selfservice(request, bill, bill_items)
+        chip_res = create_chip_purchase_for_selfservice(request, bill, chip_items)
     except HTTPException:
         bill.status = "failed"
         bill.void_reason = "CHIP initialization failed"
@@ -255,6 +321,21 @@ def get_selfservice_bill(bill_id: str, db: Session = Depends(get_db)):
     data["company_phone"] = prof.get("company_phone") or ""
     data["company_email"] = prof.get("company_email") or ""
     return JSONResponse(content=data, headers=NO_CACHE_HEADERS)
+
+
+@router.post("/api/selfservice/bills/{bill_id}/claim-points")
+async def selfservice_claim_points(
+    bill_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    email = str((payload or {}).get("email") or "").strip()
+    result = claim_selfservice_points_by_gmail(db, bill_id, email)
+    return JSONResponse(content=result, headers=NO_CACHE_HEADERS)
 
 
 # ---------------------------------------------------------------------------
