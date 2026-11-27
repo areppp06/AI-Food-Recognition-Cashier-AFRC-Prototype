@@ -11,7 +11,11 @@ from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
 
 from ..db import ENV_DIR, ROOT, SelfServiceBill
-from ..loyalty import compute_points_from_food_subtotal, mark_selfservice_voucher_used
+from ..loyalty import (
+    claim_selfservice_points_by_gmail,
+    compute_points_from_food_subtotal,
+    mark_selfservice_voucher_used,
+)
 from .config_service import _read_env_file_cached, _restaurant_profile
 
 logger = logging.getLogger("afrc")
@@ -189,5 +193,15 @@ def verify_and_mark_selfservice_paid(bill: SelfServiceBill, db: Session) -> bool
                 mark_selfservice_voucher_used(db, bill)
             except Exception as e:
                 logger.exception(f"[CHIP] Voucher usage update failed for {bill.bill_number}: {e}")
+        if (
+            (bill.points_status or "none") == "none"
+            and int(bill.points_earned or 0) > 0
+            and (bill.receipt_email or "").strip().lower().endswith("@gmail.com")
+        ):
+            try:
+                claim_selfservice_points_by_gmail(db, bill.id, bill.receipt_email)
+                db.refresh(bill)
+            except Exception as e:
+                logger.warning(f"[CHIP] Auto-claim points skipped for {bill.bill_number}: {e}")
         return True
     return False
