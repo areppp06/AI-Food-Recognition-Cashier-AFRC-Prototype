@@ -482,12 +482,6 @@ video, canvas {
   font-size: 0.92rem;
   margin-bottom: 0.7rem;
 }
-#scanFxCanvas {
-  z-index: 3;
-  pointer-events: none;
-  object-fit: fill !important;
-  background: rgba(10, 15, 28, 0.36);
-}
 .turnstile-slot {
   display: flex;
   justify-content: center;
@@ -930,7 +924,6 @@ video, canvas {
 </div>
 <video autoplay="" playsinline="" muted="" id="video" style="display:none;"></video>
 <canvas id="canvas" style="display:none;"></canvas>
-<canvas id="scanFxCanvas" style="display:none;" aria-hidden="true"></canvas>
 <div class="retake-overlay" id="retakeOverlay"></div>
 </div>
 <div class="turnstile-slot" id="recognize-turnstile"></div>
@@ -1751,7 +1744,6 @@ if (videoBox) {
 }
 
 function resumeCameraAfterReject() {
-  stopPlateScanAnimation();
   if (retakeOverlay) {
     retakeOverlay.classList.remove("is-open");
     retakeOverlay.innerHTML = "";
@@ -1764,137 +1756,6 @@ function resumeCameraAfterReject() {
     capBtn.disabled = !stream;
   }
   if (status) status.style.display = "none";
-}
-
-let scanFxRaf = 0;
-const SCAN_DOT_PALETTE = [
-  [255, 107, 53],  // vivid orange
-  [255, 214, 10],  // electric yellow
-  [0, 245, 212],   // neon mint
-  [0, 187, 249],   // electric cyan
-  [241, 91, 181],  // hot magenta
-  [168, 85, 247]   // vivid violet
-];
-
-function startPlateScanAnimation() {
-  const fx = document.getElementById("scanFxCanvas");
-  const box = document.getElementById("videoBox");
-  if (!fx || !box) return;
-  stopPlateScanAnimation();
-  fx.style.display = "block";
-
-  const ctx = fx.getContext("2d");
-  const cols = 16;
-  const rows = 11;
-  const startTime = performance.now();
-
-  const renderFrame = (now) => {
-    const w = box.clientWidth || 360;
-    const h = box.clientHeight || 270;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const targetW = Math.round(w * dpr);
-    const targetH = Math.round(h * dpr);
-    if (fx.width !== targetW || fx.height !== targetH) {
-      fx.width = targetW;
-      fx.height = targetH;
-    }
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-
-    const t = (now - startTime) * 0.001;
-    // Smooth left-to-right scan wave (0..1)
-    const sweep = (t * 0.65) % 1;
-    const beamX = sweep * (w + 140) - 70;
-
-    // Bright sweeping scan beam from left to right
-    const grad = ctx.createLinearGradient(beamX - 80, 0, beamX + 80, 0);
-    grad.addColorStop(0, "rgba(0, 187, 249, 0)");
-    grad.addColorStop(0.5, "rgba(255, 255, 255, 0.24)");
-    grad.addColorStop(1, "rgba(255, 107, 53, 0)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-
-    const cx = w * 0.5;
-    const cy = h * 0.5;
-    const padX = w * 0.07;
-    const padY = h * 0.09;
-    const spanX = w - padX * 2;
-    const spanY = h - padY * 2;
-
-    const dots = [];
-    for (let r = 0; r < rows; r++) {
-      const ny = r / (rows - 1);
-      const baseY = padY + ny * spanY;
-      for (let c = 0; c < cols; c++) {
-        const nx = c / (cols - 1);
-        const baseX = padX + nx * spanX;
-
-        // Rolling 3D wave traveling left-to-right
-        const wavePhase = nx * 5.4 - t * 5.6 + ny * 1.5;
-        const lift = Math.sin(wavePhase);
-        const sway = Math.cos(wavePhase);
-
-        const beamDist = Math.abs(baseX - beamX) / (w * 0.24);
-        const beamBoost = Math.max(0, 1 - beamDist);
-
-        // 3D perspective & displacement
-        const depth = 1 + lift * 0.45 + beamBoost * 0.55;
-        const px = cx + (baseX - cx) * (0.9 + depth * 0.1) + sway * 9;
-        const py = cy + (baseY - cy) * (0.9 + depth * 0.1) - lift * 15 - beamBoost * 8;
-
-        const radius = Math.max(2.2, 3.0 * depth + beamBoost * 2.2);
-        const alpha = Math.min(1.0, 0.58 + (lift + 1) * 0.16 + beamBoost * 0.35);
-
-        const colorIdx = (c * 3 + r) % SCAN_DOT_PALETTE.length;
-        dots.push({ px, py, radius, alpha, rgb: SCAN_DOT_PALETTE[colorIdx], depth, beamBoost });
-      }
-    }
-
-    // Painter's order (back-to-front)
-    dots.sort((a, b) => a.depth - b.depth);
-    for (let i = 0; i < dots.length; i++) {
-      const d = dots[i];
-      const [cr, cg, cb] = d.rgb;
-
-      // Vivid outer glow halo
-      ctx.beginPath();
-      ctx.arc(d.px, d.py, d.radius * 2.4, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${(d.alpha * 0.34).toFixed(3)})`;
-      ctx.fill();
-
-      // Main vivid dot
-      ctx.beginPath();
-      ctx.arc(d.px, d.py, d.radius, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${d.alpha.toFixed(3)})`;
-      ctx.fill();
-
-      // Bright core on elevated/scanned dots so they pop
-      if (d.depth > 1.05) {
-        ctx.beginPath();
-        ctx.arc(d.px, d.py, d.radius * 0.42, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${(Math.min(0.95, d.alpha * 0.85)).toFixed(3)})`;
-        ctx.fill();
-      }
-    }
-
-    scanFxRaf = requestAnimationFrame(renderFrame);
-  };
-
-  scanFxRaf = requestAnimationFrame(renderFrame);
-}
-
-function stopPlateScanAnimation() {
-  if (scanFxRaf) {
-    cancelAnimationFrame(scanFxRaf);
-    scanFxRaf = 0;
-  }
-  const fx = document.getElementById("scanFxCanvas");
-  if (fx) {
-    const ctx = fx.getContext("2d");
-    if (ctx) ctx.clearRect(0, 0, fx.width, fx.height);
-    fx.style.display = "none";
-  }
 }
 
 capBtn.onclick = async () => {
@@ -1926,7 +1787,6 @@ capBtn.onclick = async () => {
   canvas.getContext('2d').drawImage(video, sx, sy, sw, sh, 0, 0, outW, outH);
   canvas.style.display = "block";
   video.style.display = "none";
-  startPlateScanAnimation();
 
   canvas.toBlob(async (blob) => {
     if (!blob) {
@@ -2009,7 +1869,6 @@ capBtn.onclick = async () => {
       showError("NETWORK_ERROR", "Could not connect to recognition server. Please try again.");
     } finally {
       if (!redirected) {
-        stopPlateScanAnimation();
         if (status) status.style.display = "none";
         if (capBtn.dataset.mode !== "resume") {
           capBtn.innerHTML = captureDefaultHtml;
@@ -2048,7 +1907,6 @@ function malayRetakeMessage(code, message) {
 }
 
 function showError(code, message) {
-  stopPlateScanAnimation();
   const safeCode = esc(code || "UNKNOWN");
   const spoken = esc(malayRetakeMessage(code, message));
   if (result) result.innerHTML = "";
