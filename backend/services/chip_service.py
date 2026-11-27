@@ -75,7 +75,7 @@ def create_chip_purchase_for_selfservice(
 
     base_url = _external_base_url(request)
     callback_url = f"{base_url}/api/selfservice/chip-callback?bill_id={bill.id}"
-    cancel_url = f"{base_url}/selfservice?payment=cancelled"
+    cancel_url = f"{base_url}/self?payment=cancelled"
     webhook_url = f"{base_url}/api/selfservice/chip-webhook"
 
     products_payload: list[dict[str, Any]] = []

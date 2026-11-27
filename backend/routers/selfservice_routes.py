@@ -60,7 +60,7 @@ def _serialize_ss_bill(b: SelfServiceBill) -> dict:
     }
 
 
-@router.get("/selfservice")
+@router.get("/self")
 async def selfservice_page():
     settings = _restaurant_settings()
     if settings["maintenance_mode"]:
@@ -70,7 +70,7 @@ async def selfservice_page():
     return FileResponse("frontend/selfservice.html", headers=NO_CACHE_HEADERS)
 
 
-@router.get("/selfservice/success")
+@router.get("/self/success")
 async def selfservice_success_page():
     return FileResponse("frontend/selfservice_success.html", headers=NO_CACHE_HEADERS)
 
@@ -272,7 +272,7 @@ def selfservice_chip_callback(
         bill = db.query(SelfServiceBill).filter(SelfServiceBill.chip_purchase_id == pid).first()
 
     if not bill:
-        return RedirectResponse("/selfservice?payment=failed", status_code=303)
+        return RedirectResponse("/self?payment=failed", status_code=303)
 
     if status in ("failure", "cancelled"):
         if bill.status == "pending":
@@ -280,11 +280,11 @@ def selfservice_chip_callback(
             bill.void_reason = f"Customer {status} payment"
             bill.updated_at = datetime.utcnow()
             db.commit()
-        return RedirectResponse(f"/selfservice?payment={quote(status)}", status_code=303)
+        return RedirectResponse(f"/self?payment={quote(status)}", status_code=303)
 
     if verify_and_mark_selfservice_paid(bill, db):
-        return RedirectResponse(f"/selfservice/success?bill={quote(bill.id)}", status_code=303)
-    return RedirectResponse(f"/selfservice/success?bill={quote(bill.id)}&pending=1", status_code=303)
+        return RedirectResponse(f"/self/success?bill={quote(bill.id)}", status_code=303)
+    return RedirectResponse(f"/self/success?bill={quote(bill.id)}&pending=1", status_code=303)
 
 
 @router.post("/api/selfservice/chip-webhook")
