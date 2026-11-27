@@ -365,18 +365,26 @@ async def recognize(
         if target_bill and target_bill.status in ("paid", "void", "cancelled"):
             target_bill = None
 
+    async def _upload_plate_or_reject(key: str, sid: str) -> None:
+        if not await _upload_plate_to_r2(key, image_bytes):
+            raise HTTPException(
+                status_code=503,
+                detail=ErrorResponse(
+                    error_code="R2_UPLOAD_FAILED",
+                    message="Cloud image storage (R2) is unavailable. Request rejected.",
+                ).dict(),
+            )
+        try:
+            UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+            (UPLOAD_DIR / f"{sid}.jpg").write_bytes(image_bytes)
+        except OSError:
+            pass
+
     if target_bill:
         session_id = target_bill.id
         bill_number = target_bill.bill_number or next_bill_number(db)
         r2_key = f"plates/{bill_number}_{session_id}.jpg"
-        try:
-            UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-            (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
-        except OSError:
-            pass
-        uploaded_to_r2 = await _upload_plate_to_r2(r2_key, image_bytes)
-        if not uploaded_to_r2:
-            r2_key = target_bill.image_key or f"plates/{bill_number}_{session_id}.jpg"
+        await _upload_plate_or_reject(r2_key, session_id)
         target_bill.bill_number = bill_number
         target_bill.image_key = r2_key
         target_bill.raw_ai = json.dumps([i.dict() for i in ai_items])
@@ -412,14 +420,7 @@ async def recognize(
         session_id = str(uuid.uuid4())
         bill_number = next_bill_number(db)
         r2_key = f"plates/{bill_number}_{session_id}.jpg"
-        try:
-            UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-            (UPLOAD_DIR / f"{session_id}.jpg").write_bytes(image_bytes)
-        except OSError:
-            pass
-        uploaded_to_r2 = await _upload_plate_to_r2(r2_key, image_bytes)
-        if not uploaded_to_r2:
-            r2_key = f"plates/{bill_number}_{session_id}.jpg"
+        await _upload_plate_or_reject(r2_key, session_id)
         session = SessionBill(
             id=session_id,
             bill_number=bill_number,
