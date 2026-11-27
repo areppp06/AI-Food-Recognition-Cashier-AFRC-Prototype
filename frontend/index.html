@@ -482,6 +482,12 @@ video, canvas {
   font-size: 0.92rem;
   margin-bottom: 0.7rem;
 }
+#scanFxCanvas {
+  z-index: 3;
+  pointer-events: none;
+  object-fit: fill !important;
+  background: rgba(15, 23, 42, 0.18);
+}
 .turnstile-slot {
   display: flex;
   justify-content: center;
@@ -924,6 +930,7 @@ video, canvas {
 </div>
 <video autoplay="" playsinline="" muted="" id="video" style="display:none;"></video>
 <canvas id="canvas" style="display:none;"></canvas>
+<canvas id="scanFxCanvas" style="display:none;" aria-hidden="true"></canvas>
 <div class="retake-overlay" id="retakeOverlay"></div>
 </div>
 <div class="turnstile-slot" id="recognize-turnstile"></div>
@@ -1744,6 +1751,7 @@ if (videoBox) {
 }
 
 function resumeCameraAfterReject() {
+  stopPlateScanAnimation();
   if (retakeOverlay) {
     retakeOverlay.classList.remove("is-open");
     retakeOverlay.innerHTML = "";
@@ -1756,6 +1764,125 @@ function resumeCameraAfterReject() {
     capBtn.disabled = !stream;
   }
   if (status) status.style.display = "none";
+}
+
+let scanFxRaf = 0;
+const SCAN_DOT_PALETTE = [
+  [255, 94, 54],   // orange
+  [245, 158, 11],  // amber
+  [56, 189, 248],  // sky cyan
+  [52, 211, 153],  // emerald
+  [167, 139, 250], // violet
+  [251, 113, 133]  // coral pink
+];
+
+function startPlateScanAnimation() {
+  const fx = document.getElementById("scanFxCanvas");
+  const box = document.getElementById("videoBox");
+  if (!fx || !box) return;
+  stopPlateScanAnimation();
+  fx.style.display = "block";
+
+  const ctx = fx.getContext("2d");
+  const cols = 18;
+  const rows = 13;
+  const startTime = performance.now();
+
+  const renderFrame = (now) => {
+    const w = box.clientWidth || 360;
+    const h = box.clientHeight || 270;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const targetW = Math.round(w * dpr);
+    const targetH = Math.round(h * dpr);
+    if (fx.width !== targetW || fx.height !== targetH) {
+      fx.width = targetW;
+      fx.height = targetH;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    const t = (now - startTime) * 0.001;
+    // Smooth left-to-right sweep position (0..1)
+    const sweep = (t * 0.55) % 1;
+    const beamX = sweep * (w + 120) - 60;
+
+    // Subtle sweeping scan beam from left to right
+    const grad = ctx.createLinearGradient(beamX - 70, 0, beamX + 70, 0);
+    grad.addColorStop(0, "rgba(56, 189, 248, 0)");
+    grad.addColorStop(0.5, "rgba(255, 255, 255, 0.14)");
+    grad.addColorStop(1, "rgba(255, 94, 54, 0)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    const cx = w * 0.5;
+    const cy = h * 0.5;
+    const padX = w * 0.08;
+    const padY = h * 0.1;
+    const spanX = w - padX * 2;
+    const spanY = h - padY * 2;
+
+    const dots = [];
+    for (let r = 0; r < rows; r++) {
+      const ny = r / (rows - 1);
+      const baseY = padY + ny * spanY;
+      for (let c = 0; c < cols; c++) {
+        const nx = c / (cols - 1);
+        const baseX = padX + nx * spanX;
+
+        // 3D wave propagating from left to right
+        const wavePhase = nx * 6.2 - t * 4.4 + ny * 1.4;
+        const waveZ = Math.sin(wavePhase) * 0.65 + Math.cos(nx * 3.1 - t * 2.6 - ny * 2.0) * 0.35;
+        const beamDist = Math.abs(baseX - beamX) / (w * 0.22);
+        const beamBoost = Math.max(0, 1 - beamDist);
+
+        // Perspective projection from 3D depth
+        const depth = 1 + waveZ * 0.32 + beamBoost * 0.35;
+        const px = cx + (baseX - cx) * (0.94 + depth * 0.06);
+        const py = cy + (baseY - cy) * (0.94 + depth * 0.06) - (waveZ * 7 + beamBoost * 6);
+
+        const radius = Math.max(1.4, 2.0 * depth + beamBoost * 1.6);
+        const alpha = Math.min(0.95, 0.26 + (waveZ + 1) * 0.22 + beamBoost * 0.42);
+
+        const colorIdx = (c + r * 2 + Math.floor(t * 1.5)) % SCAN_DOT_PALETTE.length;
+        dots.push({ px, py, radius, alpha, rgb: SCAN_DOT_PALETTE[colorIdx], depth });
+      }
+    }
+
+    // Painter's order (back-to-front) for clean 3D depth
+    dots.sort((a, b) => a.depth - b.depth);
+    for (let i = 0; i < dots.length; i++) {
+      const d = dots[i];
+      const [cr, cg, cb] = d.rgb;
+      if (d.alpha > 0.55) {
+        ctx.beginPath();
+        ctx.arc(d.px, d.py, d.radius * 2.0, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${(d.alpha * 0.22).toFixed(3)})`;
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(d.px, d.py, d.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${d.alpha.toFixed(3)})`;
+      ctx.fill();
+    }
+
+    scanFxRaf = requestAnimationFrame(renderFrame);
+  };
+
+  scanFxRaf = requestAnimationFrame(renderFrame);
+}
+
+function stopPlateScanAnimation() {
+  if (scanFxRaf) {
+    cancelAnimationFrame(scanFxRaf);
+    scanFxRaf = 0;
+  }
+  const fx = document.getElementById("scanFxCanvas");
+  if (fx) {
+    const ctx = fx.getContext("2d");
+    if (ctx) ctx.clearRect(0, 0, fx.width, fx.height);
+    fx.style.display = "none";
+  }
 }
 
 capBtn.onclick = async () => {
@@ -1787,6 +1914,7 @@ capBtn.onclick = async () => {
   canvas.getContext('2d').drawImage(video, sx, sy, sw, sh, 0, 0, outW, outH);
   canvas.style.display = "block";
   video.style.display = "none";
+  startPlateScanAnimation();
 
   canvas.toBlob(async (blob) => {
     if (!blob) {
@@ -1869,6 +1997,7 @@ capBtn.onclick = async () => {
       showError("NETWORK_ERROR", "Could not connect to recognition server. Please try again.");
     } finally {
       if (!redirected) {
+        stopPlateScanAnimation();
         if (status) status.style.display = "none";
         if (capBtn.dataset.mode !== "resume") {
           capBtn.innerHTML = captureDefaultHtml;
@@ -1907,6 +2036,7 @@ function malayRetakeMessage(code, message) {
 }
 
 function showError(code, message) {
+  stopPlateScanAnimation();
   const safeCode = esc(code || "UNKNOWN");
   const spoken = esc(malayRetakeMessage(code, message));
   if (result) result.innerHTML = "";
