@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html class="light" lang="en">
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=5.0" name="viewport">
@@ -86,9 +86,9 @@
     }
     .confirm-wiggle-pulse {
       animation: wigglePulse 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-      border-color: #f97316 !important;
-      background-color: rgba(234, 88, 12, 0.16) !important;
-      outline: 2px solid #f97316 !important;
+      border-color: #ea580c !important;
+      background-color: #fff7ed !important;
+      outline: 2px solid #ea580c !important;
     }
   </style>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -121,10 +121,10 @@
     }
   </script>
 </head>
-<body class="bg-slate-950 font-body-md text-slate-100 antialiased">
+<body class="bg-slate-50 font-body-md text-slate-900 antialiased">
 <div>
-  <main class="w-full bg-slate-950 min-h-screen">
-    <div class="flex flex-col w-full h-screen overflow-hidden select-none bg-slate-950 relative">
+  <main class="w-full bg-slate-50 min-h-screen">
+    <div class="flex flex-col w-full h-screen overflow-hidden select-none bg-slate-50 relative">
 
       <!-- State Lock Overlay (Outside Operating Hours) -->
       <div id="stateLockOverlay" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -133,19 +133,19 @@
 
       <!-- Kiosk Inactivity Reset Warning Modal -->
       <div id="idleWarningModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-800 animate-in fade-in zoom-in-95">
-          <div class="w-16 h-16 rounded-full bg-orange-500/15 text-orange-400 border border-orange-500/30 flex items-center justify-center mx-auto mb-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+          <div class="w-16 h-16 rounded-full bg-orange-50 text-orange-600 border border-orange-200 flex items-center justify-center mx-auto mb-4">
             <span class="material-symbols-outlined text-[32px]">timer</span>
           </div>
-          <h3 class="font-headline-md text-xl font-bold text-slate-100 mb-1">Are you still ordering?</h3>
-          <p class="text-xs text-slate-400 mb-5 leading-relaxed">
-            To prepare the kiosk for the next customer, this session will reset in <strong id="idleCountdownSec" class="text-orange-400 text-sm">15</strong> seconds.
+          <h3 class="font-headline-md text-xl font-bold text-slate-900 mb-1">Are you still ordering?</h3>
+          <p class="text-xs text-slate-500 mb-5 leading-relaxed">
+            To prepare the kiosk for the next customer, this session will reset in <strong id="idleCountdownSec" class="text-orange-600 text-sm">15</strong> seconds.
           </p>
           <div class="flex gap-2">
             <button type="button" onclick="cancelIdleTimeout()" class="flex-1 py-3 px-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm shadow-md transition-all active:scale-95">
               Keep Ordering
             </button>
-            <button type="button" onclick="forceIdleReset()" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition-all active:scale-95">
+            <button type="button" onclick="forceIdleReset()" class="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-all active:scale-95">
               Reset
             </button>
           </div>
@@ -153,19 +153,19 @@
       </div>
 
       <!-- PWA Install Prompt Banner (Floating Kiosk Card) -->
-      <div id="pwaInstallBanner" class="hidden fixed bottom-16 lg:bottom-5 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-40 bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-orange-500/40 animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div id="pwaInstallBanner" class="hidden fixed bottom-16 lg:bottom-5 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-40 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-orange-500/40 animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div class="flex items-start gap-3">
           <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-orange-600/25">
             <span class="material-symbols-outlined text-[28px]">restaurant</span>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between gap-1 mb-0.5">
-              <h4 class="font-headline-sm text-sm font-bold text-slate-100 truncate">Install Kiosk App</h4>
-              <button type="button" onclick="dismissPWAInstallPrompt()" class="w-6 h-6 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 flex items-center justify-center transition-colors" title="Dismiss">
+              <h4 class="font-headline-sm text-sm font-bold text-slate-900 truncate">Install Kiosk App</h4>
+              <button type="button" onclick="dismissPWAInstallPrompt()" class="w-6 h-6 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition-colors" title="Dismiss">
                 <span class="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
-            <p class="text-xs text-slate-400 mb-3 leading-snug">
+            <p class="text-xs text-slate-500 mb-3 leading-snug">
               Install this self-checkout kiosk on your device for instant full-screen ordering and quick offline-ready payments.
             </p>
             <div class="flex items-center gap-2">
@@ -173,7 +173,7 @@
                 <span class="material-symbols-outlined text-[16px]">download</span>
                 <span>Install App</span>
               </button>
-              <button type="button" onclick="dismissPWAInstallPrompt()" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-all">
+              <button type="button" onclick="dismissPWAInstallPrompt()" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-all">
                 Maybe Later
               </button>
             </div>
@@ -183,22 +183,22 @@
 
       <!-- iOS PWA Install Instruction Modal -->
       <div id="pwaIOSInstallModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-        <div class="bg-slate-900 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-800 animate-in fade-in zoom-in-95">
-          <div class="w-14 h-14 rounded-2xl bg-orange-500/15 text-orange-400 border border-orange-500/30 flex items-center justify-center mx-auto mb-3">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+          <div class="w-14 h-14 rounded-2xl bg-orange-50 text-orange-600 border border-orange-200 flex items-center justify-center mx-auto mb-3">
             <span class="material-symbols-outlined text-[32px]">touch_app</span>
           </div>
-          <h3 class="font-headline-md text-lg font-bold text-slate-100 mb-1">Install on iPhone / iPad</h3>
-          <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+          <h3 class="font-headline-md text-lg font-bold text-slate-900 mb-1">Install on iPhone / iPad</h3>
+          <p class="text-xs text-slate-500 mb-4 leading-relaxed">
             Safari doesn't support automatic prompt. Follow these 2 quick steps:
           </p>
-          <div class="bg-slate-800/80 rounded-2xl p-3.5 mb-5 text-left text-xs space-y-2.5 border border-slate-700">
-            <div class="flex items-center gap-2.5 text-slate-200">
-              <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center shrink-0">1</span>
+          <div class="bg-slate-100 rounded-2xl p-3.5 mb-5 text-left text-xs space-y-2.5 border border-slate-200">
+            <div class="flex items-center gap-2.5 text-slate-800">
+              <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-600 font-bold text-xs flex items-center justify-center shrink-0">1</span>
               <span>Tap the <strong>Share</strong> button <span class="material-symbols-outlined text-[16px] align-middle text-sky-400">ios_share</span> in Safari's toolbar.</span>
             </div>
-            <div class="flex items-center gap-2.5 text-slate-200">
-              <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center shrink-0">2</span>
-              <span>Scroll down and tap <strong>Add to Home Screen</strong> <span class="material-symbols-outlined text-[16px] align-middle text-slate-200">add_box</span>.</span>
+            <div class="flex items-center gap-2.5 text-slate-800">
+              <span class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-600 font-bold text-xs flex items-center justify-center shrink-0">2</span>
+              <span>Scroll down and tap <strong>Add to Home Screen</strong> <span class="material-symbols-outlined text-[16px] align-middle text-slate-800">add_box</span>.</span>
             </div>
           </div>
           <button type="button" onclick="closeIOSInstallModal()" class="w-full py-2.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs shadow-md transition-all active:scale-95">
@@ -209,9 +209,9 @@
 
       <div class="flex flex-1 w-full h-full overflow-hidden relative">
         <!-- LEFT & CENTER: Product Catalog & Menu Actions -->
-        <section class="flex-1 flex flex-col min-w-0 bg-slate-950 h-full overflow-hidden">
+        <section class="flex-1 flex flex-col min-w-0 bg-slate-50 h-full overflow-hidden">
           <!-- Top Functional Bar: Categories & View Filters -->
-          <div class="flex flex-col gap-2.5 p-4 bg-slate-900 border-b border-slate-800 shrink-0 shadow-sm z-10">
+          <div class="flex flex-col gap-2.5 p-4 bg-white border-b border-slate-200 shrink-0 shadow-sm z-10">
             <div class="flex items-center justify-between gap-3">
               <!-- Horizontal Scrollable Category Pills -->
               <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="categoryScroll">
@@ -223,40 +223,40 @@
               </div>
               <!-- Layout & Filter Controls -->
               <div class="flex items-center gap-1.5 shrink-0 pl-2">
-                <button id="pwaInstallHeaderBtn" onclick="triggerPWAInstall()" class="hidden h-9 px-3 rounded-xl bg-orange-500/15 hover:bg-orange-500/25 text-orange-400 border border-orange-500/30 flex items-center gap-1.5 text-xs font-bold transition-all shadow-2xs" title="Install Kiosk App">
+                <button id="pwaInstallHeaderBtn" onclick="triggerPWAInstall()" class="hidden h-9 px-3 rounded-xl bg-orange-50 hover:bg-orange-500/25 text-orange-600 border border-orange-200 flex items-center gap-1.5 text-xs font-bold transition-all shadow-2xs" title="Install Kiosk App">
                   <span class="material-symbols-outlined text-[18px]">download_for_offline</span>
                   <span class="hidden sm:inline">Install App</span>
                 </button>
-                <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
                   <button id="btnGridView" onclick="setCatalogViewMode('grid')" class="w-8 h-8 rounded-lg bg-orange-600 text-white shadow-sm flex items-center justify-center font-semibold transition-all" title="Grid View">
                     <span class="material-symbols-outlined text-[18px]">grid_view</span>
                   </button>
-                  <button id="btnListView" onclick="setCatalogViewMode('list')" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-100 flex items-center justify-center transition-colors" title="List View">
+                  <button id="btnListView" onclick="setCatalogViewMode('list')" class="w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors" title="List View">
                     <span class="material-symbols-outlined text-[18px]">format_list_bulleted</span>
                   </button>
                 </div>
-                <button id="btnToggleFilter" onclick="toggleFilterBar()" class="h-9 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center gap-1.5 text-xs font-semibold transition-all">
+                <button id="btnToggleFilter" onclick="toggleFilterBar()" class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-white border border-slate-200 flex items-center gap-1.5 text-xs font-semibold transition-all">
                   <span class="material-symbols-outlined text-[18px]">filter_list</span>
                   <span class="hidden xl:inline">Filter</span>
                 </button>
-                <button id="btnHeaderRefresh" onclick="location.reload()" class="h-9 w-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 flex items-center justify-center transition-all shadow-2xs active:scale-95" title="Refresh Page">
+                <button id="btnHeaderRefresh" onclick="location.reload()" class="h-9 w-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-white border border-slate-200 flex items-center justify-center transition-all shadow-2xs active:scale-95" title="Refresh Page">
                   <span class="material-symbols-outlined text-[18px]">refresh</span>
                 </button>
               </div>
             </div>
 
             <!-- Collapsible Search & Sort Filter Bar -->
-            <div id="filterBarPanel" class="hidden pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2.5">
+            <div id="filterBarPanel" class="hidden pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
               <div class="relative flex-1 min-w-[200px]">
-                <span class="material-symbols-outlined text-[18px] text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">search</span>
-                <input id="catalogSearchInput" type="text" oninput="renderProductCatalog()" placeholder="Search menu items or description..." class="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl border border-slate-700 bg-slate-800 focus:bg-slate-900 focus:border-orange-500 focus:ring-0 text-slate-100 placeholder-slate-500">
-                <button id="btnClearSearch" onclick="clearCatalogSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                <span class="material-symbols-outlined text-[18px] text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">search</span>
+                <input id="catalogSearchInput" type="text" oninput="renderProductCatalog()" placeholder="Search menu items or description..." class="w-full pl-9 pr-8 py-1.5 text-xs rounded-xl border border-slate-200 bg-slate-100 focus:bg-white focus:border-orange-500 focus:ring-0 text-slate-900 placeholder-slate-400">
+                <button id="btnClearSearch" onclick="clearCatalogSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800">
                   <span class="material-symbols-outlined text-[16px]">close</span>
                 </button>
               </div>
               <div class="flex items-center gap-1.5">
-                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Sort:</span>
-                <select id="catalogSortSelect" onchange="renderProductCatalog()" class="text-xs font-medium rounded-xl border border-slate-700 bg-slate-800 py-1.5 pl-2.5 pr-7 text-slate-200 focus:border-orange-500 focus:ring-0">
+                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Sort:</span>
+                <select id="catalogSortSelect" onchange="renderProductCatalog()" class="text-xs font-medium rounded-xl border border-slate-200 bg-slate-100 py-1.5 pl-2.5 pr-7 text-slate-800 focus:border-orange-500 focus:ring-0">
                   <option value="default">Recommended</option>
                   <option value="price_asc">Price: Low to High</option>
                   <option value="price_desc">Price: High to Low</option>
@@ -273,19 +273,19 @@
             </div>
 
             <!-- Discrete Kiosk Footer Links -->
-            <footer class="mt-8 pt-4 border-t border-slate-800 text-center text-[11px] text-slate-500 space-y-1.5">
+            <footer class="mt-8 pt-4 border-t border-slate-200 text-center text-[11px] text-slate-500 space-y-1.5">
               <div class="flex flex-wrap justify-center items-center gap-x-2.5 gap-y-1">
-                <a href="/pricelist" class="hover:text-orange-400 transition-colors font-medium">Menu Prices</a>
+                <a href="/pricelist" class="hover:text-orange-600 transition-colors font-medium">Menu Prices</a>
                 <span>&bull;</span>
-                <a href="/about" class="hover:text-orange-400 transition-colors font-medium">About Us</a>
+                <a href="/about" class="hover:text-orange-600 transition-colors font-medium">About Us</a>
                 <span>&bull;</span>
-                <a href="/contact" class="hover:text-orange-400 transition-colors font-medium">Contact Us</a>
+                <a href="/contact" class="hover:text-orange-600 transition-colors font-medium">Contact Us</a>
                 <span>&bull;</span>
-                <a href="/privacy" class="hover:text-orange-400 transition-colors font-medium">Privacy Policy</a>
+                <a href="/privacy" class="hover:text-orange-600 transition-colors font-medium">Privacy Policy</a>
                 <span>&bull;</span>
-                <a href="/terms" class="hover:text-orange-400 transition-colors font-medium">Terms &amp; Conditions</a>
+                <a href="/terms" class="hover:text-orange-600 transition-colors font-medium">Terms &amp; Conditions</a>
                 <span>&bull;</span>
-                <a href="/payment-policy" class="hover:text-orange-400 transition-colors font-medium">Payment Policy</a>
+                <a href="/payment-policy" class="hover:text-orange-600 transition-colors font-medium">Payment Policy</a>
               </div>
               <div>
                 &copy; 2026 <span id="footerBrandName">Self-Service e-Cashier</span> &bull; Self-Checkout Kiosk
@@ -298,19 +298,19 @@
         <div id="mobileCartBackdrop" onclick="toggleMobileCart(false)" class="hidden lg:hidden fixed inset-0 bg-black/65 z-30"></div>
 
         <!-- RIGHT: Sticky Order Cart & Tender Sidebar -->
-        <aside id="cartSidebar" class="fixed lg:static inset-y-0 right-0 translate-x-full lg:translate-x-0 transition-transform duration-200 w-full max-w-[410px] xl:w-[440px] shrink-0 bg-slate-900 border-l border-slate-800 flex flex-col h-full shadow-2xl z-40">
+        <aside id="cartSidebar" class="fixed lg:static inset-y-0 right-0 translate-x-full lg:translate-x-0 transition-transform duration-200 w-full max-w-[410px] xl:w-[440px] shrink-0 bg-white border-l border-slate-200 flex flex-col h-full shadow-2xl z-40">
           <!-- Mobile Drawer Close Header -->
-          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/90">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white/95">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-[20px] text-orange-500">shopping_bag</span>
-              <span class="font-headline-sm text-sm font-bold text-slate-100">Current Order</span>
-              <span id="cartHeaderCountBadge" class="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 font-bold text-[11px]">0</span>
+              <span class="font-headline-sm text-sm font-bold text-slate-900">Current Order</span>
+              <span id="cartHeaderCountBadge" class="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-600 border border-orange-200 font-bold text-[11px]">0</span>
             </div>
             <div class="flex items-center gap-2">
-              <button id="btnClearCart" onclick="clearCart()" class="hidden text-xs font-semibold text-slate-400 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10">
+              <button id="btnClearCart" onclick="clearCart()" class="hidden text-xs font-semibold text-slate-500 hover:text-red-600 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10">
                 Clear All
               </button>
-              <button onclick="toggleMobileCart(false)" class="lg:hidden w-8 h-8 rounded-lg bg-slate-800 text-slate-300 flex items-center justify-center">
+              <button onclick="toggleMobileCart(false)" class="lg:hidden w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
                 <span class="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
@@ -322,63 +322,63 @@
           </div>
 
           <!-- Financial Calculation Summary Card -->
-          <div class="p-4 bg-slate-900 border-t border-slate-800 flex flex-col gap-2.5 shrink-0">
+          <div class="p-4 bg-white border-t border-slate-200 flex flex-col gap-2.5 shrink-0">
             <!-- Voucher Code Input -->
             <div class="space-y-1">
               <div class="flex items-center gap-1.5">
                 <div class="relative flex-1">
                   <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-[16px]">confirmation_number</span>
-                  <input id="voucherCodeInput" type="text" placeholder="Voucher code (optional)" onkeydown="if(event.key==='Enter'){event.preventDefault();applySelfServiceVoucher();}" class="w-full h-9 pl-8 pr-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold uppercase text-slate-100 placeholder-slate-500 placeholder:normal-case focus:bg-slate-950 focus:border-orange-500 outline-none transition-all">
+                  <input id="voucherCodeInput" type="text" placeholder="Voucher code (optional)" onkeydown="if(event.key==='Enter'){event.preventDefault();applySelfServiceVoucher();}" class="w-full h-9 pl-8 pr-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold uppercase text-slate-900 placeholder-slate-400 placeholder:normal-case focus:bg-slate-50 focus:border-orange-500 outline-none transition-all">
                 </div>
-                <button id="voucherApplyBtn" type="button" onclick="applySelfServiceVoucher()" class="h-9 px-3 rounded-xl bg-slate-800 hover:bg-orange-600 border border-slate-700 hover:border-orange-500 text-xs font-bold text-slate-200 hover:text-white transition-colors shrink-0">
+                <button id="voucherApplyBtn" type="button" onclick="applySelfServiceVoucher()" class="h-9 px-3 rounded-xl bg-slate-100 hover:bg-orange-600 border border-slate-200 hover:border-orange-500 text-xs font-bold text-slate-800 hover:text-white transition-colors shrink-0">
                   Apply
                 </button>
-                <button id="voucherRemoveBtn" type="button" onclick="removeSelfServiceVoucher()" class="hidden h-9 px-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-xs font-bold text-red-400 transition-colors shrink-0" title="Remove voucher">
+                <button id="voucherRemoveBtn" type="button" onclick="removeSelfServiceVoucher()" class="hidden h-9 px-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-xs font-bold text-red-600 transition-colors shrink-0" title="Remove voucher">
                   &times;
                 </button>
               </div>
               <p id="voucherStatusMsg" class="hidden text-[11px] font-semibold px-1"></p>
             </div>
 
-            <div class="flex justify-between items-center text-slate-400 text-sm">
+            <div class="flex justify-between items-center text-slate-500 text-sm">
               <span id="cartSubtotalLabel">Subtotal (0 items)</span>
-              <span id="cartSubtotalVal" class="font-semibold text-slate-100 tabular-nums">RM 0.00</span>
+              <span id="cartSubtotalVal" class="font-semibold text-slate-900 tabular-nums">RM 0.00</span>
             </div>
 
-            <div id="cartDiscountRow" class="hidden flex justify-between items-center text-emerald-400 text-xs font-bold">
+            <div id="cartDiscountRow" class="hidden flex justify-between items-center text-emerald-600 text-xs font-bold">
               <span id="cartDiscountLabel">Voucher Discount</span>
               <span id="cartDiscountVal" class="tabular-nums">-RM 0.00</span>
             </div>
 
-            <p id="checkoutErrorMsg" class="hidden text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-1.5 text-center"></p>
+            <p id="checkoutErrorMsg" class="hidden text-xs font-semibold text-red-600 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-1.5 text-center"></p>
 
             <!-- Big Master Checkout CTA -->
-            <div class="flex justify-between items-baseline pt-2 border-t border-slate-800">
-              <span class="font-bold text-slate-200 text-base">Your Total Is:</span>
-              <span id="cartTotalVal" class="font-currency-total text-2xl font-black text-orange-400 tabular-nums">RM 0.00</span>
+            <div class="flex justify-between items-baseline pt-2 border-t border-slate-200">
+              <span class="font-bold text-slate-800 text-base">Your Total Is:</span>
+              <span id="cartTotalVal" class="font-currency-total text-2xl font-black text-orange-600 tabular-nums">RM 0.00</span>
             </div>
 
             <!-- Optional Email Receipt Field -->
             <div id="emailReceiptContainer" class="space-y-1.5 pt-1">
-              <label for="customerEmailInput" class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <label for="customerEmailInput" class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 <span>Email Receipt</span>
                 <span class="text-[10px] text-slate-500 font-semibold lowercase tracking-normal">optional</span>
               </label>
               <div class="relative">
                 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">mail</span>
-                <input id="customerEmailInput" type="email" placeholder="customer@example.com" class="w-full h-11 pl-9 pr-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-medium text-slate-100 placeholder-slate-500 focus:bg-slate-900 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all outline-none">
+                <input id="customerEmailInput" type="email" placeholder="customer@example.com" class="w-full h-11 pl-9 pr-3 rounded-xl bg-slate-100 border border-slate-200 text-xs font-medium text-slate-900 placeholder-slate-400 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all outline-none">
               </div>
             </div>
 
             <!-- Confirmation Checkbox under Your Total Is -->
-            <label id="confirmCheckboxContainer" for="confirmItemsCheckbox" class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-800/70 hover:bg-orange-500/10 border border-slate-700 cursor-pointer select-none transition-all duration-200">
-              <input id="confirmItemsCheckbox" type="checkbox" onchange="onConfirmCheckboxChange()" class="mt-0.5 w-4 h-4 rounded border-slate-600 bg-slate-900 text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0">
-              <span class="text-xs font-semibold text-slate-200 leading-snug">
+            <label id="confirmCheckboxContainer" for="confirmItemsCheckbox" class="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 hover:bg-orange-50 border border-slate-200 cursor-pointer select-none transition-all duration-200">
+              <input id="confirmItemsCheckbox" type="checkbox" onchange="onConfirmCheckboxChange()" class="mt-0.5 w-4 h-4 rounded border-slate-300 bg-white text-orange-600 focus:ring-orange-500 cursor-pointer shrink-0">
+              <span class="text-xs font-semibold text-slate-800 leading-snug">
                 I confirm that all listed items and quantities in my order are accurate.
               </span>
             </label>
 
-            <button onclick="submitCheckoutOrder()" class="w-full h-14 rounded-2xl bg-orange-600 hover:bg-orange-500 disabled:bg-slate-800 disabled:text-slate-600 disabled:shadow-none disabled:cursor-not-allowed text-white flex items-center justify-between px-5 transition-all shadow-lg shadow-orange-600/25 active:scale-[0.98] group relative overflow-hidden" id="tenderBtn" disabled>
+            <button onclick="submitCheckoutOrder()" class="w-full h-14 rounded-2xl bg-orange-600 hover:bg-orange-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:shadow-none disabled:cursor-not-allowed text-white flex items-center justify-between px-5 transition-all shadow-lg shadow-orange-600/25 active:scale-[0.98] group relative overflow-hidden" id="tenderBtn" disabled>
               <!-- Normal Content -->
               <div id="tenderBtnNormalContent" class="w-full flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -410,15 +410,15 @@
         </aside>
 
         <!-- Mobile Bottom Floating Cart Trigger (< 1024px) -->
-        <div class="lg:hidden fixed bottom-0 inset-x-0 p-3 bg-slate-900/95 backdrop-blur border-t border-slate-800 z-20 flex items-center justify-between gap-3 shadow-lg">
+        <div class="lg:hidden fixed bottom-0 inset-x-0 p-3 bg-white/95 backdrop-blur border-t border-slate-200 z-20 flex items-center justify-between gap-3 shadow-lg">
           <div onclick="toggleMobileCart(true)" class="flex items-center gap-2.5 cursor-pointer">
-            <div class="w-10 h-10 rounded-xl bg-orange-500/15 text-orange-400 border border-orange-500/30 flex items-center justify-center font-bold relative">
+            <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 border border-orange-200 flex items-center justify-center font-bold relative">
               <span class="material-symbols-outlined text-[20px]">shopping_bag</span>
               <span id="mobileCartCountBubble" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-orange-600 text-white text-[10px] font-bold flex items-center justify-center">0</span>
             </div>
             <div>
-              <div class="text-[11px] font-semibold text-slate-400">Your Order Total</div>
-              <div id="mobileCartTotalVal" class="font-headline-md text-base font-black text-orange-400">RM 0.00</div>
+              <div class="text-[11px] font-semibold text-slate-500">Your Order Total</div>
+              <div id="mobileCartTotalVal" class="font-headline-md text-base font-black text-orange-600">RM 0.00</div>
             </div>
           </div>
           <button onclick="toggleMobileCart(true)" class="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-orange-600/20">
@@ -704,10 +704,10 @@
         const lBtn = document.getElementById("btnListView");
         if (catalogViewMode === "grid") {
           gBtn.className = "w-8 h-8 rounded-lg bg-orange-600 text-white shadow-sm flex items-center justify-center font-semibold transition-all";
-          lBtn.className = "w-8 h-8 rounded-lg text-slate-400 hover:text-slate-100 flex items-center justify-center transition-colors";
+          lBtn.className = "w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors";
         } else {
           lBtn.className = "w-8 h-8 rounded-lg bg-orange-600 text-white shadow-sm flex items-center justify-center font-semibold transition-all";
-          gBtn.className = "w-8 h-8 rounded-lg text-slate-400 hover:text-slate-100 flex items-center justify-center transition-colors";
+          gBtn.className = "w-8 h-8 rounded-lg text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors";
         }
         renderProductCatalog();
       }
@@ -719,12 +719,12 @@
         const isHidden = panel.classList.contains("hidden");
         if (isHidden) {
           panel.classList.remove("hidden");
-          btn.classList.add("bg-orange-500/20", "text-orange-400", "border-orange-500/40");
+          btn.classList.add("bg-orange-500/20", "text-orange-600", "border-orange-500/40");
           const inp = document.getElementById("catalogSearchInput");
           if (inp) inp.focus();
         } else {
           panel.classList.add("hidden");
-          btn.classList.remove("bg-orange-500/20", "text-orange-400", "border-orange-500/40");
+          btn.classList.remove("bg-orange-500/20", "text-orange-600", "border-orange-500/40");
         }
       }
 
@@ -744,14 +744,14 @@
         const map = {
           coffee: "text-amber-400",
           bakery_dining: "text-amber-400",
-          lunch_dining: "text-orange-400",
+          lunch_dining: "text-orange-600",
           glass_cup: "text-sky-400",
           cake: "text-pink-400",
-          dinner_dining: "text-emerald-400",
+          dinner_dining: "text-emerald-600",
           tapas: "text-purple-400",
-          restaurant: "text-orange-400",
+          restaurant: "text-orange-600",
         };
-        return map[icon] || "text-orange-400";
+        return map[icon] || "text-orange-600";
       }
 
       function renderCategoryPills() {
@@ -760,10 +760,10 @@
         const availableItems = allMenuItems.filter(d => d.available);
 
         let html = `
-          <button type="button" onclick="selectCategory('__all__')" class="cat-pill ${activeCategory === '__all__' ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
+          <button type="button" onclick="selectCategory('__all__')" class="cat-pill ${activeCategory === '__all__' ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-white border border-slate-200'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
             <span class="material-symbols-outlined text-[18px]">local_mall</span>
             <span>All Items</span>
-            <span class="ml-1 px-1.5 py-0.5 rounded-full ${activeCategory === '__all__' ? 'bg-white/20 text-white font-bold' : 'bg-slate-700 text-slate-300 font-semibold'} text-[10px]">${availableItems.length}</span>
+            <span class="ml-1 px-1.5 py-0.5 rounded-full ${activeCategory === '__all__' ? 'bg-white/20 text-white font-bold' : 'bg-slate-700 text-slate-700 font-semibold'} text-[10px]">${availableItems.length}</span>
           </button>
         `;
 
@@ -775,10 +775,10 @@
           const iconName = cat.icon || "restaurant";
           const iconColor = isAct ? "text-white" : categoryIconColor(iconName);
           html += `
-            <button type="button" data-cat="${esc(cat.name)}" onclick="selectCategory(this.dataset.cat)" class="cat-pill ${isAct ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
+            <button type="button" data-cat="${esc(cat.name)}" onclick="selectCategory(this.dataset.cat)" class="cat-pill ${isAct ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-white border border-slate-200'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
               <span class="material-symbols-outlined text-[18px] ${iconColor}">${esc(iconName)}</span>
               <span>${esc(cat.name)}</span>
-              <span class="ml-1 px-1.5 py-0.5 rounded-full ${isAct ? 'bg-white/20 text-white font-bold' : 'bg-slate-700 text-slate-300 font-semibold'} text-[10px]">${count}</span>
+              <span class="ml-1 px-1.5 py-0.5 rounded-full ${isAct ? 'bg-white/20 text-white font-bold' : 'bg-slate-700 text-slate-700 font-semibold'} text-[10px]">${count}</span>
             </button>
           `;
         });
@@ -847,38 +847,38 @@
         const ppp = item.pieces_per_portion || 1;
         const imgHtml = item.image_url
           ? `<img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" alt="${esc(item.name)}" src="${esc(item.image_url)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-             <div style="display:none;" class="w-full h-full items-center justify-center bg-slate-800 text-slate-600"><span class="material-symbols-outlined text-[24px]">restaurant</span></div>`
-          : `<div class="w-full h-full flex items-center justify-center bg-slate-800 text-slate-600"><span class="material-symbols-outlined text-[24px]">restaurant</span></div>`;
+             <div style="display:none;" class="w-full h-full items-center justify-center bg-slate-100 text-slate-400"><span class="material-symbols-outlined text-[24px]">restaurant</span></div>`
+          : `<div class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400"><span class="material-symbols-outlined text-[24px]">restaurant</span></div>`;
         const catsHtml = (item.categories || []).map(c =>
-          `<span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700/80 text-[10px] font-semibold">${esc(c)}</span>`
+          `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-semibold">${esc(c)}</span>`
         ).join("");
         const piecesBadge = ppp > 1
-          ? `<span class="px-2 py-0.5 rounded-md bg-orange-500/15 text-orange-300 border border-orange-500/30 text-[10px] font-bold">${ppp} pcs / portion</span>`
+          ? `<span class="px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 border border-orange-200 text-[10px] font-bold">${ppp} pcs / portion</span>`
           : '';
         const priceHtml = ppp > 1
           ? `<div class="flex flex-col items-end">
-               <span class="font-headline-md text-lg font-extrabold text-orange-400">${formatRM(item.price)}</span>
-               <span class="text-[11px] text-slate-400 font-medium">RM ${(Number(item.price) / ppp).toFixed(2)}/pc</span>
+               <span class="font-headline-md text-lg font-extrabold text-orange-600">${formatRM(item.price)}</span>
+               <span class="text-[11px] text-slate-500 font-medium">RM ${(Number(item.price) / ppp).toFixed(2)}/pc</span>
              </div>`
-          : `<span class="font-headline-md text-lg font-extrabold text-orange-400">${formatRM(item.price)}</span>`;
+          : `<span class="font-headline-md text-lg font-extrabold text-orange-600">${formatRM(item.price)}</span>`;
 
         return `
-          <div onclick="addToCart(${item.id}, this)" class="product-item group relative bg-slate-900 hover:border-orange-500/70 ${inCartQty > 0 ? 'border-orange-500 ring-1 ring-orange-500/30' : 'border-slate-800'} border rounded-2xl p-2.5 flex items-center justify-between gap-3.5 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-lg hover:shadow-black/30 active:scale-[0.99]">
-            <div class="relative w-16 h-16 rounded-xl overflow-hidden bg-slate-800 shrink-0">
+          <div onclick="addToCart(${item.id}, this)" class="product-item group relative bg-white hover:border-orange-500/70 ${inCartQty > 0 ? 'border-orange-500 ring-1 ring-orange-500/30' : 'border-slate-200'} border rounded-2xl p-2.5 flex items-center justify-between gap-3.5 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-lg hover:shadow-slate-200/70 active:scale-[0.99]">
+            <div class="relative w-16 h-16 rounded-xl overflow-hidden bg-slate-100 shrink-0">
               ${imgHtml}
               ${inCartQty > 0 ? `<div class="absolute top-1 right-1 px-1.5 py-0.5 rounded-full bg-orange-600 text-white text-[10px] font-extrabold shadow">${inCartQty}</div>` : ''}
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
-                <h3 class="font-headline-sm text-base text-slate-100 font-extrabold group-hover:text-orange-400 transition-colors truncate">${esc(item.name)}</h3>
+                <h3 class="font-headline-sm text-base text-slate-900 font-extrabold group-hover:text-orange-600 transition-colors truncate">${esc(item.name)}</h3>
                 ${piecesBadge}
                 ${catsHtml}
               </div>
-              ${item.description ? `<p class="text-xs text-slate-400 line-clamp-1">${esc(item.description)}</p>` : ''}
+              ${item.description ? `<p class="text-xs text-slate-500 line-clamp-1">${esc(item.description)}</p>` : ''}
             </div>
             <div class="flex items-center gap-3 shrink-0 pl-2">
               ${priceHtml}
-              <button type="button" onclick="event.stopPropagation(); addToCart(${item.id}, this.closest('.product-item'))" class="w-9 h-9 rounded-xl ${inCartQty > 0 ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-600/25' : 'bg-slate-800 hover:bg-orange-600 text-slate-300 hover:text-white border border-slate-700 hover:border-orange-500'} flex items-center justify-center transition-all shadow-sm active:scale-90" title="Quick Add">
+              <button type="button" onclick="event.stopPropagation(); addToCart(${item.id}, this.closest('.product-item'))" class="w-9 h-9 rounded-xl ${inCartQty > 0 ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-600/25' : 'bg-slate-100 hover:bg-orange-600 text-slate-700 hover:text-white border border-slate-200 hover:border-orange-500'} flex items-center justify-center transition-all shadow-sm active:scale-90" title="Quick Add">
                 <span class="material-symbols-outlined text-[19px]">add</span>
               </button>
             </div>
@@ -891,23 +891,23 @@
         const ppp = item.pieces_per_portion || 1;
         const imgHtml = item.image_url
           ? `<img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" alt="${esc(item.name)}" src="${esc(item.image_url)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-             <div style="display:none;" class="w-full h-full items-center justify-center bg-slate-800 text-slate-600"><span class="material-symbols-outlined text-[28px]">restaurant</span></div>`
-          : `<div class="w-full h-full flex items-center justify-center bg-slate-800 text-slate-600"><span class="material-symbols-outlined text-[28px]">restaurant</span></div>`;
+             <div style="display:none;" class="w-full h-full items-center justify-center bg-slate-100 text-slate-400"><span class="material-symbols-outlined text-[28px]">restaurant</span></div>`
+          : `<div class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400"><span class="material-symbols-outlined text-[28px]">restaurant</span></div>`;
 
         const piecesBadge = ppp > 1
-          ? `<div class="mb-1"><span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-orange-500/15 text-orange-300 border border-orange-500/30 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px] text-orange-400">pie_chart</span>${ppp} pcs / portion</span></div>`
+          ? `<div class="mb-1"><span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-orange-50 text-orange-700 border border-orange-200 text-[10px] font-bold"><span class="material-symbols-outlined text-[12px] text-orange-600">pie_chart</span>${ppp} pcs / portion</span></div>`
           : '';
 
         const priceHtml = ppp > 1
           ? `<div class="flex flex-col">
-               <span class="font-headline-md text-lg sm:text-xl font-extrabold text-orange-400 leading-tight">${formatRM(item.price)}</span>
-               <span class="text-[11px] text-slate-400 font-medium">RM ${(Number(item.price) / ppp).toFixed(2)}/pc</span>
+               <span class="font-headline-md text-lg sm:text-xl font-extrabold text-orange-600 leading-tight">${formatRM(item.price)}</span>
+               <span class="text-[11px] text-slate-500 font-medium">RM ${(Number(item.price) / ppp).toFixed(2)}/pc</span>
              </div>`
-          : `<span class="font-headline-md text-lg sm:text-xl font-extrabold text-orange-400">${formatRM(item.price)}</span>`;
+          : `<span class="font-headline-md text-lg sm:text-xl font-extrabold text-orange-600">${formatRM(item.price)}</span>`;
 
         return `
-          <div onclick="addToCart(${item.id}, this)" class="product-item group relative bg-slate-900 hover:border-orange-500/70 ${inCartQty > 0 ? 'border-orange-500 ring-1 ring-orange-500/30' : 'border-slate-800'} border rounded-2xl p-2.5 flex flex-col justify-between transition-all duration-200 cursor-pointer shadow-sm hover:shadow-lg hover:shadow-black/30 active:scale-[0.98] overflow-hidden" data-id="${item.id}" data-name="${esc(item.name)}" data-price="${Number(item.price).toFixed(2)}">
-            <div class="relative w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-800">
+          <div onclick="addToCart(${item.id}, this)" class="product-item group relative bg-white hover:border-orange-500/70 ${inCartQty > 0 ? 'border-orange-500 ring-1 ring-orange-500/30' : 'border-slate-200'} border rounded-2xl p-2.5 flex flex-col justify-between transition-all duration-200 cursor-pointer shadow-sm hover:shadow-lg hover:shadow-slate-200/70 active:scale-[0.98] overflow-hidden" data-id="${item.id}" data-name="${esc(item.name)}" data-price="${Number(item.price).toFixed(2)}">
+            <div class="relative w-full h-24 rounded-xl overflow-hidden mb-2 bg-slate-100">
               ${imgHtml}
               ${inCartQty > 0 ? `
                 <div class="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-full bg-orange-600 text-white text-[11px] font-extrabold shadow-md flex items-center gap-0.5">
@@ -918,14 +918,14 @@
             <div class="flex flex-col flex-1 justify-between">
               <div>
                 <div class="flex items-start justify-between gap-1 mb-0.5">
-                  <h3 class="font-headline-sm text-base text-slate-100 line-clamp-2 font-extrabold leading-snug group-hover:text-orange-400 transition-colors" title="${esc(item.name)}">${esc(item.name)}</h3>
+                  <h3 class="font-headline-sm text-base text-slate-900 line-clamp-2 font-extrabold leading-snug group-hover:text-orange-600 transition-colors" title="${esc(item.name)}">${esc(item.name)}</h3>
                 </div>
                 ${piecesBadge}
-                ${item.description ? `<p class="text-[11px] text-slate-400 line-clamp-2 mb-1.5 leading-snug">${esc(item.description)}</p>` : ''}
+                ${item.description ? `<p class="text-[11px] text-slate-500 line-clamp-2 mb-1.5 leading-snug">${esc(item.description)}</p>` : ''}
               </div>
-              <div class="flex items-center justify-between pt-1.5 border-t border-slate-800">
+              <div class="flex items-center justify-between pt-1.5 border-t border-slate-200">
                 ${priceHtml}
-                <button type="button" onclick="event.stopPropagation(); addToCart(${item.id}, this.closest('.product-item'))" class="w-9 h-9 rounded-xl ${inCartQty > 0 ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-600/25' : 'bg-slate-800 hover:bg-orange-600 text-slate-300 hover:text-white border border-slate-700 hover:border-orange-500'} flex items-center justify-center transition-all shadow-sm active:scale-90" title="Quick Add">
+                <button type="button" onclick="event.stopPropagation(); addToCart(${item.id}, this.closest('.product-item'))" class="w-9 h-9 rounded-xl ${inCartQty > 0 ? 'bg-orange-600 hover:bg-orange-500 text-white shadow-orange-600/25' : 'bg-slate-100 hover:bg-orange-600 text-slate-700 hover:text-white border border-slate-200 hover:border-orange-500'} flex items-center justify-center transition-all shadow-sm active:scale-90" title="Quick Add">
                   <span class="material-symbols-outlined text-[19px]">add</span>
                 </button>
               </div>
@@ -942,10 +942,10 @@
         if (!items.length) {
           grid.className = "w-full";
           grid.innerHTML = `
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center my-4">
-              <span class="material-symbols-outlined text-[42px] text-slate-600 mb-2">restaurant_menu</span>
-              <h3 class="font-headline-sm text-base font-bold text-slate-200 mb-1">No menu items found</h3>
-              <p class="text-xs text-slate-400">Try selecting another category or clearing your search filter.</p>
+            <div class="bg-white border border-slate-200 rounded-2xl p-12 text-center my-4">
+              <span class="material-symbols-outlined text-[42px] text-slate-400 mb-2">restaurant_menu</span>
+              <h3 class="font-headline-sm text-base font-bold text-slate-800 mb-1">No menu items found</h3>
+              <p class="text-xs text-slate-500">Try selecting another category or clearing your search filter.</p>
             </div>
           `;
           return;
@@ -974,8 +974,8 @@
               <div>
                 <div class="flex items-center gap-2 mb-2.5 px-0.5">
                   <span class="material-symbols-outlined text-[18px] ${categoryIconColor(iconName)}">${esc(iconName)}</span>
-                  <h2 class="font-headline-sm text-sm font-bold text-slate-100">${esc(cat.name)}</h2>
-                  <span class="px-2 py-0.5 rounded-full bg-slate-800 text-orange-400 border border-slate-700 text-[11px] font-bold">${catItems.length}</span>
+                  <h2 class="font-headline-sm text-sm font-bold text-slate-900">${esc(cat.name)}</h2>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-orange-600 border border-slate-200 text-[11px] font-bold">${catItems.length}</span>
                 </div>
                 <div class="${sectionContainerClass}">
                   ${catItems.map(cardFn).join("")}
@@ -991,9 +991,9 @@
             sectionsHtml += `
               <div>
                 <div class="flex items-center gap-2 mb-2.5 px-0.5">
-                  <span class="material-symbols-outlined text-[18px] text-slate-400">restaurant</span>
-                  <h2 class="font-headline-sm text-sm font-bold text-slate-100">Other Items</h2>
-                  <span class="px-2 py-0.5 rounded-full bg-slate-800 text-orange-400 border border-slate-700 text-[11px] font-bold">${uncategorized.length}</span>
+                  <span class="material-symbols-outlined text-[18px] text-slate-500">restaurant</span>
+                  <h2 class="font-headline-sm text-sm font-bold text-slate-900">Other Items</h2>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-orange-600 border border-slate-200 text-[11px] font-bold">${uncategorized.length}</span>
                 </div>
                 <div class="${sectionContainerClass}">
                   ${uncategorized.map(cardFn).join("")}
@@ -1254,12 +1254,12 @@
 
         if (entries.length === 0) {
           container.innerHTML = `
-            <div class="h-full min-h-[220px] flex flex-col items-center justify-center text-center p-6 text-slate-400">
-              <div class="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700/70 flex items-center justify-center text-slate-500 mb-3">
+            <div class="h-full min-h-[220px] flex flex-col items-center justify-center text-center p-6 text-slate-500">
+              <div class="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 mb-3">
                 <span class="material-symbols-outlined text-[32px]">shopping_basket</span>
               </div>
-              <p class="font-bold text-slate-200 text-sm mb-1">Your cart is empty</p>
-              <p class="text-xs text-slate-400 max-w-[200px]">Tap on dishes from the menu to build your order.</p>
+              <p class="font-bold text-slate-800 text-sm mb-1">Your cart is empty</p>
+              <p class="text-xs text-slate-500 max-w-[200px]">Tap on dishes from the menu to build your order.</p>
             </div>
           `;
           return;
@@ -1269,37 +1269,37 @@
           const itemSubtotal = Math.round(Number(dish.price || 0) * qty * 100) / 100;
           const ppp = dish.pieces_per_portion || 1;
           const pieceInfo = ppp > 1
-            ? `<div class="text-[10px] text-orange-300 font-semibold mt-0.5"><span class="inline-block bg-orange-500/15 border border-orange-500/30 px-1.5 py-0.5 rounded">${qty} ${qty > 1 ? 'portions' : 'portion'} (${qty * ppp} pcs)</span></div>`
+            ? `<div class="text-[10px] text-orange-700 font-semibold mt-0.5"><span class="inline-block bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded">${qty} ${qty > 1 ? 'portions' : 'portion'} (${qty * ppp} pcs)</span></div>`
             : '';
           const cartImgHtml = dish.image_url
             ? `<img src="${esc(dish.image_url)}" alt="${esc(dish.name)}" class="w-full h-full object-cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-               <div style="display:none;" class="w-full h-full items-center justify-center bg-slate-800 text-slate-500"><span class="material-symbols-outlined text-[18px]">restaurant</span></div>`
-            : `<div class="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500"><span class="material-symbols-outlined text-[18px]">restaurant</span></div>`;
+               <div style="display:none;" class="w-full h-full items-center justify-center bg-slate-100 text-slate-500"><span class="material-symbols-outlined text-[18px]">restaurant</span></div>`
+            : `<div class="w-full h-full flex items-center justify-center bg-slate-100 text-slate-500"><span class="material-symbols-outlined text-[18px]">restaurant</span></div>`;
           return `
-            <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/70 hover:border-orange-500/40 transition-colors">
+            <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-100 border border-slate-200 hover:border-orange-500/40 transition-colors">
               <div class="flex items-center gap-2.5 min-w-0 pr-2">
-                <div class="w-11 h-11 rounded-lg overflow-hidden bg-slate-800 shrink-0 border border-slate-700 flex items-center justify-center">
+                <div class="w-11 h-11 rounded-lg overflow-hidden bg-slate-100 shrink-0 border border-slate-200 flex items-center justify-center">
                   ${cartImgHtml}
                 </div>
                 <div class="min-w-0">
-                  <h4 class="font-semibold text-xs text-slate-100 truncate" title="${esc(dish.name)}">${esc(dish.name)}</h4>
-                  <div class="text-[11px] text-slate-400 tabular-nums">
-                    ${formatRM(dish.price)} &times; ${qty} = <strong class="text-orange-400">${formatRM(itemSubtotal)}</strong>
+                  <h4 class="font-semibold text-xs text-slate-900 truncate" title="${esc(dish.name)}">${esc(dish.name)}</h4>
+                  <div class="text-[11px] text-slate-500 tabular-nums">
+                    ${formatRM(dish.price)} &times; ${qty} = <strong class="text-orange-600">${formatRM(itemSubtotal)}</strong>
                   </div>
                   ${pieceInfo}
                 </div>
               </div>
               <div class="flex items-center gap-1.5 shrink-0">
-                <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg p-0.5 shadow-2xs">
-                  <button type="button" onclick="updateCartQty(${dish.id}, -1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-300 hover:bg-slate-800 active:scale-90 transition-all font-bold text-xs" title="Decrease">
+                <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
+                  <button type="button" onclick="updateCartQty(${dish.id}, -1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-90 transition-all font-bold text-xs" title="Decrease">
                     &minus;
                   </button>
-                  <span class="w-6 text-center text-xs font-bold text-slate-100 tabular-nums">${qty}</span>
-                  <button type="button" onclick="updateCartQty(${dish.id}, 1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-300 hover:bg-slate-800 active:scale-90 transition-all font-bold text-xs" title="Increase">
+                  <span class="w-6 text-center text-xs font-bold text-slate-900 tabular-nums">${qty}</span>
+                  <button type="button" onclick="updateCartQty(${dish.id}, 1)" class="w-6 h-6 rounded flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-90 transition-all font-bold text-xs" title="Increase">
                     +
                   </button>
                 </div>
-                <button type="button" onclick="removeFromCart(${dish.id})" class="w-7 h-7 rounded-md hover:bg-orange-500/15 text-slate-400 hover:text-orange-400 flex items-center justify-center transition-colors" title="Remove Item">
+                <button type="button" onclick="removeFromCart(${dish.id})" class="w-7 h-7 rounded-md hover:bg-orange-50 text-slate-500 hover:text-orange-600 flex items-center justify-center transition-colors" title="Remove Item">
                   <span class="material-symbols-outlined text-[16px]">delete</span>
                 </button>
               </div>
@@ -1352,14 +1352,14 @@
         if (!itemsPayload.length) {
           if (msgEl) {
             msgEl.textContent = "Add items to your cart first.";
-            msgEl.className = "text-[11px] font-semibold px-1 text-red-400";
+            msgEl.className = "text-[11px] font-semibold px-1 text-red-600";
           }
           return;
         }
         if (!code) {
           if (msgEl) {
             msgEl.textContent = "Please enter a voucher code.";
-            msgEl.className = "text-[11px] font-semibold px-1 text-red-400";
+            msgEl.className = "text-[11px] font-semibold px-1 text-red-600";
           }
           return;
         }
@@ -1375,7 +1375,7 @@
             appliedVoucher = null;
             if (msgEl) {
               msgEl.textContent = (typeof data.detail === "string" ? data.detail : data.detail?.message) || "Invalid voucher code.";
-              msgEl.className = "text-[11px] font-semibold px-1 text-red-400";
+              msgEl.className = "text-[11px] font-semibold px-1 text-red-600";
             }
             renderCart();
             return;
@@ -1384,13 +1384,13 @@
           if (inp) inp.value = data.code;
           if (msgEl) {
             msgEl.textContent = `Voucher ${data.code} applied (-RM ${Number(data.discount_amount || 0).toFixed(2)})`;
-            msgEl.className = "text-[11px] font-semibold px-1 text-emerald-400";
+            msgEl.className = "text-[11px] font-semibold px-1 text-emerald-600";
           }
           renderCart();
         } catch (e) {
           if (msgEl) {
             msgEl.textContent = "Could not validate voucher. Try again.";
-            msgEl.className = "text-[11px] font-semibold px-1 text-red-400";
+            msgEl.className = "text-[11px] font-semibold px-1 text-red-600";
           }
         } finally {
           if (btn) btn.disabled = false;
@@ -1489,16 +1489,16 @@
         const hourDisplay = opHourText || "08:00 - 17:00";
         overlay.classList.remove("hidden");
         content.innerHTML = `
-          <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center shadow-2xl">
-            <div class="w-16 h-16 rounded-full bg-orange-500/15 text-orange-400 flex items-center justify-center mx-auto mb-4 ring-8 ring-orange-500/10">
+          <div class="bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-2xl">
+            <div class="w-16 h-16 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center mx-auto mb-4 ring-8 ring-orange-100/70">
               <span class="material-symbols-outlined text-[34px]">schedule</span>
             </div>
-            <div class="text-xs font-bold uppercase tracking-wider text-orange-400 mb-1">Restaurant Closed</div>
-            <h2 class="font-headline-md text-2xl font-extrabold text-slate-100 mb-2">Outside Operation Hours</h2>
-            <p class="text-sm text-slate-400 leading-relaxed mb-5">
-              You are outside our operation hours. Our operating hours are <strong class="text-slate-100">${esc(hourDisplay)}</strong>. Please come back later.
+            <div class="text-xs font-bold uppercase tracking-wider text-orange-600 mb-1">Restaurant Closed</div>
+            <h2 class="font-headline-md text-2xl font-extrabold text-slate-900 mb-2">Outside Operation Hours</h2>
+            <p class="text-sm text-slate-500 leading-relaxed mb-5">
+              You are outside our operation hours. Our operating hours are <strong class="text-slate-900">${esc(hourDisplay)}</strong>. Please come back later.
             </p>
-            <div class="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-xs text-slate-300">
+            <div class="inline-flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-700">
               <span class="w-2 h-2 rounded-full bg-red-500"></span>
               <span>Operating hours: <strong>${esc(hourDisplay)}</strong></span>
             </div>
