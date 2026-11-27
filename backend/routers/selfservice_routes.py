@@ -122,7 +122,7 @@ def _resolve_selfservice_items(raw_items: list, db: Session) -> tuple[list[dict]
         food_subtotal += sub
         bill_items.append({
             "dish_id": dish.id,
-            "name": dish.name,
+            "name": (dish.alias or "").strip() or dish.name,
             "quantity": qty,
             "unit_price": unit_price,
             "subtotal": sub,

@@ -873,11 +873,10 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
-                <h3 class="font-headline-sm text-base text-slate-900 font-extrabold group-hover:text-orange-600 transition-colors truncate">${esc(item.name)}</h3>
+                <h3 class="font-headline-sm text-base text-slate-900 font-extrabold group-hover:text-orange-600 transition-colors truncate">${esc((item.alias || "").trim() || item.name)}</h3>
                 ${piecesBadge}
                 ${catsHtml}
               </div>
-              ${item.description ? `<p class="text-xs text-slate-500 line-clamp-1">${esc(item.description)}</p>` : ''}
             </div>
             <div class="flex items-center gap-3 shrink-0 pl-2">
               ${priceHtml}
@@ -921,10 +920,9 @@
             <div class="flex flex-col flex-1 justify-between">
               <div>
                 <div class="flex items-start justify-between gap-1 mb-0.5">
-                  <h3 class="font-headline-sm text-base text-slate-900 line-clamp-2 font-extrabold leading-snug group-hover:text-orange-600 transition-colors" title="${esc(item.name)}">${esc(item.name)}</h3>
+                  <h3 class="font-headline-sm text-base text-slate-900 line-clamp-2 font-extrabold leading-snug group-hover:text-orange-600 transition-colors" title="${esc((item.alias || '').trim() || item.name)}">${esc((item.alias || "").trim() || item.name)}</h3>
                 </div>
                 ${piecesBadge}
-                ${item.description ? `<p class="text-[11px] text-slate-500 line-clamp-2 mb-1.5 leading-snug">${esc(item.description)}</p>` : ''}
               </div>
               <div class="flex items-center justify-between pt-1.5 border-t border-slate-200">
                 ${priceHtml}
