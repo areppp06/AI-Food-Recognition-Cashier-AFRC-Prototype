@@ -35,7 +35,7 @@ body {
   max-width: 390px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 1rem 0.9rem 3.5rem;
+  padding: 1rem 0.9rem calc(5.8rem + env(safe-area-inset-bottom));
   background: #f8fafc;
   box-shadow: 0 0 40px rgba(15, 23, 42, 0.12);
   display: flex;
@@ -897,6 +897,96 @@ video, canvas {
   font-size: 0.68rem;
   color: #94a3b8;
 }
+/* Bottom Liquid Glass Tab Bar */
+.mobile-tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 80;
+  padding: 0.65rem 0.75rem max(0.8rem, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+.mobile-tab-inner {
+  pointer-events: auto;
+  position: relative;
+  max-width: 374px;
+  height: 64px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 0 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  box-shadow: 0 14px 36px -6px rgba(15, 23, 42, 0.14), 0 4px 12px -4px rgba(15, 23, 42, 0.08);
+  overflow: visible;
+}
+.lgt-lens {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  border-radius: 999px;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 247, 237, 0.78) 55%, rgba(255, 237, 213, 0.82) 100%);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  box-shadow:
+    0 6px 16px -4px rgba(255, 94, 54, 0.22),
+    0 2px 6px -2px rgba(15, 23, 42, 0.08),
+    inset 0 0 0 1px rgba(255, 94, 54, 0.28),
+    inset 0 2px 2px rgba(255, 255, 255, 0.98),
+    inset 0 -1.5px 2px rgba(255, 94, 54, 0.14);
+  will-change: transform, width;
+}
+.m-tab-btn {
+  position: relative;
+  z-index: 2;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font: inherit;
+  height: 100%;
+  padding: 0 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  cursor: pointer;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.24s ease;
+}
+.m-tab-btn svg {
+  transition: color 0.24s ease, filter 0.24s ease, transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.m-tab-btn span {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: #94a3b8;
+  opacity: 1;
+  transition: color 0.24s ease;
+}
+.m-tab-btn.active {
+  color: #ff5e36;
+}
+.m-tab-btn.active svg {
+  color: #ff5e36;
+  filter: drop-shadow(0 0 5px rgba(255, 94, 54, 0.25));
+  transform: scale(1.04);
+}
+.m-tab-btn.active span {
+  color: #ff5e36;
+}
 </style>
 </head>
 <body>
@@ -987,7 +1077,49 @@ video, canvas {
   </div>
 </footer>
 </div>
+<nav class="mobile-tab-bar" id="homeMobileTabBar" aria-label="Bottom navigation">
+  <div class="mobile-tab-inner" id="homeTabInner">
+    <div class="lgt-lens" id="homeLgtLens" aria-hidden="true"></div>
+    <button type="button" class="m-tab-btn active" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 012-2h2l1.5-2h5L16 6h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"></path><circle cx="12" cy="12.5" r="3"></circle></svg>
+      <span>Scanner</span>
+    </button>
+    <a href="/account?view=rewards" class="m-tab-btn">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      <span>Rewards</span>
+    </a>
+    <a href="/account?view=orders" class="m-tab-btn">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>
+      <span>Orders</span>
+    </a>
+    <a href="/account?view=profile" class="m-tab-btn">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Account</span>
+    </a>
+  </div>
+</nav>
 <script>
+(function initHomeLiquidGlassNav() {
+  const positionLens = () => {
+    const inner = document.getElementById("homeTabInner");
+    const lens = document.getElementById("homeLgtLens");
+    if (!inner || !lens) return;
+    const activeBtn = inner.querySelector(".m-tab-btn.active") || inner.querySelector(".m-tab-btn");
+    if (!activeBtn) return;
+    const innerRect = inner.getBoundingClientRect();
+    const btnRect = activeBtn.getBoundingClientRect();
+    if (!innerRect.width || !btnRect.width) return;
+    const targetW = Math.max(btnRect.width - 10, 72);
+    const centerX = (btnRect.left - innerRect.left - inner.clientLeft) + btnRect.width / 2;
+    lens.style.width = targetW.toFixed(1) + "px";
+    lens.style.transform = `translate3d(${(centerX - targetW / 2).toFixed(1)}px, 0, 0)`;
+  };
+  requestAnimationFrame(positionLens);
+  window.addEventListener("resize", positionLens);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(positionLens);
+  }
+})();
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const capBtn = document.getElementById('capture');
