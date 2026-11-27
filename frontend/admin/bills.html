@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>Bills & Transactions Log — AFRC Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="/static/admin/shared/admin.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar"></aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<div class="main-wrapper">
+  <header class="topbar" id="topbar"></header>
+  <main class="content">
+    <section class="section-pane active" id="tab-bills">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">All Logged Bills</div>
+          <div class="filter-bar">
+            <input class="search-input" id="billSearch" oninput="onBillSearchInput()" placeholder="Search Bill #AAA-0001, dish, void cause..." type="text">
+            <div class="filter-pills">
+              <button class="pill-filter active" data-status="all" onclick="setStatusFilter('all', this)">All</button>
+              <button class="pill-filter" data-status="paid" onclick="setStatusFilter('paid', this)">Paid</button>
+              <button class="pill-filter" data-status="open" onclick="setStatusFilter('open', this)">Pending</button>
+              <button class="pill-filter" data-status="void" onclick="setStatusFilter('void', this)">Void</button>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Bill #</th>
+                <th>Created At</th>
+                <th>Items Ordered</th>
+                <th>Contacts</th>
+                <th>Total (RM)</th>
+                <th>Status</th>
+                <th>Photo</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="allBillsBody"></tbody>
+          </table>
+        </div>
+        <div class="bills-mobile-list" id="billsMobileList"></div>
+        <div class="pagination-bar" id="billsPaginationBar">
+          <div class="pagination-info" id="billsPaginationInfo">Showing 0 bills</div>
+          <div class="pagination-controls" id="billsPaginationControls"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="refundModal" onclick="if(event.target===this) closeRefundModal()">
+  <div class="refund-modal-card" role="dialog" aria-modal="true" aria-labelledby="refundModalTitle">
+    <div class="refund-modal-head">
+      <div class="refund-modal-title" id="refundModalTitle">
+        <span>Issue Refund</span>
+        <span class="bill-code" id="refundBillNoBadge">#---</span>
+      </div>
+      <button type="button" class="refund-modal-close" onclick="closeRefundModal()" aria-label="Close refund form">&times;</button>
+    </div>
+    <div class="refund-modal-body" id="refundModalBody">
+      <div class="empty-state-sm">Loading bill details...</div>
+    </div>
+    <div class="refund-modal-foot">
+      <button type="button" class="btn btn-outline" onclick="closeRefundModal()">Cancel</button>
+      <button type="button" class="btn" id="refundSubmitBtn" style="background:#dc2626;" onclick="submitRefund()" disabled>Process Refund</button>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<script src="/static/admin/shared/admin-shell.js"></script>
+<script src="/static/admin/shared/bill-pdf.js"></script>
+<script src="/static/admin/js/bills.js"></script>
+<script>
+  initAdminShell({
+    activeTab: "bills",
+    title: "Bills & Transactions Log",
+    onRefresh: loadBills
+  });
+</script>
+</body>
+</html>

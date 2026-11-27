@@ -233,6 +233,143 @@ body {
   font-size: 0.7rem;
   color: #94a3b8;
 }
+
+/* Category Filter Bar & Search */
+.pricelist-search-wrap {
+  position: relative;
+  margin-bottom: 0.85rem;
+}
+.pricelist-search-input {
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.65rem 2.2rem 0.65rem 2.4rem;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.15s ease;
+}
+.pricelist-search-input:focus {
+  border-color: #ff5e36;
+  box-shadow: 0 0 0 2px rgba(255, 94, 54, 0.18);
+}
+.pricelist-search-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+.pricelist-search-clear {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.2rem;
+  display: none;
+}
+.pricelist-search-clear:hover {
+  color: #ff5e36;
+}
+
+.cat-filter-scroll-wrap {
+  margin: 0 -0.4rem 1.15rem;
+  padding: 0 0.4rem 0.35rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.cat-filter-scroll-wrap::-webkit-scrollbar {
+  display: none;
+}
+.cat-filter-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+.cat-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  border-radius: 9999px;
+  padding: 0.42rem 0.88rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  flex-shrink: 0;
+}
+.cat-filter-btn:hover {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #ea580c;
+}
+.cat-filter-btn.active {
+  background: #ff5e36;
+  border-color: #ff5e36;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(255, 94, 54, 0.35);
+}
+.cat-filter-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  transition: all 0.15s ease;
+}
+.cat-filter-btn.active .cat-filter-count {
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+.dish-cat-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+.dish-cat-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #c2410c;
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  line-height: 1.2;
+}
+.dish-soldout-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  line-height: 1.2;
+}
 </style>
 </head>
 <body>
@@ -262,10 +399,23 @@ body {
     </div>
 
     <!-- LAST UPDATED: SMALLER AND NOT BOLD -->
-    <div style="font-size:0.75rem; color:#94a3b8; margin-top:0.25rem; margin-bottom:1.25rem; font-weight:normal;">
+    <div style="font-size:0.75rem; color:#94a3b8; margin-top:0.25rem; margin-bottom:1.15rem; font-weight:normal;">
       <span data-lang="bm">Kemas Kini Terakhir:</span>
       <span data-lang="en" style="display:none;">Last Updated:</span>
       <span id="menuLastUpdated" style="color:#64748b; margin-left:0.25rem; font-weight:normal;">Memuatkan...</span>
+    </div>
+
+    <!-- SEARCH & CATEGORY FILTER -->
+    <div class="pricelist-search-wrap">
+      <span class="pricelist-search-icon">
+        <svg style="width:16px; height:16px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </span>
+      <input type="text" id="pricelistSearchInput" class="pricelist-search-input" placeholder="Cari hidangan..." oninput="handlePricelistSearch(this.value)">
+      <button type="button" id="pricelistSearchClear" class="pricelist-search-clear" onclick="clearPricelistSearch()" aria-label="Clear search">✕</button>
+    </div>
+
+    <div class="cat-filter-scroll-wrap" id="categoryFilterScrollWrap">
+      <div class="cat-filter-bar" id="categoryFilterBar"></div>
     </div>
 
     <!-- SIMPLE DISH LIST (NO DESCRIPTION, NO CARDS, NO EMOJIS) -->
@@ -279,13 +429,122 @@ body {
 
   <script>
     let allDishes = [];
+    let allCategories = [];
+    let selectedCategory = "all";
+    let searchFilterQuery = "";
+
+    function esc(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[ch]));
+    }
+
+    function renderCategoryFilters(isBM) {
+      const bar = document.getElementById('categoryFilterBar');
+      if (!bar) return;
+
+      const counts = { all: allDishes.length };
+      allDishes.forEach(d => {
+        const cats = Array.isArray(d.categories) ? d.categories : [];
+        cats.forEach(c => {
+          counts[c] = (counts[c] || 0) + 1;
+        });
+      });
+
+      const catNames = [];
+      allCategories.forEach(c => {
+        if (c.name && !catNames.includes(c.name)) catNames.push(c.name);
+      });
+      allDishes.forEach(d => {
+        const cats = Array.isArray(d.categories) ? d.categories : [];
+        cats.forEach(c => {
+          if (c && !catNames.includes(c)) catNames.push(c);
+        });
+      });
+
+      const allLabel = isBM ? "Semua" : "All";
+      let html = `
+        <button type="button" class="cat-filter-btn ${selectedCategory === 'all' ? 'active' : ''}" onclick="selectCategory('all')">
+          <span>${allLabel}</span>
+          <span class="cat-filter-count">${counts.all || 0}</span>
+        </button>
+      `;
+
+      catNames.forEach(name => {
+        const count = counts[name] || 0;
+        const isActive = selectedCategory.toLowerCase() === name.toLowerCase();
+        html += `
+          <button type="button" class="cat-filter-btn ${isActive ? 'active' : ''}" onclick="selectCategory('${esc(name)}')">
+            <span>${esc(name)}</span>
+            <span class="cat-filter-count">${count}</span>
+          </button>
+        `;
+      });
+
+      bar.innerHTML = html;
+    }
+
+    function selectCategory(catName) {
+      selectedCategory = catName || "all";
+      const isBM = (localStorage.getItem('prism_lang') || 'bm') === 'bm';
+      renderCategoryFilters(isBM);
+      applyFiltersAndRender(isBM);
+    }
+
+    function handlePricelistSearch(val) {
+      searchFilterQuery = (val || "").trim().toLowerCase();
+      const clearBtn = document.getElementById("pricelistSearchClear");
+      if (clearBtn) clearBtn.style.display = searchFilterQuery ? "block" : "none";
+      const isBM = (localStorage.getItem('prism_lang') || 'bm') === 'bm';
+      applyFiltersAndRender(isBM);
+    }
+
+    function clearPricelistSearch() {
+      searchFilterQuery = "";
+      const inp = document.getElementById("pricelistSearchInput");
+      if (inp) {
+        inp.value = "";
+        inp.focus();
+      }
+      const clearBtn = document.getElementById("pricelistSearchClear");
+      if (clearBtn) clearBtn.style.display = "none";
+      const isBM = (localStorage.getItem('prism_lang') || 'bm') === 'bm';
+      applyFiltersAndRender(isBM);
+    }
+
+    function applyFiltersAndRender(isBM) {
+      let filtered = allDishes;
+
+      if (selectedCategory && selectedCategory !== 'all') {
+        const targetLow = selectedCategory.toLowerCase();
+        filtered = filtered.filter(d => {
+          const cats = Array.isArray(d.categories) ? d.categories : [];
+          return cats.some(c => String(c).toLowerCase() === targetLow);
+        });
+      }
+
+      if (searchFilterQuery) {
+        filtered = filtered.filter(d => {
+          const nameMatch = (d.name || "").toLowerCase().includes(searchFilterQuery);
+          const aliasMatch = (d.alias || "").toLowerCase().includes(searchFilterQuery);
+          const catsMatch = Array.isArray(d.categories) && d.categories.some(c => c.toLowerCase().includes(searchFilterQuery));
+          return nameMatch || aliasMatch || catsMatch;
+        });
+      }
+
+      renderDishes(filtered, isBM);
+    }
 
     function renderDishes(dishes, isBM) {
       const container = document.getElementById('dishList');
       if (!dishes || dishes.length === 0) {
+        let msg = isBM ? 'Tiada hidangan tersedia.' : 'No menu items available.';
+        if (selectedCategory !== 'all' || searchFilterQuery) {
+          msg = isBM ? 'Tiada hidangan yang sepadan dengan kategori atau carian ini.' : 'No dishes match this category or search.';
+        }
         container.innerHTML = `
-          <div style="text-align:center; padding:1.5rem; color:#64748b; font-size:0.88rem;">
-            ${isBM ? 'Tiada hidangan tersedia.' : 'No menu items available.'}
+          <div style="text-align:center; padding:2.5rem 1rem; color:#64748b; font-size:0.88rem;">
+            ${msg}
           </div>
         `;
         return;
@@ -294,22 +553,30 @@ body {
       container.innerHTML = dishes.map((d, index) => {
         const pieces = d.pieces_per_portion || 1;
         const price = Number(d.price).toFixed(2);
-        
-        // Only show pieces/portion if applicable (> 1)
+        const cats = Array.isArray(d.categories) ? d.categories : [];
+
         let portionDetail = '';
         if (pieces > 1) {
           portionDetail = `<div style="font-size:0.8rem; color:#64748b; margin-top:0.15rem;">${pieces} ${isBM ? 'ketul sepinggan' : 'pcs per portion'}</div>`;
         }
 
+        const catTagsHtml = (cats.length || !d.available) ? `
+          <div class="dish-cat-tags">
+            ${cats.map(c => `<span class="dish-cat-tag">${esc(c)}</span>`).join('')}
+            ${!d.available ? `<span class="dish-soldout-tag">${isBM ? 'Habis' : 'Sold out'}</span>` : ''}
+          </div>
+        ` : '';
+
         const borderBottom = (index === dishes.length - 1) ? '' : 'border-bottom: 1px solid #f1f5f9;';
 
         return `
-          <div style="display:flex; justify-content:space-between; align-items:baseline; padding:0.85rem 0.2rem; ${borderBottom}">
-            <div style="padding-right:1rem;">
-              <div style="font-weight:600; color:#0f172a; font-size:0.95rem;">${d.name}</div>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:0.85rem 0.2rem; ${borderBottom}">
+            <div style="padding-right:1rem; flex:1;">
+              <div style="font-weight:600; color:#0f172a; font-size:0.95rem;">${esc(d.name)}</div>
               ${portionDetail}
+              ${catTagsHtml}
             </div>
-            <div style="font-weight:700; color:#ff5e36; font-size:1.05rem; white-space:nowrap;">
+            <div style="font-weight:700; color:#ff5e36; font-size:1.05rem; white-space:nowrap; margin-top:2px;">
               RM ${price}
             </div>
           </div>
@@ -323,24 +590,19 @@ body {
         .then(data => {
           if (!data) return;
           allDishes = data.items || [];
+          allCategories = data.categories || [];
           const updatedEl = document.getElementById('menuLastUpdated');
           if (updatedEl && data.last_updated) {
             updatedEl.textContent = data.last_updated;
           }
           const isBM = (localStorage.getItem('prism_lang') || 'bm') === 'bm';
-          renderDishes(allDishes, isBM);
+          renderCategoryFilters(isBM);
+          applyFiltersAndRender(isBM);
         })
         .catch(err => {
           document.getElementById('dishList').innerHTML = '<div style="color:#ef4444;text-align:center;padding:1.5rem;">Ralat memuatkan harga menu. Sila cuba sebentar lagi.</div>';
         });
     }
-
-    // Re-render when language changes
-    const originalSetLanguage = window.setLanguage;
-    window.setLanguage = function(lang) {
-      originalSetLanguage(lang);
-      renderDishes(allDishes, lang === 'bm');
-    };
 
     document.addEventListener('DOMContentLoaded', () => {
       loadPricelist();
@@ -383,6 +645,18 @@ function setLanguage(lang) {
   const btn = document.getElementById('lang-' + lang);
   if (btn) btn.classList.add('active');
   document.documentElement.lang = (lang === 'bm') ? 'ms' : 'en';
+
+  const isBM = (lang === 'bm');
+  const searchInp = document.getElementById("pricelistSearchInput");
+  if (searchInp) {
+    searchInp.placeholder = isBM ? "Cari hidangan..." : "Search dish...";
+  }
+  if (typeof renderCategoryFilters === 'function') {
+    renderCategoryFilters(isBM);
+  }
+  if (typeof applyFiltersAndRender === 'function') {
+    applyFiltersAndRender(isBM);
+  }
 }
 
 function initProfile() {

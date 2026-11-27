@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>Voucher Management — AFRC Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="/static/admin/shared/admin.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar"></aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<div class="main-wrapper">
+  <header class="topbar" id="topbar"></header>
+  <main class="content">
+    <section class="section-pane active" id="tab-vouchers">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Redeemed Today</div>
+          <div class="stat-value green" id="loyKpiVoucherToday">RM 0.00</div>
+          <div class="stat-sub">Voucher discounts captured today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Redeemed This Week</div>
+          <div class="stat-value" id="loyKpiVoucherWeek">RM 0.00</div>
+          <div class="stat-sub">Current week total (MYT)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Redeemed This Month</div>
+          <div class="stat-value orange" id="loyKpiVoucherMonth">RM 0.00</div>
+          <div class="stat-sub">Current calendar month</div>
+        </div>
+      </div>
+
+      <div class="analytics-grid">
+        <div>
+          <div class="voucher-tabs-bar">
+            <div class="voucher-folder-tabs" id="adminVoucherSourceTabs">
+              <button type="button" class="voucher-folder-tab active" data-vsrc="manual" onclick="setAdminVoucherSource('manual', this)">Manual Generated</button>
+              <button type="button" class="voucher-folder-tab" data-vsrc="points_redemption" onclick="setAdminVoucherSource('points_redemption', this)">Auto Generated</button>
+              <button type="button" class="voucher-folder-tab" data-vsrc="deleted" onclick="setAdminVoucherSource('deleted', this)">Revoked</button>
+            </div>
+            <a href="/api/admin/loyalty/vouchers/export" class="btn btn-outline" style="text-decoration:none;">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>Export Audit CSV</span>
+            </a>
+          </div>
+
+          <div class="panel-card" style="margin-bottom:0;">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Value</th>
+                    <th>Limits &amp; Usage</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th style="text-align:center;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="loyVouchersBody"></tbody>
+              </table>
+            </div>
+            <div class="loyalty-mobile-list" id="loyVouchersMobileList"></div>
+            <div class="pagination-bar">
+              <div class="pagination-info" id="loyVouchersPageInfo">Page 1 of 1</div>
+              <div class="pagination-controls" id="loyVouchersPageBtns"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="analytics-side sticky-side-col">
+          <div class="panel-card" style="margin-bottom:0;">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Create Manual Voucher</div>
+                <div class="stat-sub" style="margin-top:0.15rem;">Issue public promo codes or single-user rewards.</div>
+              </div>
+            </div>
+            <div class="panel-body">
+              <form onsubmit="createAdminVoucher(event)" style="display:flex; flex-direction:column; gap:0.85rem;">
+                <div class="field-label">
+                  <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Voucher Code</span>
+                    <button type="button" onclick="generateRandomVoucherCode()" style="background:none; border:none; color:#ff5e36; font-size:0.75rem; font-weight:700; cursor:pointer;">Generate Code</button>
+                  </div>
+                  <input type="text" class="input-box" id="vNewCode" placeholder="e.g. MAKAN5" style="text-transform:uppercase; font-family:ui-monospace,monospace; font-weight:700;" required>
+                </div>
+
+                <label class="field-label">Discount Type
+                  <select class="input-box" id="vNewType" onchange="onVoucherTypeSelectChange()">
+                    <option value="fixed">Fixed Amount (RM)</option>
+                    <option value="percentage">Percentage (%)</option>
+                  </select>
+                </label>
+
+                <label class="field-label">Discount Value
+                  <input type="number" step="0.01" min="0.01" class="input-box" id="vNewVal" placeholder="e.g. 5.00" required>
+                </label>
+
+                <label class="field-label" id="vNewMaxDiscWrap" style="display:none;">Max Discount (RM) — Optional
+                  <input type="number" step="0.01" min="0" class="input-box" id="vNewMaxDisc" placeholder="e.g. 15.00">
+                </label>
+
+                <label class="field-label">Minimum Spend (RM)
+                  <input type="number" step="0.01" min="0" class="input-box" id="vNewMin" value="0" placeholder="0.00">
+                </label>
+
+                <label class="field-label">Specific User Email (Optional)
+                  <input type="email" class="input-box" id="vNewEmail" placeholder="Leave blank for public voucher" oninput="onVoucherEmailInputChange()">
+                </label>
+
+                <div class="field-label" id="vNewMaxUsesWrap">
+                  <span>Max Uses (Total)</span>
+                  <input type="number" step="1" min="1" class="input-box" id="vNewMaxUses" value="1">
+                  <span style="font-size:0.74rem; font-weight:500; color:#64748b;">How many times this voucher can be redeemed globally.</span>
+                </div>
+
+                <label class="field-label">Expiry Date
+                  <input type="date" class="input-box" id="vNewExpiry" required>
+                </label>
+
+                <button type="submit" class="btn" id="btnCreateAdminVoucher" style="width:100%; margin-top:0.25rem;">Create Voucher</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="loyaltyDeleteVoucherModal" onclick="if(event.target===this) closeDeleteVoucherModal()">
+  <div class="refund-modal-card" style="max-width:440px;" role="dialog" aria-modal="true">
+    <div class="refund-modal-head">
+      <div class="refund-modal-title" style="color:#b91c1c;">Revoke Voucher</div>
+      <button type="button" class="refund-modal-close" onclick="closeDeleteVoucherModal()">&times;</button>
+    </div>
+    <div class="refund-modal-body" style="padding:1.25rem 1.5rem;">
+      <p style="font-size:0.88rem; color:#475569; line-height:1.5; margin-bottom:0.9rem;">
+        Are you sure you want to revoke voucher <strong id="loyDelVoucherCodeLabel" style="color:#0f172a; font-family:ui-monospace,monospace;"></strong>? It will stop working. The owner will see it marked Revoked, and the record stays in the Revoked list.
+      </p>
+      <label class="field-label">Type "REVOKE" to confirm
+        <input type="text" class="input-box" id="loyDelVoucherConfirmInput" placeholder="REVOKE" autocomplete="off" oninput="onDeleteVoucherConfirmInput()" style="font-family:ui-monospace,monospace; font-weight:700; letter-spacing:0.04em;">
+      </label>
+    </div>
+    <div class="refund-modal-foot">
+      <button type="button" class="btn btn-outline" onclick="closeDeleteVoucherModal()">Cancel</button>
+      <button type="button" class="btn" id="btnConfirmDeleteVoucher" style="background:#dc2626;" onclick="executeDeleteVoucher()" disabled>Revoke Voucher</button>
+    </div>
+  </div>
+</div>
+<script src="/static/admin/shared/admin-shell.js"></script>
+<script src="/static/admin/shared/loyalty-common.js"></script>
+<script src="/static/admin/js/vouchers.js"></script>
+<script>
+  initAdminShell({
+    activeTab: "vouchers",
+    title: "Voucher Management",
+    onRefresh: () => { initVoucherFormDefaults(); return Promise.all([loadAdminLoyaltyOverview(), loadAdminVouchers(loyVoucherPage)]); }
+  });
+</script>
+</body>
+</html>

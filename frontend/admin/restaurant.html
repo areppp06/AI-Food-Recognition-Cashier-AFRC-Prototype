@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>Restaurant Settings — AFRC Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<link rel="stylesheet" href="/static/admin/shared/admin.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar"></aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<div class="main-wrapper">
+  <header class="topbar" id="topbar"></header>
+  <main class="content">
+    <section class="section-pane active" id="tab-restaurant">
+      <!-- Operating Hours Panel -->
+      <div class="panel-card" style="margin-bottom: 1.5rem;">
+        <div class="panel-header" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+          <div>
+            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
+              <svg style="width:20px;height:20px;color:#ff5e36;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Daily Operating Hours</span>
+            </div>
+            <p style="font-size:0.82rem; color:#64748b; margin-top:0.25rem;">
+              Set restaurant operating hours (default 08:00 to 17:00). Outside these hours, AI scanning is disabled on server side.
+            </p>
+          </div>
+        </div>
+
+        <div class="panel-body" style="padding: 1.5rem 1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; background:#fff7ed; border:1px solid #ffedd5; border-radius:14px; padding:0.85rem 1.15rem; margin-bottom:1.5rem;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span style="font-size:0.82rem; font-weight:700; color:#c2410c;">Server Time (UTC+8):</span>
+              <strong id="adminServerTimeDisplay" style="font-size:0.95rem; color:#9a3412;">--:--</strong>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <span style="font-size:0.82rem; color:#7c2d12;">Current Status:</span>
+              <span id="adminLiveOpenBadge" class="badge" style="background:#fee2e2; color:#b91c1c; font-size:0.75rem; padding:0.25rem 0.65rem; border-radius:999px; font-weight:700;">Closed</span>
+            </div>
+          </div>
+
+          <form onsubmit="handleSaveOperationHours(event)" style="max-width:560px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
+              <label class="field-label">Opening Time
+                <input type="time" class="input-box" id="opHourStartInput" value="08:00" required>
+              </label>
+              <label class="field-label">Closing Time
+                <input type="time" class="input-box" id="opHourEndInput" value="17:00" required>
+              </label>
+            </div>
+
+            <!-- Quick presets -->
+            <div style="margin-bottom:1.5rem;">
+              <span style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:0.4rem;">Quick Presets</span>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button type="button" class="btn-sm btn-ghost" style="border:1px solid #cbd5e1; font-size:0.78rem;" onclick="setHourPreset('08:00', '17:00')">Default (08:00 - 17:00)</button>
+                <button type="button" class="btn-sm btn-ghost" style="border:1px solid #cbd5e1; font-size:0.78rem;" onclick="setHourPreset('07:00', '22:00')">Full Day (07:00 - 22:00)</button>
+                <button type="button" class="btn-sm btn-ghost" style="border:1px solid #cbd5e1; font-size:0.78rem;" onclick="setHourPreset('00:00', '23:59')">24 Hours (00:00 - 23:59)</button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-dark" id="btnSaveOpHours">
+              <svg class="btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              <span>Save Operating Hours</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Status & Availability Panel -->
+      <div class="panel-card">
+        <div class="panel-header" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+          <div>
+            <div class="panel-title" style="display:flex; align-items:center; gap:0.5rem;">
+              <svg style="width:20px;height:20px;color:#ff5e36;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+              <span>System &amp; Kiosk Availability</span>
+            </div>
+            <p style="font-size:0.82rem; color:#64748b; margin-top:0.25rem;">
+              Control public access to the customer scanner kiosk.
+            </p>
+          </div>
+        </div>
+
+        <div class="panel-body" style="padding: 1.5rem 1rem;">
+          <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            
+            <!-- Maintenance Mode Switch Row -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Maintenance Mode</span>
+                  <span id="badgeMaintenance" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
+                </div>
+                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
+                  When switched on, redirects customer kiosk visitors to the <strong>Maintenance</strong> page and pauses scanning for system upkeep.
+                </p>
+              </div>
+              <div style="flex-shrink:0;">
+                <label class="switch-wrap" style="cursor:pointer;" onclick="onMaintenanceClick(event)">
+                  <span class="switch-toggle">
+                    <input type="checkbox" id="toggleMaintenance" class="switch-input" style="pointer-events:none;">
+                    <span class="switch-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Coming Soon Switch Row -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Coming Soon Feature</span>
+                  <span id="badgeComingSoon" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
+                </div>
+                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
+                  When enabled, automatically redirects visitors to the <strong>Coming Soon</strong> page.
+                </p>
+              </div>
+              <div style="flex-shrink:0;">
+                <label class="switch-wrap" style="cursor:pointer;" onclick="onComingSoonClick(event)">
+                  <span class="switch-toggle">
+                    <input type="checkbox" id="toggleComingSoon" class="switch-input" style="pointer-events:none;">
+                    <span class="switch-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Customer Email Receipt Switch Row -->
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1.15rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:16px;">
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.25rem;">
+                  <span style="font-weight:700; font-size:0.95rem; color:#0f172a;">Customer Email Receipt</span>
+                  <span id="badgeEmailReceipt" class="badge" style="background:#e2e8f0; color:#475569; font-size:0.75rem; padding:0.2rem 0.55rem; border-radius:999px;">Disabled</span>
+                </div>
+                <p style="font-size:0.82rem; color:#64748b; line-height:1.45; margin:0;">
+                  When enabled, displays the optional email receipt field on the bill payment page. When disabled, the email field is hidden.
+                </p>
+              </div>
+              <div style="flex-shrink:0;">
+                <label class="switch-wrap" style="cursor:pointer;" onclick="onEmailReceiptToggle(event)">
+                  <span class="switch-toggle">
+                    <input type="checkbox" id="toggleEmailReceipt" class="switch-input" style="pointer-events:none;">
+                    <span class="switch-slider"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="restaurantConfirmModal" onclick="if(event.target===this) closeRestaurantConfirmModal()">
+  <div class="refund-modal-card" style="max-width: 480px;" role="dialog" aria-modal="true">
+    <div class="refund-modal-head" style="display:flex; justify-content:space-between; align-items:center; padding:1.25rem 1.5rem; border-bottom:1px solid #f1f5f9;">
+      <div class="refund-modal-title" style="font-size:1.1rem; font-weight:700; color:#0f172a;" id="restaurantConfirmTitle">
+        Confirmation Required
+      </div>
+      <button type="button" class="btn-sm btn-ghost" style="padding:0.25rem 0.5rem;" onclick="closeRestaurantConfirmModal()">✕</button>
+    </div>
+    <div class="refund-modal-body" style="padding: 1.5rem;">
+      <p id="restaurantConfirmDesc" style="font-size: 0.9rem; color: #475569; margin-bottom: 1.15rem; line-height: 1.5;">
+        Please confirm this action.
+      </p>
+      <div style="background: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; padding: 0.9rem 1.1rem; margin-bottom: 1.25rem;">
+        <div style="font-size: 0.72rem; font-weight: 700; color: #c2410c; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem;">
+          Type this exact phrase below to confirm:
+        </div>
+        <div id="restaurantConfirmPhrase" style="font-family: monospace; font-size: 0.95rem; font-weight: 800; color: #9a3412; word-break: break-all; user-select: all;">
+          COMFIRM ENABLE COOMING SOON
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 0.5rem;">
+        <label class="form-label" style="font-weight: 600; font-size: 0.82rem; margin-bottom: 0.35rem; display:block;">Confirmation Input (ALL CAPS):</label>
+        <input type="text" id="restaurantConfirmInput" class="input-box" style="font-family: monospace; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;" placeholder="Type the phrase above..." oninput="checkRestaurantConfirmMatch()" autocomplete="off">
+      </div>
+    </div>
+    <div class="refund-modal-foot" style="display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.5rem; background: #f8fafc; border-top: 1px solid #e2e8f0; border-radius: 0 0 14px 14px;">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeRestaurantConfirmModal()">Cancel</button>
+      <button type="button" class="btn btn-sm" id="restaurantConfirmBtn" style="background: #ff5e36;" onclick="executeRestaurantConfirmAction()" disabled>Confirm &amp; Enable</button>
+    </div>
+  </div>
+</div>
+<script src="/static/admin/shared/admin-shell.js"></script>
+<script src="/static/admin/js/restaurant.js"></script>
+<script>
+  initAdminShell({
+    activeTab: "restaurant",
+    title: "Restaurant Settings",
+    onRefresh: loadRestaurantSettings
+  });
+</script>
+</body>
+</html>

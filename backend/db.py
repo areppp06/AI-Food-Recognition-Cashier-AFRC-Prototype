@@ -48,6 +48,14 @@ if _is_sqlite:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+class Category(Base):
+    __tablename__ = "categories"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    icon = Column(String, default="restaurant")
+    sort_order = Column(Integer, default=0, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class Dish(Base):
     __tablename__ = "dishes"
     id = Column(Integer, primary_key=True, index=True)
@@ -58,6 +66,7 @@ class Dish(Base):
     unit = Column(String, default="portion")
     description = Column(Text, default="")
     pieces_per_portion = Column(Integer, default=1)
+    categories = Column(Text, default="[]")  # JSON array of up to 3 category names
 
 class Cashier(Base):
     __tablename__ = "cashiers"
@@ -297,7 +306,16 @@ def init_db():
             conn.exec_driver_sql("ALTER TABLE dishes ADD COLUMN description TEXT DEFAULT ''")
         if "pieces_per_portion" not in columns:
             conn.exec_driver_sql("ALTER TABLE dishes ADD COLUMN pieces_per_portion INTEGER DEFAULT 1")
+        if "categories" not in columns:
+            conn.exec_driver_sql("ALTER TABLE dishes ADD COLUMN categories TEXT DEFAULT '[]'")
         conn.exec_driver_sql("UPDATE dishes SET pieces_per_portion = 1 WHERE pieces_per_portion IS NULL")
+        conn.exec_driver_sql("UPDATE dishes SET categories = '[]' WHERE categories IS NULL OR categories = ''")
+
+        cat_columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(categories)")]
+        if cat_columns and "icon" not in cat_columns:
+            conn.exec_driver_sql("ALTER TABLE categories ADD COLUMN icon TEXT DEFAULT 'restaurant'")
+        if cat_columns and "sort_order" not in cat_columns:
+            conn.exec_driver_sql("ALTER TABLE categories ADD COLUMN sort_order INTEGER DEFAULT 0")
         session_columns = [row[1] for row in conn.exec_driver_sql("PRAGMA table_info(sessions)")]
         if session_columns and "bill_number" not in session_columns:
             conn.exec_driver_sql("ALTER TABLE sessions ADD COLUMN bill_number TEXT DEFAULT ''")
@@ -401,6 +419,18 @@ def init_db():
             seq += 1
             s.bill_number = format_bill_number(seq)
         db.commit()
+    # Seed default categories if empty
+    if db.query(Category).count() == 0:
+        default_cats = [
+            Category(name="Ala carte", icon="lunch_dining", sort_order=0),
+            Category(name="Lauk Pauk", icon="restaurant", sort_order=1),
+            Category(name="Sarapan", icon="bakery_dining", sort_order=2),
+            Category(name="Set", icon="set_meal", sort_order=3),
+            Category(name="Minuman", icon="local_cafe", sort_order=4),
+        ]
+        db.add_all(default_cats)
+        db.commit()
+
     # Seed default dishes if empty
     if db.query(Dish).count() == 0:
         seeds = [
