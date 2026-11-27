@@ -98,7 +98,7 @@ video, canvas {
 /* Modern Rounded Buttons */
 .learn-guide-wrap {
   text-align: center;
-  margin-top: 0.15rem;
+  margin: -0.35rem 0 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1037,21 +1037,17 @@ video, canvas {
       <span id="kioskLoyaltyText">Sign In</span>
     </a>
   </div>
-  <div class="learn-guide-wrap">
-    <a href="/guide" class="learn-guide-link">
-      <svg fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="14"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
-      Belajar cara guna
-    </a>
-    <a href="/account" id="kioskOrderHistoryLink" class="learn-guide-link">
-      <svg fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="14"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-      Sejarah Pesanan
-    </a>
-  </div>
 </div>
 <div class="loading-box" id="status" style="display:none;">
 <div class="spinner"></div>
 <span>Sedang Mengira...</span>
 </div>
+</div>
+<div class="learn-guide-wrap">
+  <a href="/guide" class="learn-guide-link">
+    <svg fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="14"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+    Belajar cara guna
+  </a>
 </div>
 <div id="result"></div>
 <footer class="quick-links-footer">
@@ -2178,8 +2174,6 @@ function showBill(data) {
       pill.style.display = "inline-flex";
       pill.style.background = "#ff5e36";
       txt.textContent = "View Rewards";
-      const ordersLink = document.getElementById("kioskOrderHistoryLink");
-      if (ordersLink) ordersLink.href = "/account?view=orders";
     } else if (data.unclaimed && data.unclaimed.has_unclaimed && data.unclaimed.points > 0) {
       const uPts = Number(data.unclaimed.points).toLocaleString();
       if (titleEl) titleEl.textContent = `+${uPts} Unclaimed Points`;
