@@ -59,7 +59,8 @@ body {
 .video-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  max-width: calc(440px * 4 / 3);
+  aspect-ratio: 4 / 3;
   max-height: 440px;
   background: #0f172a;
   border-radius: 18px;
@@ -67,7 +68,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.1rem;
+  margin: 0 auto 1.1rem;
 }
 .camera-placeholder {
   display: flex;
