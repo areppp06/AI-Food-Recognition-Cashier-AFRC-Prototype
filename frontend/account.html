@@ -745,14 +745,14 @@
     margin-top: 1px;
   }
 
-  /* Mobile Bottom Tab Bar (matching UserMobileTabBar.tsx) */
+  /* Mobile Bottom Tab Bar (Liquid Glass style) */
   .mobile-tab-bar {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 80;
-    padding: 0.5rem 0.75rem max(0.65rem, env(safe-area-inset-bottom));
+    padding: 0.65rem 0.9rem max(0.8rem, env(safe-area-inset-bottom));
     pointer-events: none;
     display: none;
   }
@@ -761,26 +761,50 @@
   }
   .mobile-tab-inner {
     pointer-events: auto;
-    max-width: 440px;
+    position: relative;
+    max-width: 420px;
+    height: 68px;
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid #dbe3ee;
-    border-radius: 20px;
-    padding: 0.35rem;
+    background: #0a0a0a;
+    border-radius: 999px;
+    padding: 0 8px;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.25rem;
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    align-items: center;
+    box-shadow: 0 22px 50px -8px rgba(15, 23, 42, 0.42), 0 8px 20px -6px rgba(0, 0, 0, 0.28);
+    overflow: visible;
+  }
+  .lgt-lens {
+    position: absolute;
+    top: -6px;
+    left: 0;
+    height: 80px;
+    border-radius: 999px;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 42%, rgba(0, 0, 0, 0.14) 72%, rgba(255, 255, 255, 0.16) 100%);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    box-shadow:
+      0 14px 28px -10px rgba(10, 14, 20, 0.55),
+      inset 0 0 0 1.25px rgba(236, 240, 242, 0.55),
+      inset 0 2px 1px -1px rgba(255, 255, 255, 0.92),
+      inset 0 -2px 1px -1px rgba(255, 255, 255, 0.65),
+      inset 3px 0 3px -1px rgba(70, 120, 255, 0.65),
+      inset -3px 0 3px -1px rgba(70, 120, 255, 0.65),
+      inset 0 0 18px 2px rgba(165, 170, 175, 0.22);
+    will-change: transform, width;
   }
   .m-tab-btn {
+    position: relative;
+    z-index: 2;
     border: none;
     background: transparent;
-    color: #64748b;
+    color: #5b616b;
     font: inherit;
-    border-radius: 14px;
-    padding: 0.5rem 0.25rem;
+    height: 100%;
+    padding: 0 0.25rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -788,16 +812,35 @@
     gap: 0.22rem;
     cursor: pointer;
     text-decoration: none;
-    transition: all 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.24s ease;
+  }
+  .m-tab-btn svg {
+    transition: color 0.24s ease, filter 0.24s ease, transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .m-tab-btn span {
-    font-size: 0.68rem;
-    font-weight: 700;
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
     line-height: 1;
+    color: #ffffff;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.24s ease, max-height 0.24s ease;
   }
   .m-tab-btn.active {
-    background: #ff5e36;
     color: #ffffff;
+    transform: translateY(-5px);
+  }
+  .m-tab-btn.active svg {
+    color: #ffffff;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.85)) drop-shadow(0 0 9px rgba(255, 255, 255, 0.4));
+    transform: scale(1.06);
+  }
+  .m-tab-btn.active span {
+    opacity: 1;
+    max-height: 14px;
   }
 
   /* Modals & Toast */
@@ -1066,7 +1109,8 @@
 
 <!-- MOBILE BOTTOM TAB BAR -->
 <nav class="mobile-tab-bar" id="mobileTabBar" aria-label="Mobile navigation">
-  <div class="mobile-tab-inner">
+  <div class="mobile-tab-inner" id="mobileTabInner">
+    <div class="lgt-lens" id="lgtLens" aria-hidden="true"></div>
     <a href="/" class="m-tab-btn" id="mobileScanLink">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 012-2h2l1.5-2h5L16 6h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"></path><circle cx="12" cy="12.5" r="3"></circle></svg>
       <span id="mobileScanLabel">Scanner</span>
@@ -1172,6 +1216,64 @@ function copyText(code) {
   navigator.clipboard.writeText(code).then(() => showToast("Copied voucher code: " + code)).catch(() => {});
 }
 
+let _lgtCurX = null;
+let _lgtCurW = null;
+let _lgtRaf = 0;
+
+function updateLiquidGlassLens(immediate = false) {
+  const inner = document.getElementById("mobileTabInner");
+  const lens = document.getElementById("lgtLens");
+  if (!inner || !lens) return;
+  const activeBtn = inner.querySelector(".m-tab-btn.active") || inner.querySelector(".m-tab-btn");
+  if (!activeBtn || inner.clientWidth === 0) return;
+
+  const targetW = Math.max(activeBtn.offsetWidth + 14, 86);
+  const targetX = activeBtn.offsetLeft + activeBtn.offsetWidth / 2 - targetW / 2;
+
+  const paint = (x, w) => {
+    lens.style.width = w.toFixed(1) + "px";
+    lens.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`;
+  };
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (immediate || reduce || _lgtCurX === null) {
+    cancelAnimationFrame(_lgtRaf);
+    _lgtCurX = targetX;
+    _lgtCurW = targetW;
+    paint(_lgtCurX, _lgtCurW);
+    return;
+  }
+
+  const fromX = _lgtCurX;
+  const fromW = _lgtCurW;
+  const z = 0.53, wn = 11.1, wd = wn * Math.sqrt(1 - z * z), k = z / Math.sqrt(1 - z * z);
+  const spring = (t) => (t <= 0 ? 0 : 1 - Math.exp(-z * wn * t) * (Math.cos(wd * t) + k * Math.sin(wd * t)));
+
+  cancelAnimationFrame(_lgtRaf);
+  const t0 = performance.now();
+  const tick = (now) => {
+    const t = (now - t0) / 1000;
+    const p = t > 1.1 ? 1 : spring(t);
+    _lgtCurX = fromX + (targetX - fromX) * p;
+    _lgtCurW = fromW + (targetW - fromW) * p;
+    paint(_lgtCurX, _lgtCurW);
+    if (p < 1) _lgtRaf = requestAnimationFrame(tick);
+  };
+  _lgtRaf = requestAnimationFrame(tick);
+}
+
+(function initLiquidGlassNavObserver() {
+  const bar = document.getElementById("mobileTabBar");
+  if (bar && typeof MutationObserver !== "undefined") {
+    new MutationObserver(() => {
+      if (bar.classList.contains("visible")) {
+        requestAnimationFrame(() => updateLiquidGlassLens(true));
+      }
+    }).observe(bar, { attributes: true, attributeFilter: ["class"] });
+  }
+  window.addEventListener("resize", () => updateLiquidGlassLens(true));
+})();
+
 function switchView(viewName) {
   document.querySelectorAll(".side-nav-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.view === viewName);
@@ -1179,6 +1281,7 @@ function switchView(viewName) {
   document.querySelectorAll(".m-tab-btn[data-mview]").forEach(b => {
     b.classList.toggle("active", b.dataset.mview === viewName);
   });
+  updateLiquidGlassLens(false);
   document.querySelectorAll(".view-pane").forEach(p => p.classList.remove("active"));
   const pane = document.getElementById("view-" + viewName);
   if (pane) pane.classList.add("active");
