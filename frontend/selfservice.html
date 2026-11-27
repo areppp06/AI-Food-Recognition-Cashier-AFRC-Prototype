@@ -763,10 +763,10 @@
         const availableItems = allMenuItems.filter(d => d.available);
 
         let html = `
-          <button type="button" onclick="selectCategory('__all__')" class="cat-pill ${activeCategory === '__all__' ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-white border border-slate-200'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
+          <button type="button" onclick="selectCategory('__all__')" class="cat-pill ${activeCategory === '__all__' ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
             <span class="material-symbols-outlined text-[18px]">local_mall</span>
             <span>All Items</span>
-            <span class="ml-1 px-1.5 py-0.5 rounded-full ${activeCategory === '__all__' ? 'bg-white/20 text-white font-bold' : 'bg-slate-700 text-slate-700 font-semibold'} text-[10px]">${availableItems.length}</span>
+            <span class="ml-1 px-1.5 py-0.5 rounded-full ${activeCategory === '__all__' ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 text-slate-600 font-semibold'} text-[10px]">${availableItems.length}</span>
           </button>
         `;
 
@@ -778,10 +778,10 @@
           const iconName = cat.icon || "restaurant";
           const iconColor = isAct ? "text-white" : categoryIconColor(iconName);
           html += `
-            <button type="button" data-cat="${esc(cat.name)}" onclick="selectCategory(this.dataset.cat)" class="cat-pill ${isAct ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-white border border-slate-200'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
+            <button type="button" data-cat="${esc(cat.name)}" onclick="selectCategory(this.dataset.cat)" class="cat-pill ${isAct ? 'active bg-orange-600 text-white shadow-sm shadow-orange-600/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200'} flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium text-xs transition-all whitespace-nowrap">
               <span class="material-symbols-outlined text-[18px] ${iconColor}">${esc(iconName)}</span>
               <span>${esc(cat.name)}</span>
-              <span class="ml-1 px-1.5 py-0.5 rounded-full ${isAct ? 'bg-white/20 text-white font-bold' : 'bg-slate-700 text-slate-700 font-semibold'} text-[10px]">${count}</span>
+              <span class="ml-1 px-1.5 py-0.5 rounded-full ${isAct ? 'bg-white/20 text-white font-bold' : 'bg-slate-200 text-slate-600 font-semibold'} text-[10px]">${count}</span>
             </button>
           `;
         });
