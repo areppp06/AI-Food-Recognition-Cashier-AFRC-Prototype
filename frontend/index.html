@@ -960,7 +960,7 @@ video, canvas {
 </div>
 <div class="loading-box" id="status" style="display:none;">
 <div class="spinner"></div>
-<span>Analyzing plate with AI...</span>
+<span>Sedang Mengira...</span>
 </div>
 </div>
 <div id="result"></div>
@@ -1765,7 +1765,7 @@ capBtn.onclick = async () => {
   }
   if (status) status.style.display = "none";
   capBtn.disabled = true;
-  capBtn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span><span>Analyzing plate with AI...</span>`;
+  capBtn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span><span>Sedang Mengira...</span>`;
   result.innerHTML = "";
 
   const vw = video.videoWidth || 640;
