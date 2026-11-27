@@ -1163,6 +1163,26 @@
   </div>
 </div>
 
+<!-- MANDATORY PHONE MODAL FOR NEW SIGNUPS -->
+<div class="modal-backdrop" id="phoneRequiredModal">
+  <div class="modal-card" style="text-align:center;">
+    <div style="width:52px; height:52px; border-radius:50%; background:#fff7ed; color:#ff5e36; display:inline-flex; align-items:center; justify-content:center; margin-bottom:0.85rem;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+    </div>
+    <h3 style="font-size:1.2rem; font-weight:800; margin-bottom:0.35rem;">Nombor Telefon Diperlukan</h3>
+    <p id="phoneModalSub" style="font-size:0.84rem; color:#64748b; line-height:1.45; margin-bottom:1rem;">Sila masukkan nombor telefon anda untuk melengkapkan pendaftaran akun.</p>
+    <div style="display:flex; align-items:stretch; border:1.5px solid #cbd5e1; border-radius:14px; overflow:hidden; background:#ffffff; margin-bottom:0.6rem;">
+      <span style="display:inline-flex; align-items:center; padding:0 0.85rem; background:#f1f5f9; border-right:1px solid #cbd5e1; font-size:0.9rem; font-weight:800; color:#0f172a; user-select:none;">+60</span>
+      <input id="signupPhoneInput" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="123456789" oninput="this.value=this.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,10)" onkeydown="if(event.key==='Enter'){event.preventDefault();submitMandatoryPhoneSignup();}" style="flex:1; min-width:0; border:none; outline:none; padding:0.75rem 0.85rem; font-size:0.95rem; font-weight:700; color:#0f172a;">
+    </div>
+    <p id="signupPhoneError" style="display:none; font-size:0.78rem; font-weight:700; color:#dc2626; margin-bottom:0.85rem; text-align:left;"></p>
+    <div style="display:flex; gap:0.6rem; margin-top:0.9rem;">
+      <button type="button" class="btn btn-outline" style="flex:1;" onclick="cancelMandatoryPhoneSignup()">Batal</button>
+      <button type="button" class="btn" style="flex:1;" id="btnSubmitPhoneSignup" onclick="submitMandatoryPhoneSignup()">Daftar Akaun</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-msg" id="toastMsg"></div>
 
 <script>
@@ -1417,6 +1437,79 @@ function setupGoogleButton() {
   }
 }
 
+let _pendingGoogleCredential = "";
+
+function cancelMandatoryPhoneSignup() {
+  _pendingGoogleCredential = "";
+  const modal = document.getElementById("phoneRequiredModal");
+  if (modal) modal.classList.remove("open");
+  const errEl = document.getElementById("signupPhoneError");
+  if (errEl) errEl.style.display = "none";
+  const inp = document.getElementById("signupPhoneInput");
+  if (inp) inp.value = "";
+}
+
+async function submitMandatoryPhoneSignup() {
+  const errEl = document.getElementById("signupPhoneError");
+  const inp = document.getElementById("signupPhoneInput");
+  const btn = document.getElementById("btnSubmitPhoneSignup");
+  const digits = (inp ? inp.value : "").replace(/\D/g, "").replace(/^0+/, "");
+  if (digits.length < 9 || digits.length > 10) {
+    if (errEl) {
+      errEl.textContent = "Masukkan nombor telefon Malaysia yang sah (9 hingga 10 digit selepas +60).";
+      errEl.style.display = "block";
+    }
+    return;
+  }
+  if (!_pendingGoogleCredential) {
+    cancelMandatoryPhoneSignup();
+    return;
+  }
+  if (errEl) errEl.style.display = "none";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Mendaftar...";
+  }
+  try {
+    const res = await fetch("/api/customer/auth/google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        credential: _pendingGoogleCredential,
+        phone_number: "+60" + digits,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (errEl) {
+        errEl.textContent = data.detail || data.error || "Pendaftaran gagal. Sila cuba lagi.";
+        errEl.style.display = "block";
+      }
+      return;
+    }
+    cancelMandatoryPhoneSignup();
+    stateUser = data.user;
+    if (data.claimed && data.claimed.claimed) {
+      showClaimBanner(data.claimed);
+    }
+    if (nextUrl && nextUrl.startsWith("/pay")) {
+      location.href = nextUrl;
+      return;
+    }
+    await renderAuthenticatedDashboard();
+  } catch (e) {
+    if (errEl) {
+      errEl.textContent = "Ralat rangkaian. Sila cuba lagi.";
+      errEl.style.display = "block";
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Daftar Akaun";
+    }
+  }
+}
+
 async function handleGoogleCredential(response) {
   const errEl = document.getElementById("googleAuthError");
   const busyEl = document.getElementById("googleBusyText");
@@ -1437,6 +1530,17 @@ async function handleGoogleCredential(response) {
     if (!res.ok) {
       errEl.textContent = data.detail || data.error || "Sign-in failed.";
       errEl.style.display = "block";
+      return;
+    }
+    if (data.requires_phone) {
+      _pendingGoogleCredential = response.credential;
+      const sub = document.getElementById("phoneModalSub");
+      if (sub && data.email) {
+        sub.innerHTML = `Sila masukkan nombor telefon untuk melengkapkan pendaftaran <strong>${esc(data.email)}</strong>.`;
+      }
+      const modal = document.getElementById("phoneRequiredModal");
+      if (modal) modal.classList.add("open");
+      setTimeout(() => document.getElementById("signupPhoneInput")?.focus(), 80);
       return;
     }
     stateUser = data.user;

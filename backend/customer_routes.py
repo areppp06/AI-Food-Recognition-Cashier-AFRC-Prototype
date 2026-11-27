@@ -21,6 +21,7 @@ from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
 from backend.auth import require_admin_api
+from backend.services.payment_service import _normalize_my_phone
 from backend.db import (
     AuditLog,
     BillRefund,
@@ -409,13 +410,25 @@ def customer_google_sign_in(
             db.commit()
             db.refresh(user)
         else:
+            raw_phone = str((payload or {}).get("phone_number") or "").strip()
+            if not raw_phone:
+                return JSONResponse(
+                    content={
+                        "ok": False,
+                        "requires_phone": True,
+                        "email": email,
+                        "name": name or "Customer",
+                    },
+                    headers=NO_CACHE_HEADERS,
+                )
+            norm_phone = _normalize_my_phone(raw_phone)
             is_new_account = True
             user = CustomerUser(
                 google_id=google_id,
                 email=email,
                 name=name or "Customer",
                 avatar_url=avatar_url,
-                phone_number="",
+                phone_number=norm_phone,
                 points_balance=0,
                 is_suspended=False,
                 created_at=now,
