@@ -217,6 +217,15 @@ video, canvas {
   border-top-color: #ff5e36;
   animation: spin 0.8s linear infinite;
 }
+.btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -1754,8 +1763,9 @@ capBtn.onclick = async () => {
     resumeCameraAfterReject();
     return;
   }
-  status.style.display = "inline-flex";
+  if (status) status.style.display = "none";
   capBtn.disabled = true;
+  capBtn.innerHTML = `<span class="btn-spinner" aria-hidden="true"></span><span>Analyzing plate with AI...</span>`;
   result.innerHTML = "";
 
   const vw = video.videoWidth || 640;
@@ -1859,7 +1869,10 @@ capBtn.onclick = async () => {
       showError("NETWORK_ERROR", "Could not connect to recognition server. Please try again.");
     } finally {
       if (!redirected) {
-        status.style.display = "none";
+        if (status) status.style.display = "none";
+        if (capBtn.dataset.mode !== "resume") {
+          capBtn.innerHTML = captureDefaultHtml;
+        }
         capBtn.disabled = false;
         resetRecognizeTurnstile();
       }
