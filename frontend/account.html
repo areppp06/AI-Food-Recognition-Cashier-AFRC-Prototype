@@ -780,8 +780,8 @@
   .lgt-lens {
     position: absolute;
     top: 5px;
+    bottom: 5px;
     left: 0;
-    height: 52px;
     border-radius: 999px;
     z-index: 1;
     pointer-events: none;
@@ -830,7 +830,6 @@
   }
   .m-tab-btn.active {
     color: #ff5e36;
-    transform: translateY(-1px);
   }
   .m-tab-btn.active svg {
     color: #ff5e36;
@@ -1225,8 +1224,13 @@ function updateLiquidGlassLens(immediate = false) {
   const activeBtn = inner.querySelector(".m-tab-btn.active") || inner.querySelector(".m-tab-btn");
   if (!activeBtn || inner.clientWidth === 0) return;
 
-  const targetW = Math.max(activeBtn.offsetWidth - 10, 72);
-  const targetX = activeBtn.offsetLeft + activeBtn.offsetWidth / 2 - targetW / 2;
+  const innerRect = inner.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  if (!innerRect.width || !btnRect.width) return;
+
+  const targetW = Math.max(btnRect.width - 10, 72);
+  const centerX = (btnRect.left - innerRect.left - inner.clientLeft) + btnRect.width / 2;
+  const targetX = centerX - targetW / 2;
 
   const paint = (x, w) => {
     lens.style.width = w.toFixed(1) + "px";
