@@ -1255,11 +1255,12 @@ function updateLiquidGlassLens(immediate = false) {
   const t0 = performance.now();
   const tick = (now) => {
     const t = (now - t0) / 1000;
-    const p = t > 1.1 ? 1 : spring(t);
+    const done = t >= 1.1;
+    const p = done ? 1 : spring(t);
     _lgtCurX = fromX + (targetX - fromX) * p;
     _lgtCurW = fromW + (targetW - fromW) * p;
     paint(_lgtCurX, _lgtCurW);
-    if (p < 1) _lgtRaf = requestAnimationFrame(tick);
+    if (!done) _lgtRaf = requestAnimationFrame(tick);
   };
   _lgtRaf = requestAnimationFrame(tick);
 }
@@ -1274,6 +1275,9 @@ function updateLiquidGlassLens(immediate = false) {
     }).observe(bar, { attributes: true, attributeFilter: ["class"] });
   }
   window.addEventListener("resize", () => updateLiquidGlassLens(true));
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => updateLiquidGlassLens(true));
+  }
 })();
 
 function switchView(viewName) {
