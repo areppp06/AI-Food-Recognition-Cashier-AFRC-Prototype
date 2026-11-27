@@ -19,7 +19,8 @@ html {
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   margin: 0;
   padding: 0;
   background: #dde4ee;
@@ -28,19 +29,23 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 .mobile-phone-frame {
   width: 100%;
   max-width: 390px;
-  min-height: 100vh;
+  height: calc(100vh - 84px);
+  height: calc(100dvh - 84px - env(safe-area-inset-bottom));
   margin: 0 auto;
-  padding: 1rem 0.9rem calc(5.8rem + env(safe-area-inset-bottom));
+  padding: 1rem 0.9rem 1.25rem;
   background: #f8fafc;
   box-shadow: 0 0 40px rgba(15, 23, 42, 0.12);
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 .camera-card {
   width: 100%;
@@ -900,12 +905,18 @@ video, canvas {
 /* Bottom Liquid Glass Tab Bar */
 .mobile-tab-bar {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: 0;
+  width: 100%;
+  max-width: 390px;
+  height: 84px;
+  height: calc(84px + env(safe-area-inset-bottom));
   z-index: 80;
-  padding: 0.65rem 0.75rem max(0.8rem, env(safe-area-inset-bottom));
-  pointer-events: none;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 0.55rem 0.75rem max(0.65rem, env(safe-area-inset-bottom));
+  box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.05);
 }
 .mobile-tab-inner {
   pointer-events: auto;
@@ -1074,7 +1085,7 @@ video, canvas {
 <nav class="mobile-tab-bar" id="homeMobileTabBar" aria-label="Bottom navigation">
   <div class="mobile-tab-inner" id="homeTabInner">
     <div class="lgt-lens" id="homeLgtLens" aria-hidden="true"></div>
-    <button type="button" class="m-tab-btn active" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    <button type="button" class="m-tab-btn active" onclick="document.querySelector('.mobile-phone-frame')?.scrollTo({top:0,behavior:'smooth'})">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8a2 2 0 012-2h2l1.5-2h5L16 6h2a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8z"></path><circle cx="12" cy="12.5" r="3"></circle></svg>
       <span>Scanner</span>
     </button>
