@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from ..auth import require_admin_api
 from ..db import AuditLog, Dish, SelfServiceBill, next_selfservice_bill_number
 from ..services.chip_service import create_chip_purchase_for_selfservice, verify_and_mark_selfservice_paid
-from ..services.config_service import NO_CACHE_HEADERS, _local_tz_offset, _operation_hours_status, _restaurant_profile, _restaurant_settings
+from ..services.config_service import NO_CACHE_HEADERS, _local_tz_offset, _restaurant_profile, _restaurant_settings
 from ..services.security_service import _get_client_token, _get_device_id
 from .deps import get_db
 
@@ -63,14 +63,13 @@ async def selfservice_success_page():
 @router.get("/api/selfservice/status")
 def selfservice_status():
     settings = _restaurant_settings()
-    op = _operation_hours_status()
     prof = _restaurant_profile()
     return JSONResponse(
         content={
             "maintenance_mode": bool(settings["maintenance_mode"]),
             "coming_soon": bool(settings["coming_soon"]),
-            "is_open": bool(op.get("is_open", True)),
-            "operation_hour": op.get("operation_hour") or prof.get("operation_hour") or "08:00 - 17:00",
+            "is_open": bool(settings.get("is_open", True)),
+            "operation_hour": settings.get("operation_hour_text") or "08:00 - 17:00",
             "restaurant_name": prof.get("restaurant_name") or "AFRC Self-Service",
         },
         headers=NO_CACHE_HEADERS,
@@ -82,11 +81,10 @@ async def selfservice_pay(request: Request, db: Session = Depends(get_db)):
     settings = _restaurant_settings()
     if settings["maintenance_mode"] or settings["coming_soon"]:
         raise HTTPException(status_code=503, detail="Store is currently unavailable.")
-    op = _operation_hours_status()
-    if not op.get("is_open", True):
+    if not settings.get("is_open", True):
         raise HTTPException(
             status_code=403,
-            detail=f"You are outside our operation hours ({op.get('operation_hour', '08:00 - 17:00')}).",
+            detail=f"You are outside our operation hours ({settings.get('operation_hour_text', '08:00 - 17:00')}).",
         )
 
     try:
