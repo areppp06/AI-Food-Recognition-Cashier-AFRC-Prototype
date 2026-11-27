@@ -41,7 +41,7 @@ POINTS_PER_RM_REDEMPTION_VALUE = 200.0  # 200 pts ~= RM 1.00 baseline display va
 MIN_PAYABLE_RM = 0.10  # Curlec gateway minimum (10 sen)
 
 CUSTOMER_SESSION_COOKIE = "afrc_customer_session"
-CUSTOMER_SESSION_DAYS = 30
+CUSTOMER_SESSION_DAYS = 365
 
 GUEST_LOYALTY_COOKIE = "afrc_guest_loyalty"
 GUEST_LOYALTY_DAYS = 30
