@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .customer_routes import router as customer_router
 from .db import init_db
-from .routers import admin_routes, auth_routes, checkout_routes, menu_routes, pages
+from .routers import admin_routes, auth_routes, checkout_routes, menu_routes, pages, selfservice_routes
 from .services.bill_service import _run_stale_bills_cleanup_sync, _stale_bills_watcher, _sync_legacy_scans_sync
 from .services.config_service import _sync_caddy_domain_sync
 from .services.payment_service import _amount_sen, _record_captured_payment  # noqa: F401 (re-exported for scripts/test_loyalty_e2e.py)
@@ -67,4 +67,5 @@ app.include_router(auth_routes.router)
 app.include_router(menu_routes.router)
 app.include_router(checkout_routes.router)
 app.include_router(admin_routes.router)
+app.include_router(selfservice_routes.router)
 app.include_router(customer_router)

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+<title>Self-Checkout Bills — AFRC Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/admin/shared/admin.css">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar"></aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<div class="main-wrapper">
+  <header class="topbar" id="topbar"></header>
+  <main class="content">
+    <section class="section-pane active" id="tab-selfservice-bills">
+      <div class="stats-grid" style="margin-bottom:1.15rem;">
+        <div class="stat-card">
+          <div class="stat-label">Self-Checkout Paid Revenue</div>
+          <div class="stat-value orange" id="ssPaidRev">RM 0.00</div>
+          <div class="stat-sub" id="ssPaidSub">0 paid orders</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending Payment</div>
+          <div class="stat-value amber" id="ssPendingCnt">0</div>
+          <div class="stat-sub">Awaiting CHIP completion</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Void / Cancelled</div>
+          <div class="stat-value" id="ssVoidCnt">0</div>
+          <div class="stat-sub">Cancelled, failed, or voided</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;">
+          <div>
+            <h2 class="card-title">Self-Checkout Bills (SS-AAA-000)</h2>
+            <p class="card-subtitle">Independent orders placed via <code>/selfservice</code> using CHIP.</p>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <input type="text" id="ssSearchInput" class="form-input" placeholder="Search SS-AAA-001 or email..." style="width:220px;" oninput="debouncedLoadSsBills()">
+            <select id="ssStatusFilter" class="form-input" style="width:140px;" onchange="loadSsBills()">
+              <option value="all">All Statuses</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Pending</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="failed">Failed</option>
+              <option value="void">Void</option>
+            </select>
+            <a class="btn btn-outline btn-sm" href="/api/admin/selfservice-bills/export">Export CSV</a>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Bill #</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Email / CHIP ID</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ssBillsTbody">
+              <tr><td colspan="7" style="text-align:center; padding:2rem; color:#64748b;">Loading self-checkout bills...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/admin/shared/admin-shell.js"></script>
+<script src="/static/admin/js/selfservice-bills.js"></script>
+<script>
+  initAdminPage("selfservice-bills", "Self-Checkout Bills &amp; Receipts", loadSsBills);
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 let latestSummary = null;
 let latestAnalytics = null;
 let analyticsPeriod = "7d";
+let analyticsChannel = "all";
 let analyticsMonth = "";
 let analyticsQuarter = "";
 let analyticsReqSeq = 0;
@@ -24,7 +25,13 @@ function toggleSalesSeries(key) {
 
 function applySummaryCards(sum) {
   document.getElementById("statTodayRev").textContent = "RM " + Number(sum.today_revenue || 0).toFixed(2);
-  document.getElementById("statTodayPaidSub").textContent = `${sum.today_paid_count || 0} paid bills today`;
+  let todaySub = `${sum.today_paid_count || 0} paid bills today`;
+  if ((sum.channel || "all") === "all" && sum.channel_breakdown) {
+    const aRev = Number(sum.channel_breakdown.afrc_today_revenue || 0).toFixed(2);
+    const sRev = Number(sum.channel_breakdown.selfservice_today_revenue || 0).toFixed(2);
+    todaySub += ` · AFRC RM ${aRev} · SC RM ${sRev}`;
+  }
+  document.getElementById("statTodayPaidSub").textContent = todaySub;
 
   document.getElementById("statWeeklyRev").textContent = "RM " + Number(sum.weekly_revenue || 0).toFixed(2);
   document.getElementById("statWeeklyPaidSub").textContent = `Last 7 days · ${sum.weekly_paid_count || 0} paid bills`;
@@ -61,6 +68,7 @@ async function fetchAnalyticsUpdate() {
   const mySeq = ++analyticsReqSeq;
   const params = new URLSearchParams({
     period: analyticsPeriod,
+    channel: analyticsChannel,
     month: analyticsPeriod === "monthly" ? analyticsMonth : "",
     quarter: analyticsPeriod === "quarterly" ? analyticsQuarter : "",
     _t: String(Date.now()),
@@ -82,11 +90,18 @@ async function fetchAnalyticsUpdate() {
   }
 }
 
+async function setAnalyticsChannel(ch, btn) {
+  analyticsChannel = String(ch || "all");
+  document.querySelectorAll("#channelFilterPills .range-pill").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  await fetchAnalyticsUpdate();
+}
+
 async function setAnalyticsRange(period, btn) {
   analyticsPeriod = String(period || "7d");
   if (analyticsPeriod !== "monthly") analyticsMonth = "";
   if (analyticsPeriod !== "quarterly") analyticsQuarter = "";
-  document.querySelectorAll(".range-pill").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".overview-toolbar .range-pill").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
   syncPeriodSelectors(latestAnalytics);
   await fetchAnalyticsUpdate();

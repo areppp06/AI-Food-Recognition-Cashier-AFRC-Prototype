@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from ..db import ScanAttempt, SessionBill
+from ..db import ScanAttempt, SelfServiceBill, SessionBill
 from .config_service import _local_tz_offset, _rate_limit_config, _restaurant_profile, _shift_year_month
 from .menu_service import _dish_alias_map
 
@@ -19,14 +19,18 @@ def _compute_overview_data(
     month: str = "",
     quarter: str = "",
     include_export_bills: bool = False,
+    channel: str = "all",
 ) -> dict:
     offset = _local_tz_offset()
     now_local = datetime.utcnow() + offset
     today_date = now_local.date()
     week_start_date = today_date - timedelta(days=6)
     max_retakes = _rate_limit_config()["max_retakes"]
+    ch_norm = (channel or "all").strip().lower()
+    if ch_norm not in ("all", "afrc", "selfservice"):
+        ch_norm = "all"
 
-    rows = (
+    afrc_rows = (
         db.query(
             SessionBill.id,
             SessionBill.bill_number,
@@ -45,6 +49,39 @@ def _compute_overview_data(
         .order_by(SessionBill.created_at.desc())
         .all()
     )
+    ss_raw = (
+        db.query(SelfServiceBill)
+        .order_by(SelfServiceBill.created_at.desc())
+        .all()
+    )
+    ss_rows = [
+        (
+            b.id,
+            b.bill_number,
+            b.status,
+            b.void_reason,
+            b.items_json,
+            b.receipt_email,
+            "",
+            b.chip_purchase_id,
+            0,
+            0.0,
+            b.created_at,
+            b.updated_at,
+            b.paid_at,
+        )
+        for b in ss_raw
+    ]
+    if ch_norm == "afrc":
+        rows = afrc_rows
+    elif ch_norm == "selfservice":
+        rows = ss_rows
+    else:
+        rows = sorted(
+            list(afrc_rows) + ss_rows,
+            key=lambda r: (r[10] or r[11] or datetime.min),
+            reverse=True,
+        )
 
     try:
         days_int = int(days)
@@ -427,7 +464,25 @@ def _compute_overview_data(
         key=lambda x: (-x["count"], -x["lost_value"], x["reason"]),
     )
 
+    afrc_today_rev = round(
+        sum(
+            max(0.0, sum(float(i.get("subtotal") or 0) for i in json.loads(r[4] or "[]")) - float(r[9] or 0.0))
+            for r in afrc_rows
+            if (r[2] or "").lower() == "paid" and ((r[12] or r[10] or r[11] or datetime.utcnow()) + offset).date() == today_date
+        ),
+        2,
+    )
+    ss_today_rev = round(
+        sum(
+            float(b.total_amount or 0.0)
+            for b in ss_raw
+            if (b.status or "").lower() == "paid" and ((b.paid_at or b.created_at or b.updated_at or datetime.utcnow()) + offset).date() == today_date
+        ),
+        2,
+    )
+
     summary = {
+        "channel": ch_norm,
         "today_revenue": round(today_revenue, 2),
         "today_paid_count": today_paid_count,
         "weekly_revenue": round(weekly_revenue, 2),
@@ -443,11 +498,16 @@ def _compute_overview_data(
         "paid_count": paid_count,
         "pending_count": pending_count,
         "void_count": void_count,
+        "channel_breakdown": {
+            "afrc_today_revenue": afrc_today_rev,
+            "selfservice_today_revenue": ss_today_rev,
+        },
     }
     profile = _restaurant_profile()
     summary["restaurant_name"] = profile.get("restaurant_name", "AFRC")
     summary["company_name"] = profile.get("company_name", "")
     analytics = {
+        "channel": ch_norm,
         "period": p_norm,
         "month": selected_month,
         "quarter": selected_quarter,

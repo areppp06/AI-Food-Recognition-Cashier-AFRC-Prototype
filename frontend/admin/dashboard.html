@@ -43,6 +43,14 @@
         </div>
       </div>
 
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem; margin-bottom:0.85rem;">
+        <div class="range-pills" id="channelFilterPills">
+          <button class="range-pill active" data-channel="all" type="button" onclick="setAnalyticsChannel('all', this)">All Channels</button>
+          <button class="range-pill" data-channel="afrc" type="button" onclick="setAnalyticsChannel('afrc', this)">AFRC (AI)</button>
+          <button class="range-pill" data-channel="selfservice" type="button" onclick="setAnalyticsChannel('selfservice', this)">Self-Checkout</button>
+        </div>
+      </div>
+
       <div class="overview-toolbar">
         <div class="range-pills">
           <button class="range-pill" data-period="today" type="button" onclick="setAnalyticsRange('today', this)">Today (Hourly)</button>
